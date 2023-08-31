@@ -1,53 +1,84 @@
 export class Metrics {
   private totalDuration: number = 0;
-  private numberOfViews: number = 0;
-  private numberOfClicks: number = 0;
   private numberOfImpressions: number = 0;
-  private numberOfReturnVisits: number = 0;
-  private numberOfUniqueVisitors: number = new Set<string>().size;
-  private numberOfBounces: number = 0;
-  private numberOfTotalVisitors: number = 0;
+  private numberOfClicks: number = 0;
+  private totalIdleTime: number = 0;
+  private numberOfRecordings: number = 0;
+  private numberOfFailedTasks: number = 0;
+  private numberOfMultistreams: number = 0;
+  private numberOfAssets: number = 0;
+  private numberOfUpdates: number = 0;
+  private startTime: number = 0;
 
-  constructor() {}
+  updateAVD = (duration: number) => {
+    this.totalDuration += duration;
+  };
 
-  updateAVD(newDuration: number) {
-    this.totalDuration += newDuration;
-    this.numberOfViews++;
-  }
+  updateStartTime = () => {
+    this.startTime = new Date().getTime();
+  };
 
-  getAVD() {
-    return this.numberOfViews ? this.totalDuration / this.numberOfViews : 0;
-  }
+  updateNumberOfRecordings = () => {
+    this.numberOfRecordings++;
+  };
 
-  updateCTR() {
-    this.numberOfClicks++;
-  }
+  updateNumberofMultistreams = () => {
+    this.numberOfMultistreams++;
+  };
 
-  getCTR() {
-    return this.numberOfImpressions ? (this.numberOfClicks / this.numberOfImpressions) * 100 : 0;
-  }
+  updateNumberOfFailedTasks = () => {
+    this.numberOfFailedTasks++;
+  };
 
   updateImpressions() {
     this.numberOfImpressions++;
   }
 
-  updateReturnVisitor() {
-    this.numberOfReturnVisits++;
-  }
+  updateNumberOfUpdates = () => {
+    this.numberOfUpdates++;
+  };
 
-  updateUniqueVisitors(visitorId: string) {
-    this.numberOfUniqueVisitors++;
-  }
+  updateNumberOfAssets = () => {
+    this.numberOfAssets++;
+  };
 
-  updateBounce() {
-    this.numberOfBounces++;
-  }
+  updateNumberOfClicks = () => {
+    this.numberOfClicks++;
+  };
 
-  getBounceRate() {
-    return this.numberOfTotalVisitors ? (this.numberOfBounces / this.numberOfTotalVisitors) * 100 : 0;
-  }
+  updateIdleTime = () => {
+    const currentTime = new Date().getTime();
+    this.totalIdleTime += currentTime - this.startTime;
+  };
 
-  updateTotalVisitors() {
-    this.numberOfTotalVisitors++;
-  }
+  getAVD = () => {
+    return this.totalDuration / this.numberOfImpressions;
+  };
+
+  getCTR = () => {
+    return (this.numberOfClicks / this.numberOfImpressions) * 100;
+  };
+
+  getRecordingPerSession = () => {
+    return this.numberOfRecordings;
+  };
+
+  getTaskFailureRate = () => {
+    return (
+      this.numberOfFailedTasks /
+      (this.numberOfFailedTasks + this.numberOfUpdates)
+    );
+  };
+
+  getMultistreamUsageRate = () => {
+    return this.numberOfMultistreams / this.numberOfImpressions;
+  };
+
+  getAssetEngagement = () => {
+    return this.numberOfAssets / this.numberOfUpdates;
+  };
+
+  getUserEngagementRatio = () => {
+    return this.totalDuration / (this.totalDuration + this.totalIdleTime);
+  };
 }

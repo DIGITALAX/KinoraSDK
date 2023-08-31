@@ -11,14 +11,17 @@ import { AuthMethod, SessionSigs, IRelayPKP } from "@lit-protocol/types";
 import { KINORA_PKP_DB, LIT_RPC, PKP_CONTRACT_ADDRESS } from "./constants";
 import KinoraPKPDB from "./abis/KinoraPKPDB.json";
 import PKPNFT from "./abis/PKPNFT.json";
-import { BaseProvider } from "@lit-protocol/lit-auth-client";
+import {
+  DiscordProvider,
+  EthWalletProvider,
+  GoogleProvider,
+} from "@lit-protocol/lit-auth-client";
 import { createTxData, litExecute } from "./utils/lit-protocol";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
 export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   private livepeerPlayer: LivepeerPlayer<TPlaybackPolicyObject, TSlice>;
   private metrics: Metrics;
-  private startTime: number = 0;
   private litAuthClient = new LitAuthClient({
     litRelayConfig: {
       relayApiKey: `${process.env.LIT_RELAY_KEY}`,
@@ -44,24 +47,35 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     encryptedToken: string;
   };
   private redirectURL: string;
+  private streamId: string;
+  private startTime: number;
   private providerType: ProviderType;
-  private litProvider: BaseProvider;
+  private litProvider: GoogleProvider | DiscordProvider | EthWalletProvider;
   private questProvider: JsonRpcProvider;
   private chronicleProvider: JsonRpcProvider;
   private authMethod: AuthMethod;
   private rpcURL: string;
   private chain: string = "polygon";
+  private developerPKPPublicKey: string;
+  private encryptUserMetrics: boolean;
 
   constructor(
     livepeerPlayer: LivepeerPlayer<TPlaybackPolicyObject, TSlice>,
     redirectURL: string,
-    rpcURL: string
+    rpcURL: string,
+    streamId: string,
+    metricsOnChainInterval: number, // in minutes,
+    developerPKPPublicKey: `0x04${string}`,
+    encryptUserMetrics: boolean
   ) {
     this.livepeerPlayer = livepeerPlayer;
-    this.metrics = new Metrics();
-    this.bindEvents();
     this.redirectURL = redirectURL;
     this.rpcURL = rpcURL;
+    this.developerPKPPublicKey = developerPKPPublicKey;
+    this.streamId = streamId;
+    this.encryptUserMetrics = encryptUserMetrics;
+    this.metrics = new Metrics();
+    this.bindEvents();
     this.questProvider = new ethers.providers.JsonRpcProvider(
       this.rpcURL,
       ChainIds[this.chain]
@@ -70,6 +84,14 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       LIT_RPC,
       175177
     );
+    if (typeof window !== "undefined") {
+      setInterval(this.sendMetricsOnChain, metricsOnChainInterval * 60 * 1000);
+      window.addEventListener("beforeunload", this.sendMetricsOnChain);
+    } else {
+      setInterval(this.sendMetricsOnChain, metricsOnChainInterval * 60 * 1000);
+      process.on("exit", this.sendMetricsOnChain);
+      process.on("SIGINT", this.sendMetricsOnChain);
+    }
   }
 
   authenticateUser = async (type: "wallet" | "google" | "discord") => {
@@ -84,7 +106,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       this.litProvider = this.litAuthClient.initProvider(this.providerType, {
         redirectUri: `${this.redirectURL}`,
       });
-      await this.litProvider.signIn();
+      this.providerType !== ProviderType.EthWallet &&
+        (await (this.litProvider as GoogleProvider | DiscordProvider).signIn());
     } catch (err: any) {
       // add in error logs aqui
     }
@@ -107,6 +130,54 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       // add in error logs aqui
     }
   };
+
+  developerPKPMint = async () => {
+    // developer to mint pkp
+  };
+
+  bindEvents = () => {
+    this.livepeerPlayer.on("stream.started", () => {
+      this.metrics.updateImpressions();
+      this.metrics.updateAVD(0);
+      this.metrics.updateStartTime();
+    });
+
+    this.livepeerPlayer.on("stream.idle", () => {
+      this.metrics.updateIdleTime();
+      this.metrics.updateStartTime();
+    });
+
+    this.livepeerPlayer.on("recording.ready", () => {
+      this.metrics.updateNumberOfRecordings();
+    });
+
+    this.livepeerPlayer.on("recording.started", () => {
+      this.metrics.updateAVD(0);
+    });
+
+    this.livepeerPlayer.on("multistream.connected", () => {
+      this.metrics.updateNumberOfClicks();
+      this.metrics.updateNumberofMultistreams();
+    });
+
+    this.livepeerPlayer.on("asset.ready", () => {
+      this.metrics.updateNumberOfAssets();
+    });
+
+    this.livepeerPlayer.on("task.spawned", () => {
+      this.metrics.updateAVD(0);
+    });
+
+    this.livepeerPlayer.on("task.updated", () => {
+      this.metrics.updateNumberOfUpdates();
+    });
+
+    this.livepeerPlayer.on("task.failed", () => {
+      this.metrics.updateNumberOfFailedTasks();
+    });
+  };
+
+  getLogs = () => {};
 
   private handlePKPs = async () => {
     try {
@@ -270,7 +341,6 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         const res = await this.litProvider.fetchPKPsThroughRelayer(
           this.authMethod
         );
-        // get all the pkps stored on chain
         const { data } = await getPKPs();
         let result = res[0];
         if (data?.orderCreateds?.length > 0 && res?.length > 0) {
@@ -367,40 +437,20 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     }
   };
 
-  bindEvents = () => {
-    this.livepeerPlayer.on("stream.started", () => {
-      this.startTime = Date.now();
-      this.metrics.updateCTR();
-      this.metrics.updateImpressions();
-      this.metrics.updateTotalVisitors();
-      // pkp id here
-      const uniqueVisitorId = "some-unique-id";
-      this.metrics.updateUniqueVisitors(uniqueVisitorId);
-    });
-
-    this.livepeerPlayer.on("stream.idle", () => {
-      if (this.startTime) {
-        const duration = (Date.now() - this.startTime) / 1000; // Duration in seconds
-        this.metrics.updateAVD(duration);
-      }
-      this.metrics.updateBounce();
-    });
-  };
-
-  getLogs = () => {
-    const logs = {
-      AverageViewDuration: this.metrics.getAVD(),
-      ClickThroughRate: this.metrics.getCTR(),
-      BounceRate: this.metrics.getBounceRate(),
-      // ReturnVisitorRate: this.metrics.getReturnVisitorRate(),
+  private sendMetricsOnChain = async () => {
+    // all metrics // stream id uniqueness map for each user
+    // encrypt toggle or not?
+    const payload = {
+      totalDuration: this.metrics.getAVD(),
+      numberOfClicks: this.metrics.getCTR(),
+      streamId: this.streamId,
     };
-    return logs;
+
+    // tx with developer PKP
   };
 }
 
 // Engagement
-// user needs to authenticate with google auth or wallet
-// they have an account created with that pkp and stamped with factory contract main pkp <> metric indexer
 // then for each metric tracked within their view time when signed in / authenticated it's tracked through logs and updated on-chain
 // info is encrypted first before it's timestamped
 // dev can pull logs and display them for a connected user through their pkp
