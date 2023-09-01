@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 import { IPFS_CID_PKP, PKP_CONTRACT_ADDRESS } from "src/constants";
 import { joinSignature } from "@ethersproject/bytes";
 import { serialize } from "@ethersproject/transactions";
+import bs58 from "bs58";
 
 export const createTxData = async (
   provider: ethers.providers.JsonRpcProvider,
@@ -107,4 +108,9 @@ export const litExecute = async (
       console.error(err.message);
     }
   }
+};
+
+export const getBytesFromMultihash = (multihash: string): string => {
+  const decoded = bs58.decode(multihash);
+  return `0x${Buffer.from(decoded).toString("hex")}`;
 };

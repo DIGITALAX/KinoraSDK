@@ -8,15 +8,26 @@ import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
 import { SiweMessage } from "siwe";
 import { ethers } from "ethers";
 import { AuthMethod, SessionSigs, IRelayPKP } from "@lit-protocol/types";
-import { KINORA_PKP_DB, LIT_RPC, PKP_CONTRACT_ADDRESS } from "./constants";
-import KinoraPKPDB from "./abis/KinoraPKPDB.json";
+import {
+  IPFS_CID_PKP,
+  KINORA_FACTORY,
+  KINORA_PKP_DB,
+  LIT_RPC,
+  PKP_CONTRACT_ADDRESS,
+} from "./constants";
+import KinoraPKPDBAbi from "./abis/KinoraPKPDB.json";
+import KinoraFactoryAbi from "./abis/KinoraFactory.json";
 import PKPNFT from "./abis/PKPNFT.json";
 import {
   DiscordProvider,
   EthWalletProvider,
   GoogleProvider,
 } from "@lit-protocol/lit-auth-client";
-import { createTxData, litExecute } from "./utils/lit-protocol";
+import {
+  createTxData,
+  litExecute,
+  getBytesFromMultihash,
+} from "./utils/lit-protocol";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
 export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
@@ -32,7 +43,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     debug: false,
     alertWhenUnauthorized: true,
   });
-  private currentPKP: {
+  private currentUserPKP: {
     ethAddress: string;
     publicKey: string;
     tokenId: string;
@@ -50,11 +61,15 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   private streamId: string;
   private providerType: ProviderType;
   private litProvider: GoogleProvider | DiscordProvider | EthWalletProvider;
-  private questProvider: JsonRpcProvider;
+  private polygonProvider: JsonRpcProvider;
   private chronicleProvider: JsonRpcProvider;
   private authMethod: AuthMethod;
   private rpcURL: string;
   private chain: string = "polygon";
+  private kinoraPkpDBContract: ethers.Contract;
+  private pkpContract: ethers.Contract;
+  private kinoraMetricsAddress: ethers.Contract;
+  private kinoraQuestAddress: ethers.Contract;
   private developerPKPPublicKey: string;
   private encryptUserMetrics: boolean;
 
@@ -64,8 +79,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     rpcURL: string,
     streamId: string,
     metricsOnChainInterval: number, // in minutes,
-    developerPKPPublicKey: `0x04${string}`,
-    encryptUserMetrics: boolean
+    developerPKPPublicKey: `0x04${string}` | undefined, // dev may need to mint first
+    encryptUserMetrics: boolean,
   ) {
     this.livepeerPlayer = livepeerPlayer;
     this.redirectURL = redirectURL;
@@ -74,15 +89,20 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     this.streamId = streamId;
     this.encryptUserMetrics = encryptUserMetrics;
     this.metrics = new Metrics();
-    this.bindEvents();
-    this.questProvider = new ethers.providers.JsonRpcProvider(
+    this.polygonProvider = new ethers.providers.JsonRpcProvider(
       this.rpcURL,
-      ChainIds[this.chain]
+      ChainIds[this.chain],
     );
     this.chronicleProvider = new ethers.providers.JsonRpcProvider(
       LIT_RPC,
-      175177
+      175177,
     );
+    this.kinoraPkpDBContract = new ethers.Contract(
+      KINORA_PKP_DB,
+      KinoraPKPDBAbi,
+      this.polygonProvider,
+    );
+    this.pkpContract = new ethers.Contract(PKP_CONTRACT_ADDRESS, PKPNFT);
     if (typeof window !== "undefined") {
       setInterval(this.sendMetricsOnChain, metricsOnChainInterval * 60 * 1000);
       window.addEventListener("beforeunload", this.sendMetricsOnChain);
@@ -92,6 +112,66 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       process.on("SIGINT", this.sendMetricsOnChain);
     }
   }
+
+  developerFactoryContractDeploy = async (): Promise<{
+    kinoraAccessControlAddress: `0x${string}`;
+    kinoraMetricsAddress: `0x${string}`;
+    kinoraQuestAddress: `0x${string}`;
+    pkpEthAddress: string;
+    pkpPublicKey: string;
+  }> => {
+    const tx = await this.pkpContract.mintGrantAndBurnNext(
+      2,
+      getBytesFromMultihash(IPFS_CID_PKP),
+      { value: "1" },
+    );
+    const receipt = await tx.wait();
+    const logs = receipt.logs;
+    const pkpTokenId = BigInt(logs[0].topics[3]).toString();
+    const publicKey = await this.pkpContract.getPubkey(pkpTokenId);
+    this.developerPKPPublicKey = publicKey;
+
+    const factoryContract = new ethers.Contract(
+      KINORA_FACTORY,
+      KinoraFactoryAbi,
+      this.polygonProvider,
+    );
+
+    const txHash = await factoryContract.deployFromKinoraFactory(
+      ethers.utils.computeAddress(publicKey),
+    );
+
+    const receiptFactory = await this.chronicleProvider.getTransactionReceipt(
+      txHash,
+    );
+
+    if (receiptFactory && receiptFactory.logs) {
+      const parsedLogs = receiptFactory.logs
+        .map((log) => {
+          try {
+            return factoryContract.interface.parseLog(log);
+          } catch (e) {
+            return null;
+          }
+        })
+        .filter((parsedLog) => parsedLog !== null);
+
+      const filteredLogs = parsedLogs.filter((parsedLog) => {
+        return parsedLog.name === "KinoraFactoryDeployed";
+      });
+
+      this.kinoraMetricsAddress = filteredLogs[0].args[2];
+      this.kinoraQuestAddress = filteredLogs[0].args[3];
+
+      return {
+        kinoraAccessControlAddress: filteredLogs[0].args[1],
+        kinoraMetricsAddress: filteredLogs[0].args[2],
+        kinoraQuestAddress: filteredLogs[0].args[3],
+        pkpEthAddress: ethers.utils.computeAddress(publicKey),
+        pkpPublicKey: publicKey,
+      };
+    }
+  };
 
   authenticateUser = async (type: "wallet" | "google" | "discord") => {
     try {
@@ -112,13 +192,13 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     }
   };
 
-  authenticateRedirect = async () => {
+  authenticateUserRedirect = async () => {
     try {
       this.authMethod = await this.litProvider.authenticate();
 
       const values = await this.handlePKPs();
 
-      this.currentPKP = {
+      this.currentUserPKP = {
         ...values?.currentPKP,
         sessionSig: values?.sessionSigs,
         pkpWallet: values?.pkpWallet,
@@ -130,11 +210,10 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     }
   };
 
-  developerPKPMint = async () => {
-    // developer to mint pkp
-  };
-
   bindEvents = () => {
+    if (!this.developerPKPPublicKey) throw new Error();
+    if (!this.currentUserPKP) throw new Error();
+
     this.livepeerPlayer.on("stream.started", () => {
       this.metrics.updateImpressions();
       this.metrics.updateAVD(0);
@@ -192,14 +271,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       });
       const authSig = await this.generateAuthSignature(pkpWallet);
 
-      const kinoraPkpDBContract = new ethers.Contract(
-        KINORA_PKP_DB,
-        KinoraPKPDB,
-        this.questProvider
-      );
-
-      const doesExist = await kinoraPkpDBContract.userExists(
-        BigInt(res?.tokenId).toString()
+      const doesExist = await this.kinoraPkpDBContract.userExists(
+        BigInt(res.tokenId).toString(),
       );
 
       if (!doesExist) {
@@ -209,7 +282,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       const encryptedToken = await this.encryptToken(
         res.ethAddress as `0x${string}`,
         authSig,
-        BigInt(res.tokenId).toString()
+        BigInt(res.tokenId).toString(),
       );
 
       return {
@@ -224,16 +297,18 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     }
   };
 
-  private getSessionSig = async (currentPKP): Promise<SessionSigs> => {
+  private getSessionSig = async (
+    currentPKP: IRelayPKP,
+  ): Promise<SessionSigs> => {
     try {
       await this.litNodeClient.connect();
 
       const litResource = new LitJsSdk_authHelpers.LitPKPResource(
-        currentPKP.tokenId.hex
+        currentPKP.tokenId,
       );
 
       const sessionSigs = await this.litProvider.getSessionSigs({
-        pkpPublicKey: this.currentPKP.publicKey,
+        pkpPublicKey: this.currentUserPKP.publicKey,
         authMethod: {
           authMethodType:
             this.providerType === ProviderType.Google
@@ -267,25 +342,25 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       signedMessage: string;
       address: any;
     },
-    currentPKP: IRelayPKP
+    currentPKP: IRelayPKP,
   ) => {
     try {
       const tx = await createTxData(
-        this.questProvider,
-        KinoraPKPDB,
+        this.polygonProvider,
+        KinoraPKPDBAbi,
         KINORA_PKP_DB,
-        "createUserPKPAccount",
+        "addUserPKP",
         [BigInt(currentPKP?.tokenId!).toString()],
-        ChainIds[this.chain]
+        ChainIds[this.chain],
       );
 
       await litExecute(
-        this.questProvider,
+        this.polygonProvider,
         this.litNodeClient,
         tx,
-        "createUserPKPAccount",
+        "addUserPKP",
         authSig,
-        currentPKP.publicKey as `0x04${string}`
+        currentPKP.publicKey as `0x04${string}`,
       );
     } catch (err: any) {
       console.error(err.message);
@@ -295,19 +370,18 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   private mintPkp = async (): Promise<IRelayPKP> => {
     // mint a new pkp
     if (this.litProvider && this.authMethod) {
-      const pkpContract = new ethers.Contract(PKP_CONTRACT_ADDRESS, PKPNFT);
       const txHash = await this.litProvider.mintPKPThroughRelayer(
-        this.authMethod
+        this.authMethod,
       );
       const receipt = await this.chronicleProvider.getTransactionReceipt(
-        txHash
+        txHash,
       );
 
       if (receipt && receipt.logs) {
         const parsedLogs = receipt.logs
           .map((log) => {
             try {
-              return pkpContract.interface.parseLog(log);
+              return this.pkpContract.interface.parseLog(log);
             } catch (e) {
               return null;
             }
@@ -319,12 +393,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         });
 
         const tokenId = filteredLogs[0].args[2];
-        const publicKey = await pkpContract.readContract({
-          address: PKP_CONTRACT_ADDRESS,
-          abi: PKPNFT,
-          functionName: "getPubkey",
-          args: [tokenId],
-        });
+        const publicKey = await this.pkpContract.getPubkey(tokenId);
         return {
           ethAddress: ethers.utils.computeAddress(publicKey as any),
           publicKey: publicKey,
@@ -334,28 +403,21 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     }
   };
 
-  private fetchPkp = async () => {
+  private fetchPkp = async (): Promise<IRelayPKP | undefined> => {
     try {
       if (this.litProvider && this.authMethod) {
         const res = await this.litProvider.fetchPKPsThroughRelayer(
-          this.authMethod
+          this.authMethod,
         );
-        const { data } = await getPKPs();
-        let result = res[0];
-        if (data?.orderCreateds?.length > 0 && res?.length > 0) {
-          for (let i = 0; i < data?.orderCreateds?.length; i++) {
-            for (let j = 0; j < res?.length; j++) {
-              if (
-                data?.orderCreateds[i]?.toLowerCase() ===
-                BigInt(res[j]?.tokenId!).toString()
-              ) {
-                result = res[j];
-                return;
-              }
-            }
+
+        for (let i = 0; i < res.length; i++) {
+          const doesExist = await this.kinoraPkpDBContract.userExists(
+            res[i].ethAddress,
+          );
+          if (doesExist) {
+            return res[i];
           }
         }
-        return result;
       }
     } catch (error) {
       console.error(error);
@@ -370,13 +432,13 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       signedMessage: string;
       address: any;
     },
-    currentPKP: string
+    currentPKP: string,
   ): Promise<string | undefined> => {
     try {
       let encryptedTokenId: string | undefined;
 
       const { encryptedString, symmetricKey } = await LitJsSdk.encryptString(
-        currentPKP
+        currentPKP,
       );
 
       const encryptedSymmetricKey = await this.litNodeClient.saveEncryptionKey({
@@ -403,7 +465,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         encryptedString: JSON.stringify(Array.from(new Uint8Array(buffer))),
         encryptedSymmetricKey: LitJsSdk.uint8arrayToString(
           encryptedSymmetricKey,
-          "base16"
+          "base16",
         ),
       });
 
