@@ -11,19 +11,16 @@ contract KinoraFactory {
     KinoraGlobalAccessControl private _globalAccessControl;
     string public name;
     string public symbol;
+    uint256 private _kinoraIDCount;
 
     struct Kinora {
         string[] streamIds;
         address[3] contracts;
         address deployer;
+        uint256 kinoraID;
         uint256 timestamp;
     }
 
-    event GlobalAccessControlSet(
-        address indexed oldGlobalAccessControl,
-        address indexed newGlobalAccessControl,
-        address updater
-    );
     event KinoraFactoryDeployed(
         address indexed deployerAddress,
         address accessControlAddress,
@@ -31,26 +28,18 @@ contract KinoraFactory {
         address questAddress,
         uint256 timestamp
     );
-    event GrantStatusUpdated(
-        string grantName,
-        address deployerAddress,
-        string status
-    );
-    event KinoraGlobalAccessControlSet(
+    event KinoraGlobalAccessControlUpdate(
         address newAccessControlAddress,
         address deployerAddress
     );
 
-    mapping(address => Kinora[]) private _deployerToKinora;
-    mapping(address => address[])
-        private _deployedKinoraAccessControlsAddresses;
-    mapping(address => address[]) private _deployedKinoraQuestAddresses;
-    mapping(address => address[]) private _deployedKinoraMetricsAddresses;
+    mapping(address => address[]) private _deployerToPKPs;
+    mapping(address => Kinora) private _deployerPKPToKinora;
 
     modifier onlyAdmin() {
         require(
             _globalAccessControl.isAdmin(msg.sender),
-            "GlobalKinoraAccessControl: Only admin can perform this action"
+            "GlobalKinoraAccessControl: Only admin can perform this action."
         );
         _;
     }
@@ -76,7 +65,10 @@ contract KinoraFactory {
             _kinoraDeployer
         );
 
+        _kinoraIDCount++;
+
         Kinora memory _newKinoraFactoryDetails = Kinora({
+            kinoraID: _kinoraIDCount,
             streamIds: new string[](0),
             contracts: [
                 _newKinoraAccessControlAddress,
@@ -87,17 +79,8 @@ contract KinoraFactory {
             timestamp: block.timestamp
         });
 
-        _deployerToKinora[_kinoraDeployer].push(_newKinoraFactoryDetails);
-
-        _deployedKinoraAccessControlsAddresses[_kinoraDeployer].push(
-            _newKinoraAccessControlAddress
-        );
-        _deployedKinoraMetricsAddresses[_kinoraDeployer].push(
-            _newKinoraMetricsAddress
-        );
-        _deployedKinoraQuestAddresses[_kinoraDeployer].push(
-            _newKinoraQuestAddress
-        );
+        _deployerToPKPs[_kinoraDeployer].push(_pkpAddress);
+        _deployerPKPToKinora[_pkpAddress] = _newKinoraFactoryDetails;
 
         emit KinoraFactoryDeployed(
             msg.sender,
@@ -142,26 +125,60 @@ contract KinoraFactory {
         );
     }
 
-    function getDeployedKinoraAccessControls(
+    function getDeployerToPKPs(
         address _deployerAddress
     ) public view returns (address[] memory) {
-        return _deployedKinoraAccessControlsAddresses[_deployerAddress];
+        return _deployerToPKPs[_deployerAddress];
     }
 
-    function getDeployedKinoraMetrics(
-        address _deployerAddress
-    ) public view returns (address[] memory) {
-        return _deployedKinoraMetricsAddresses[_deployerAddress];
+    function getDeployedKinoraAccessControlToPKP(
+        address _pkpAddress
+    ) public view returns (address) {
+        return _deployerPKPToKinora[_pkpAddress].contracts[0];
     }
 
-    function getDeployedKinoraQuests(
-        address _deployerAddress
-    ) public view returns (address[] memory) {
-        return _deployedKinoraQuestAddresses[_deployerAddress];
+    function getDeployedKinoraMetricToPKP(
+        address _pkpAddress
+    ) public view returns (address) {
+        return _deployerPKPToKinora[_pkpAddress].contracts[1];
+    }
+
+    function getDeployedKinoraQuestToPKP(
+        address _pkpAddress
+    ) public view returns (address) {
+        return _deployerPKPToKinora[_pkpAddress].contracts[2];
+    }
+
+    function getKinoraIDToPKP(
+        address _pkpAddress
+    ) public view returns (uint256) {
+        return _deployerPKPToKinora[_pkpAddress].kinoraID;
+    }
+
+    function getKinoraDeployerToPKP(
+        address _pkpAddress
+    ) public view returns (address) {
+        return _deployerPKPToKinora[_pkpAddress].deployer;
+    }
+
+    function getKinoraStreamIdsToPKP(
+        address _pkpAddress
+    ) public view returns (string[] memory) {
+        return _deployerPKPToKinora[_pkpAddress].streamIds;
+    }
+
+    function getKinoraBlockTimestampToPKP(
+        address _pkpAddress
+    ) public view returns (uint256) {
+        return _deployerPKPToKinora[_pkpAddress].timestamp;
     }
 
     function getGlobalAccessControlContract() public view returns (address) {
         return address(_globalAccessControl);
+    }
+
+    function getKinoraIDCount() public view returns (uint256) {
+        return _kinoraIDCount;
     }
 
     function setGlobalAccessControl(
@@ -170,6 +187,9 @@ contract KinoraFactory {
         _globalAccessControl = KinoraGlobalAccessControl(
             _newAccessControlAddress
         );
-        emit KinoraGlobalAccessControlSet(_newAccessControlAddress, msg.sender);
+        emit KinoraGlobalAccessControlUpdate(
+            _newAccessControlAddress,
+            msg.sender
+        );
     }
 }

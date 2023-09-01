@@ -14,8 +14,12 @@ contract KinoraQuest {
         );
         _;
     }
-    
+
     constructor(address _accessControlAddress) {
         _accessControl = KinoraAccessControl(_accessControlAddress);
+    }
+
+    function getKinoraAccessControl() public view returns (address) {
+        return address(_accessControl);
     }
 }

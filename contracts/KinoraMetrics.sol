@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: UNLICENSE
+
 pragma solidity ^0.8.9;
 
 import "./KinoraAccessControl.sol";
@@ -18,23 +19,14 @@ contract KinoraMetrics {
     }
 
     mapping(address => UserLivePeerMetrics) private _pkpToUserLivePeerMetrics;
-    mapping(address => bool) private _userActiveAccount;
 
     event AddUserPKP(address addedUserPKPAddress);
     event RemoveUserPKP(address removedUserPKPAddress);
 
-    modifier onlyAdmin() {
-        require(
-            _accessControl.isAdmin(msg.sender),
-            "GlobalKinoraAccessControl: Only admin can perform this action"
-        );
-        _;
-    }
-
     modifier onlyUserPKP() {
         require(
-            _accessControl.isAdmin(msg.sender),
-            "GlobalKinoraAccessControl: Only admin can perform this action"
+            msg.sender == _accessControl.getAssignedPKPAddress(),
+            "KinoraAccessControl: Only Assigned PKP can perform this action."
         );
         _;
     }
@@ -42,20 +34,6 @@ contract KinoraMetrics {
     constructor(address _accessControlAddress) {
         _accessControl = KinoraAccessControl(_accessControlAddress);
     }
-
-    function addUserPKP(address _pkpAddress) public {
-        // MAKE THIS GLOBAL USER DB CONTRACT ???
-        require(
-            !_userActiveAccount[_pkpAddress],
-            "KinoraPKPDB: Cannot Add an Existing User."
-        );
-
-        _userActiveAccount[_pkpAddress] = true;
-
-        emit AddUserPKP(_pkpAddress);
-    }
-
-    function removeUserPKP(address _pkpAddress) public onlyAdmin {}
 
     function addUserArgumentsOnChain() public onlyUserPKP {}
 
