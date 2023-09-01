@@ -246,7 +246,7 @@
         "type": "address"
       }
     ],
-    "name": "getKinoraStreamIdsToPKP",
+    "name": "getKinoraPlaybackIdsToPKP",
     "outputs": [
       {
         "internalType": "string[]",

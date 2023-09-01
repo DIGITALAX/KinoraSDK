@@ -58,7 +58,7 @@ contract KinoraGlobalPKPDB {
     _activeUserCount++;
     _userActiveAccount[_userPkpAddress] = true;
 
-    UserPKP _newUserAccount = UserPKP({
+    UserPKP memory _newUserAccount = UserPKP({
       _userId: _activeUserCount,
       _userPKP: _userPkpAddress,
       _registeredTimestamp: block.timestamp
@@ -92,7 +92,7 @@ contract KinoraGlobalPKPDB {
 
   function getUserIdByPKP(
     address _userPKPAddress
-  ) public view returns (uint256) {
+  ) public view returns (address) {
     return _userPKPAccount[_userPKPAddress]._userPKP;
   }
 

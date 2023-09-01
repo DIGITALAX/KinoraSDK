@@ -23,6 +23,7 @@ export type LivepeerPlayer<TPlaybackPolicyObject extends object, TSlice> = {
 export const ChainIds: { [key: string]: number } = {
   polygon: 137,
   mumbai: 80001,
+  chronicle: 175177,
 };
 
 export type ContractABI = (
@@ -46,3 +47,20 @@ export type ContractABI = (
 )[];
 
 export type LitProvider = GoogleProvider | DiscordProvider | EthWalletProvider;
+
+export type LitAuthSig = {
+  sig: string;
+  derivedVia: string;
+  signedMessage: string;
+  address: string;
+};
+
+export interface UserMetrics {
+  avd: number;
+  ctr: number;
+  assetEngagement: number;
+  userEngagementRatio: number;
+  multiPlaybackUsageRate: number;
+  taskFailureRate: number;
+  recordingPerSession: number;
+}
