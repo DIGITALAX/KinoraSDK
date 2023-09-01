@@ -1,16 +1,17 @@
 import { ethers } from "ethers";
-import { IPFS_CID_PKP, PKP_CONTRACT_ADDRESS } from "src/constants";
+import { IPFS_CID_PKP, CHRONICLE_PKP_CONTRACT } from "src/constants";
 import { joinSignature } from "@ethersproject/bytes";
 import { serialize } from "@ethersproject/transactions";
 import bs58 from "bs58";
+import { ContractABI } from "src/@types/kinora-sdk";
 
 export const createTxData = async (
   provider: ethers.providers.JsonRpcProvider,
-  abi: any,
+  abi: ContractABI,
   contractAddress: string,
   functionName: string,
   args: any[],
-  chainId: number
+  chainId: number,
 ) => {
   try {
     const contractInterface = new ethers.utils.Interface(abi);
@@ -18,7 +19,7 @@ export const createTxData = async (
     const latestBlock = await provider.getBlock("latest");
     const baseFeePerGas = latestBlock.baseFeePerGas;
     const maxFeePerGas = baseFeePerGas?.lt(
-      ethers.utils.parseUnits("40", "gwei")
+      ethers.utils.parseUnits("40", "gwei"),
     )
       ? ethers.utils.parseUnits("40", "gwei")
       : baseFeePerGas;
@@ -26,7 +27,7 @@ export const createTxData = async (
     const maxPriorityFeePerGas = ethers.utils.parseUnits("40", "gwei");
     return {
       to: contractAddress,
-      nonce: (await provider.getTransactionCount(PKP_CONTRACT_ADDRESS)) || 0,
+      nonce: (await provider.getTransactionCount(CHRONICLE_PKP_CONTRACT)) || 0,
       chainId: chainId,
       gasLimit: ethers.BigNumber.from("25000000"),
       maxFeePerGas: maxFeePerGas,
@@ -48,7 +49,7 @@ export const litExecute = async (
   sigName: string,
   authSig: any,
   publicKey: `0x04${string}`,
-  retryCount: number = 0
+  retryCount: number = 0,
 ) => {
   const maxRetries = 5;
   try {
@@ -102,7 +103,7 @@ export const litExecute = async (
         sigName,
         authSig,
         publicKey,
-        retryCount + 1
+        retryCount + 1,
       );
     } else {
       console.error(err.message);
