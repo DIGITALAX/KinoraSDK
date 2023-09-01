@@ -48,7 +48,6 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   };
   private redirectURL: string;
   private streamId: string;
-  private startTime: number;
   private providerType: ProviderType;
   private litProvider: GoogleProvider | DiscordProvider | EthWalletProvider;
   private questProvider: JsonRpcProvider;
