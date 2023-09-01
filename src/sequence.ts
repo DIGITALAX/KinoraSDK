@@ -1,28 +1,21 @@
-import { ChainIds, LivepeerPlayer } from "./@types/kinora-sdk";
+import { ChainIds, LitProvider, LivepeerPlayer } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import "@lit-protocol/lit-auth-client";
-import * as LitJsSdk_authHelpers from "@lit-protocol/auth-helpers";
-import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import { ProviderType } from "@lit-protocol/constants";
-import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
-import { SiweMessage } from "siwe";
 import { ethers } from "ethers";
-import { AuthMethod, SessionSigs, IRelayPKP } from "@lit-protocol/types";
+import { AuthMethod, IRelayPKP } from "@lit-protocol/types";
 import {
   IPFS_CID_PKP,
-  KINORA_FACTORY,
-  KINORA_PKP_DB,
+  KINORA_FACTORY_CONTRACT,
+  KINORA_PKP_DB_CONTRACT,
   LIT_RPC,
-  PKP_CONTRACT_ADDRESS,
+  CHRONICLE_PKP_CONTRACT,
 } from "./constants";
 import KinoraPKPDBAbi from "./abis/KinoraPKPDB.json";
 import KinoraFactoryAbi from "./abis/KinoraFactory.json";
-import PKPNFT from "./abis/PKPNFT.json";
-import {
-  DiscordProvider,
-  EthWalletProvider,
-  GoogleProvider,
-} from "@lit-protocol/lit-auth-client";
+import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
+import PKPNFTAbi from "./abis/PKPNFT.json";
+import { DiscordProvider, GoogleProvider } from "@lit-protocol/lit-auth-client";
 import {
   createTxData,
   litExecute,
@@ -43,24 +36,11 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     debug: false,
     alertWhenUnauthorized: true,
   });
-  private currentUserPKP: {
-    ethAddress: string;
-    publicKey: string;
-    tokenId: string;
-    sessionSig: SessionSigs;
-    pkpWallet: PKPEthersWallet;
-    authSig: {
-      sig: any;
-      derivedVia: string;
-      signedMessage: string;
-      address: any;
-    };
-    encryptedToken: string;
-  };
+  private currentUserPKP: IRelayPKP;
   private redirectURL: string;
   private streamId: string;
   private providerType: ProviderType;
-  private litProvider: GoogleProvider | DiscordProvider | EthWalletProvider;
+  private litProvider: LitProvider;
   private polygonProvider: JsonRpcProvider;
   private chronicleProvider: JsonRpcProvider;
   private authMethod: AuthMethod;
@@ -68,9 +48,9 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   private chain: string = "polygon";
   private kinoraPkpDBContract: ethers.Contract;
   private pkpContract: ethers.Contract;
-  private kinoraMetricsAddress: ethers.Contract;
+  private kinoraMetricsAddress: `0x${string}`;
   private kinoraQuestAddress: ethers.Contract;
-  private developerPKPPublicKey: string;
+  private developerPKPPublicKey: `0x04${string}`;
   private encryptUserMetrics: boolean;
 
   constructor(
@@ -81,6 +61,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     metricsOnChainInterval: number, // in minutes,
     developerPKPPublicKey: `0x04${string}` | undefined, // dev may need to mint first
     encryptUserMetrics: boolean,
+    signer?: ethers.Signer,
+    kinoraMetricsAddress?: `0x${string}`,
   ) {
     this.livepeerPlayer = livepeerPlayer;
     this.redirectURL = redirectURL;
@@ -88,6 +70,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     this.developerPKPPublicKey = developerPKPPublicKey;
     this.streamId = streamId;
     this.encryptUserMetrics = encryptUserMetrics;
+    if (kinoraMetricsAddress) this.kinoraMetricsAddress = kinoraMetricsAddress;
     this.metrics = new Metrics();
     this.polygonProvider = new ethers.providers.JsonRpcProvider(
       this.rpcURL,
@@ -98,11 +81,15 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       175177,
     );
     this.kinoraPkpDBContract = new ethers.Contract(
-      KINORA_PKP_DB,
+      KINORA_PKP_DB_CONTRACT,
       KinoraPKPDBAbi,
       this.polygonProvider,
     );
-    this.pkpContract = new ethers.Contract(PKP_CONTRACT_ADDRESS, PKPNFT);
+    this.pkpContract = new ethers.Contract(
+      CHRONICLE_PKP_CONTRACT,
+      PKPNFTAbi,
+      signer ? signer : ethers.Wallet.createRandom(),
+    );
     if (typeof window !== "undefined") {
       setInterval(this.sendMetricsOnChain, metricsOnChainInterval * 60 * 1000);
       window.addEventListener("beforeunload", this.sendMetricsOnChain);
@@ -132,7 +119,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     this.developerPKPPublicKey = publicKey;
 
     const factoryContract = new ethers.Contract(
-      KINORA_FACTORY,
+      KINORA_FACTORY_CONTRACT,
       KinoraFactoryAbi,
       this.polygonProvider,
     );
@@ -159,7 +146,6 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       const filteredLogs = parsedLogs.filter((parsedLog) => {
         return parsedLog.name === "KinoraFactoryDeployed";
       });
-
       this.kinoraMetricsAddress = filteredLogs[0].args[2];
       this.kinoraQuestAddress = filteredLogs[0].args[3];
 
@@ -173,7 +159,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     }
   };
 
-  authenticateUser = async (type: "wallet" | "google" | "discord") => {
+  authenticateUser = async (type: "wallet" | "google" | "discord"): Promise<void> => {
     try {
       this.providerType =
         type === "wallet"
@@ -192,27 +178,20 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     }
   };
 
-  authenticateUserRedirect = async () => {
+  authenticateUserRedirect = async (): Promise<void> => {
     try {
       this.authMethod = await this.litProvider.authenticate();
 
-      const values = await this.handlePKPs();
-
-      this.currentUserPKP = {
-        ...values?.currentPKP,
-        sessionSig: values?.sessionSigs,
-        pkpWallet: values?.pkpWallet,
-        authSig: values?.authSig,
-        encryptedToken: values?.encryptedToken,
-      };
+      this.currentUserPKP = await this.handlePKPs();
     } catch (err: any) {
       // add in error logs aqui
     }
   };
 
-  bindEvents = () => {
+  bindEvents = (): void => {
     if (!this.developerPKPPublicKey) throw new Error();
     if (!this.currentUserPKP) throw new Error();
+    if (!this.kinoraMetricsAddress) throw new Error();
 
     this.livepeerPlayer.on("stream.started", () => {
       this.metrics.updateImpressions();
@@ -255,100 +234,37 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     });
   };
 
-  getLogs = () => {};
+  getSDKLogs = () => {};
 
-  private handlePKPs = async () => {
+  getUserMetrics = () => {};
+
+  private handlePKPs = async (): Promise<IRelayPKP> => {
     try {
       let res = await this.fetchPkp();
       if (res == undefined) {
         res = await this.mintPkp();
       }
-      const sessionSigs = await this.getSessionSig(res);
-      const pkpWallet = new PKPEthersWallet({
-        controllerSessionSigs: sessionSigs,
-        pkpPubKey: res.publicKey,
-        rpc: this.rpcURL,
-      });
-      const authSig = await this.generateAuthSignature(pkpWallet);
 
       const doesExist = await this.kinoraPkpDBContract.userExists(
         BigInt(res.tokenId).toString(),
       );
 
       if (!doesExist) {
-        await this.storeAuthOnChain(authSig, res);
+        await this.storeAuthOnChain(res);
       }
 
-      const encryptedToken = await this.encryptToken(
-        res.ethAddress as `0x${string}`,
-        authSig,
-        BigInt(res.tokenId).toString(),
-      );
-
-      return {
-        currentPKP: res,
-        encryptedToken,
-        authSig,
-        pkpWallet,
-        sessionSigs,
-      };
+      return res;
     } catch (err: any) {
       console.error(err.message);
     }
   };
 
-  private getSessionSig = async (
-    currentPKP: IRelayPKP,
-  ): Promise<SessionSigs> => {
-    try {
-      await this.litNodeClient.connect();
-
-      const litResource = new LitJsSdk_authHelpers.LitPKPResource(
-        currentPKP.tokenId,
-      );
-
-      const sessionSigs = await this.litProvider.getSessionSigs({
-        pkpPublicKey: this.currentUserPKP.publicKey,
-        authMethod: {
-          authMethodType:
-            this.providerType === ProviderType.Google
-              ? 6
-              : this.providerType === ProviderType.Discord
-              ? 4
-              : 1,
-          accessToken: this.authMethod.accessToken,
-        },
-        sessionSigsParams: {
-          chain: this.chain,
-          resourceAbilityRequests: [
-            {
-              resource: litResource,
-              ability: LitJsSdk_authHelpers.LitAbility.PKPSigning,
-            },
-          ],
-        },
-        litNodeClient: this.litNodeClient,
-      });
-      return sessionSigs;
-    } catch (e: any) {
-      console.error(e.message);
-    }
-  };
-
-  private storeAuthOnChain = async (
-    authSig: {
-      sig: any;
-      derivedVia: string;
-      signedMessage: string;
-      address: any;
-    },
-    currentPKP: IRelayPKP,
-  ) => {
+  private storeAuthOnChain = async (currentPKP: IRelayPKP): Promise<void> => {
     try {
       const tx = await createTxData(
         this.polygonProvider,
         KinoraPKPDBAbi,
-        KINORA_PKP_DB,
+        KINORA_PKP_DB_CONTRACT,
         "addUserPKP",
         [BigInt(currentPKP?.tokenId!).toString()],
         ChainIds[this.chain],
@@ -360,7 +276,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         tx,
         "addUserPKP",
         authSig,
-        currentPKP.publicKey as `0x04${string}`,
+        this.developerPKPPublicKey as `0x04${string}`,
       );
     } catch (err: any) {
       console.error(err.message);
@@ -424,97 +340,42 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     }
   };
 
-  private encryptToken = async (
-    address: `0x${string}`,
-    authSig: {
-      sig: any;
-      derivedVia: string;
-      signedMessage: string;
-      address: any;
-    },
-    currentPKP: string,
-  ): Promise<string | undefined> => {
-    try {
-      let encryptedTokenId: string | undefined;
+  private sendMetricsOnChain = async (): Promise<void> => {
+    if (!this.developerPKPPublicKey) throw new Error();
+    if (!this.currentUserPKP) throw new Error();
+    if (!this.kinoraMetricsAddress) throw new Error();
 
-      const { encryptedString, symmetricKey } = await LitJsSdk.encryptString(
-        currentPKP,
-      );
-
-      const encryptedSymmetricKey = await this.litNodeClient.saveEncryptionKey({
-        accessControlConditions: [
-          {
-            contractAddress: "",
-            standardContractType: "",
-            chain: this.chain,
-            method: "",
-            parameters: [":userAddress"],
-            returnValueTest: {
-              comparator: "=",
-              value: address?.toLowerCase() as string,
-            },
-          },
-        ],
-        symmetricKey,
-        authSig,
-        chain: this.chain,
-      });
-
-      const buffer = await encryptedString.arrayBuffer();
-      encryptedTokenId = JSON.stringify({
-        encryptedString: JSON.stringify(Array.from(new Uint8Array(buffer))),
-        encryptedSymmetricKey: LitJsSdk.uint8arrayToString(
-          encryptedSymmetricKey,
-          "base16",
-        ),
-      });
-
-      return encryptedTokenId;
-    } catch (err: any) {
-      console.error(err.message);
-    }
-  };
-
-  private generateAuthSignature = async (pkpWallet: any | undefined) => {
-    try {
-      const siweMessage = new SiweMessage({
-        domain: "coinop.themanufactory.xyz",
-        address: pkpWallet?.address,
-        statement: "This is an Auth Sig for Coin Op",
-        uri: "https://coinop.themanufactory.xyz",
-        version: "1",
-        chainId: 137,
-      });
-      const signedMessage = siweMessage.prepareMessage();
-      const sig = await pkpWallet?.signMessage(signedMessage);
-      return {
-        sig,
-        derivedVia: "web3.eth.personal.sign",
-        signedMessage,
-        address: pkpWallet?.address,
-      };
-    } catch (err: any) {
-      console.error(err.message);
-    }
-  };
-
-  private sendMetricsOnChain = async () => {
-    // all metrics // stream id uniqueness map for each user
-    // encrypt toggle or not?
     const payload = {
       totalDuration: this.metrics.getAVD(),
       numberOfClicks: this.metrics.getCTR(),
       streamId: this.streamId,
     };
 
-    // tx with developer PKP
+    // encryptPayload and set toggle for user <> developer
+
+    if (this.encryptUserMetrics) {
+      const encryptedPayload = {};
+    }
+
+    const tx = await createTxData(
+      this.polygonProvider,
+      KinoraMetricsAbi,
+      this.kinoraMetricsAddress,
+      "addUserMetrics",
+      [this.currentUserPKP.ethAddress, encryptedPayload],
+      ChainIds[this.chain],
+    );
+
+    await litExecute(
+      this.polygonProvider,
+      this.litNodeClient,
+      tx,
+      "addUserMetrics",
+      this.authSig,
+      this.developerPKPPublicKey,
+    );
   };
 }
-
-// Engagement
-// then for each metric tracked within their view time when signed in / authenticated it's tracked through logs and updated on-chain
-// info is encrypted first before it's timestamped
-// dev can pull logs and display them for a connected user through their pkp
 
 // Quests
 // quest module for a dev to set up a new quest according to the metrics
@@ -522,4 +383,4 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
 // allow limited number of users / etc. to sign up per quest
 // participants can active/join in on quest if match quest criteria
 // quest history encrypted on chain and retrievable by authenticated user
-// compute credit module attachment
+// compute credit module attachment ??
