@@ -5,33 +5,33 @@ pragma solidity ^0.8.9;
 contract KinoraAccessControl {
     string public symbol;
     string public name;
-    address private _pkpAddress;
+    address private _assignedPKPAddress;
 
     mapping(address => bool) private _admins;
 
     event AdminAdded(address indexed admin);
     event AdminRemoved(address indexed admin);
-    event PKPAddressUpdated(address indexed pkpAddress);
+    event AssignedPKPAddressUpdated(address indexed pkpAddress);
 
     modifier onlyAdmin() {
         require(
             _admins[msg.sender],
-            "KinoraAccessControl: Only admins can perform this action"
+            "KinoraAccessControl: Only admins can perform this action."
         );
         _;
     }
 
-    constructor(address _pkp, address _deployerAdmin) {
+    constructor(address _pkpAddress, address _deployerAdmin) {
         symbol = "KAC";
         name = "KinoraAccessControl";
-        _pkpAddress = _pkp;
+        _assignedPKPAddress = _pkpAddress;
         _admins[_deployerAdmin] = true;
     }
 
     function addAdmin(address _admin) external onlyAdmin {
         require(
             !_admins[_admin] && _admin != msg.sender,
-            "KinoraAccessControl: Cannot add existing admin or yourself"
+            "KinoraAccessControl: Cannot add existing admin or yourself."
         );
         _admins[_admin] = true;
         emit AdminAdded(_admin);
@@ -40,16 +40,18 @@ contract KinoraAccessControl {
     function removeAdmin(address _admin) external onlyAdmin {
         require(
             _admin != msg.sender,
-            "KinoraAccessControl: Cannot remove yourself as admin"
+            "KinoraAccessControl: Cannot remove yourself as admin."
         );
         require(_admins[_admin], "KinoraAccessControl: Admin doesn't exist.");
-        _admins[_admin] = false;
+        delete _admins[_admin];
         emit AdminRemoved(_admin);
     }
 
-    function updatePKPAddress(address _newPKPAddress) public onlyAdmin {
-        _pkpAddress = _newPKPAddress;
-        emit PKPAddressUpdated(_newPKPAddress);
+    function updateAssignedPKPAddress(
+        address _newAssignedPKPAddress
+    ) public onlyAdmin {
+        _assignedPKPAddress = _newAssignedPKPAddress;
+        emit AssignedPKPAddressUpdated(_newAssignedPKPAddress);
     }
 
     function isAdmin(address _address) public view returns (bool) {
@@ -57,6 +59,6 @@ contract KinoraAccessControl {
     }
 
     function getAssignedPKPAddress() public view returns (address) {
-        return _pkpAddress;
+        return _assignedPKPAddress;
     }
 }
