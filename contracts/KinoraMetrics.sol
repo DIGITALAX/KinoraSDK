@@ -6,15 +6,9 @@ import "./KinoraAccessControl.sol";
 
 library MetricsParamsLibrary {
   struct MetricParams {
-    string streamId;
-    uint256 avd;
-    uint256 crt;
-    uint256 recordingNumber;
-    uint256 assetEngagement;
-    uint256 userEngagementRatio;
-    uint256 multiStreamUsageRate;
-    uint256 taskFailureRate;
-    uint256 recordingPerSession;
+    string playbackId;
+    string metricJSON;
+    bool encrypted;
   }
 }
 
@@ -22,34 +16,21 @@ contract KinoraMetrics {
   KinoraAccessControl private _accessControl;
 
   struct UserLivePeerMetrics {
-    string _streamId;
-    uint256 _avd;
-    uint256 _crt;
-    uint256 _recordingNumber;
-    uint256 _assetEngagement;
-    uint256 _userEngagementRatio;
-    uint256 _multiStreamUsageRate;
-    uint256 _taskFailureRate;
-    uint256 _recordingPerSession;
+    string _playbackId;
+    string _metricJSON;
+    bool _encrypted;
   }
 
   mapping(address => mapping(string => UserLivePeerMetrics))
-    private _pkpToUserLivePeerMetricsByStreamId;
-  mapping(address => string[]) private _pkpToStreamId;
+    private _pkpToUserLivePeerMetricsByPlaybackId;
 
   event AddUserPKP(address addedUserPKPAddress);
   event RemoveUserPKP(address removedUserPKPAddress);
   event AddUserMetrics(
-    string streamId,
+    string playbackId,
+    string metricJSON,
     address userPKPAddress,
-    uint256 avd,
-    uint256 crt,
-    uint256 recordingNumber,
-    uint256 assetEngagement,
-    uint256 userEngagementRatio,
-    uint256 multiStreamUsageRate,
-    uint256 taskFailureRate,
-    uint256 recordingPerSession
+    bool encrypted
   );
 
   modifier onlyUserPKP() {
@@ -69,49 +50,49 @@ contract KinoraMetrics {
     MetricsParamsLibrary.MetricParams memory _args
   ) public onlyUserPKP {
     UserLivePeerMetrics memory _newUserLivePeerMetrics;
-    if (_pkpToStreamId[_userPKPAddress].length > 0) {
-      _newUserLivePeerMetrics = UserLivePeerMetrics({
-        _streamId: _args.streamId,
-        _avd: _args.avd,
-        _crt: _args.crt,
-        _recordingNumber: _args.recordingNumber,
-        _assetEngagement: _args.assetEngagement,
-        _userEngagementRatio: _args.userEngagementRatio,
-        _multiStreamUsageRate: _args.multiStreamUsageRate,
-        _taskFailureRate: _args.taskFailureRate,
-        _recordingPerSession: _args.recordingPerSession
-      });
-    } else {
-      // update and combine user metrics
-      _newUserLivePeerMetrics = UserLivePeerMetrics({
-        _streamId: _args.streamId,
-        _avd: _args.avd,
-        _crt: _args.crt,
-        _recordingNumber: _args.recordingNumber,
-        _assetEngagement: _args.assetEngagement,
-        _userEngagementRatio: _args.userEngagementRatio,
-        _multiStreamUsageRate: _args.multiStreamUsageRate,
-        _taskFailureRate: _args.taskFailureRate,
-        _recordingPerSession: _args.recordingPerSession
-      });
-    }
+    _newUserLivePeerMetrics = UserLivePeerMetrics({
+      _playbackId: _args.playbackId,
+      _metricJSON: _args.metricJSON,
+      _encrypted: _args.encrypted
+    });
 
-    _pkpToUserLivePeerMetricsByStreamId[_userPKPAddress][
-      _args.streamId
+    _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][
+      _args.playbackId
     ] = _newUserLivePeerMetrics;
 
     emit AddUserMetrics(
-      _args.streamId,
+      _args.playbackId,
+      _args.metricJSON,
       _userPKPAddress,
-      _args.avd,
-      _args.crt,
-      _args.recordingNumber,
-      _args.assetEngagement,
-      _args.userEngagementRatio,
-      _args.multiStreamUsageRate,
-      _args.taskFailureRate,
-      _args.recordingPerSession
+      _args.encrypted
     );
+  }
+
+  function getUserMetricsEncryptedByPlaybackId(
+    address _userPKPAddress,
+    string memory _playbackId
+  ) public view returns (bool) {
+    return
+      _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
+        ._encrypted;
+  }
+
+  function getUserMetricsJSONByPlaybackId(
+    address _userPKPAddress,
+    string memory _playbackId
+  ) public view returns (string memory) {
+    return
+      _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
+        ._metricJSON;
+  }
+
+  function getUserPlaybackIdByPlaybackId(
+    address _userPKPAddress,
+    string memory _playbackId
+  ) public view returns (string memory) {
+    return
+      _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
+        ._playbackId;
   }
 
   function getKinoraAccessControl() public view returns (address) {

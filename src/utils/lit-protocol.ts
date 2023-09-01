@@ -3,7 +3,8 @@ import { IPFS_CID_PKP, CHRONICLE_PKP_CONTRACT } from "src/constants";
 import { joinSignature } from "@ethersproject/bytes";
 import { serialize } from "@ethersproject/transactions";
 import bs58 from "bs58";
-import { ContractABI } from "src/@types/kinora-sdk";
+import { SiweMessage } from "siwe";
+import { ContractABI, LitAuthSig } from "src/@types/kinora-sdk";
 
 export const createTxData = async (
   provider: ethers.providers.JsonRpcProvider,
@@ -110,6 +111,36 @@ export const litExecute = async (
     }
   }
 };
+
+export const generateAuthSig = async (
+  signer: ethers.Signer,
+  chainId = 1,
+  uri = "https://localhost/login",
+  version = "1",
+): Promise<LitAuthSig> => {
+  try {
+    const address = await signer.getAddress();
+    const siweMessage = new SiweMessage({
+      domain: "localhost",
+      address: address,
+      statement: "This is an Auth Sig for KinoraSDK",
+      uri: uri,
+      version: version,
+      chainId: chainId,
+    });
+    const signedMessage = siweMessage.prepareMessage();
+    const sig = await signer.signMessage(signedMessage);
+    return {
+      sig,
+      derivedVia: "web3.eth.personal.sign",
+      signedMessage,
+      address,
+    };
+  } catch (err) {
+    throw new Error(`Error generating signed message ${err}`);
+  }
+};
+
 
 export const getBytesFromMultihash = (multihash: string): string => {
   const decoded = bs58.decode(multihash);

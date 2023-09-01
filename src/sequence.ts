@@ -1,4 +1,10 @@
-import { ChainIds, LitProvider, LivepeerPlayer } from "./@types/kinora-sdk";
+import {
+  ChainIds,
+  LitAuthSig,
+  LitProvider,
+  LivepeerPlayer,
+  UserMetrics,
+} from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import "@lit-protocol/lit-auth-client";
 import { ProviderType } from "@lit-protocol/constants";
@@ -14,18 +20,37 @@ import {
 import KinoraPKPDBAbi from "./abis/KinoraPKPDB.json";
 import KinoraFactoryAbi from "./abis/KinoraFactory.json";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
+import KinoraQuestAbi from "./abis/KinoraQuest.json";
 import PKPNFTAbi from "./abis/PKPNFT.json";
 import { DiscordProvider, GoogleProvider } from "@lit-protocol/lit-auth-client";
 import {
   createTxData,
   litExecute,
   getBytesFromMultihash,
+  generateAuthSig,
 } from "./utils/lit-protocol";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
 export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   private livepeerPlayer: LivepeerPlayer<TPlaybackPolicyObject, TSlice>;
   private metrics: Metrics;
+  private currentUserPKP: IRelayPKP;
+  private providerType: ProviderType;
+  private litProvider: LitProvider;
+  private polygonProvider: JsonRpcProvider;
+  private chronicleProvider: JsonRpcProvider;
+  private authMethod: AuthMethod;
+  private rpcURL: string;
+  private chain: string = "polygon";
+  private redirectURL: string;
+  private developerPKPPublicKey: `0x04${string}`;
+  private encryptUserMetrics: boolean;
+  private kinoraPkpDBContract: ethers.Contract;
+  private pkpContract: ethers.Contract;
+  private kinoraQuestAddress: ethers.Contract;
+  private kinoraMetricsAddress: ethers.Contract;
+  private signer: ethers.Signer;
+  private authSig: LitAuthSig;
   private litAuthClient = new LitAuthClient({
     litRelayConfig: {
       relayApiKey: `${process.env.LIT_RELAY_KEY}`,
@@ -36,28 +61,11 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     debug: false,
     alertWhenUnauthorized: true,
   });
-  private currentUserPKP: IRelayPKP;
-  private redirectURL: string;
-  private streamId: string;
-  private providerType: ProviderType;
-  private litProvider: LitProvider;
-  private polygonProvider: JsonRpcProvider;
-  private chronicleProvider: JsonRpcProvider;
-  private authMethod: AuthMethod;
-  private rpcURL: string;
-  private chain: string = "polygon";
-  private kinoraPkpDBContract: ethers.Contract;
-  private pkpContract: ethers.Contract;
-  private kinoraMetricsAddress: `0x${string}`;
-  private kinoraQuestAddress: ethers.Contract;
-  private developerPKPPublicKey: `0x04${string}`;
-  private encryptUserMetrics: boolean;
 
   constructor(
     livepeerPlayer: LivepeerPlayer<TPlaybackPolicyObject, TSlice>,
     redirectURL: string,
     rpcURL: string,
-    streamId: string,
     metricsOnChainInterval: number, // in minutes,
     developerPKPPublicKey: `0x04${string}` | undefined, // dev may need to mint first
     encryptUserMetrics: boolean,
@@ -68,9 +76,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     this.redirectURL = redirectURL;
     this.rpcURL = rpcURL;
     this.developerPKPPublicKey = developerPKPPublicKey;
-    this.streamId = streamId;
     this.encryptUserMetrics = encryptUserMetrics;
-    if (kinoraMetricsAddress) this.kinoraMetricsAddress = kinoraMetricsAddress;
+    this.signer = signer ? signer : ethers.Wallet.createRandom();
     this.metrics = new Metrics();
     this.polygonProvider = new ethers.providers.JsonRpcProvider(
       this.rpcURL,
@@ -78,18 +85,24 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     );
     this.chronicleProvider = new ethers.providers.JsonRpcProvider(
       LIT_RPC,
-      175177,
+      ChainIds["chronicle"],
     );
     this.kinoraPkpDBContract = new ethers.Contract(
       KINORA_PKP_DB_CONTRACT,
       KinoraPKPDBAbi,
       this.polygonProvider,
     );
+    if (kinoraMetricsAddress)
+      this.kinoraMetricsAddress = new ethers.Contract(
+        kinoraMetricsAddress,
+        KinoraMetricsAbi,
+      );
     this.pkpContract = new ethers.Contract(
       CHRONICLE_PKP_CONTRACT,
       PKPNFTAbi,
-      signer ? signer : ethers.Wallet.createRandom(),
+      this.signer,
     );
+
     if (typeof window !== "undefined") {
       setInterval(this.sendMetricsOnChain, metricsOnChainInterval * 60 * 1000);
       window.addEventListener("beforeunload", this.sendMetricsOnChain);
@@ -146,8 +159,14 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       const filteredLogs = parsedLogs.filter((parsedLog) => {
         return parsedLog.name === "KinoraFactoryDeployed";
       });
-      this.kinoraMetricsAddress = filteredLogs[0].args[2];
-      this.kinoraQuestAddress = filteredLogs[0].args[3];
+      this.kinoraMetricsAddress = new ethers.Contract(
+        filteredLogs[0].args[2],
+        KinoraMetricsAbi,
+      );
+      this.kinoraQuestAddress = new ethers.Contract(
+        filteredLogs[0].args[3],
+        KinoraQuestAbi,
+      );
 
       return {
         kinoraAccessControlAddress: filteredLogs[0].args[1],
@@ -159,7 +178,9 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     }
   };
 
-  authenticateUser = async (type: "wallet" | "google" | "discord"): Promise<void> => {
+  authenticateUser = async (
+    type: "wallet" | "google" | "discord",
+  ): Promise<void> => {
     try {
       this.providerType =
         type === "wallet"
@@ -275,11 +296,24 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         this.litNodeClient,
         tx,
         "addUserPKP",
-        authSig,
+        this.authSig ? this.authSig : await this.generateAuthSignature(),
         this.developerPKPPublicKey as `0x04${string}`,
       );
     } catch (err: any) {
       console.error(err.message);
+    }
+  };
+
+  private generateAuthSignature = async (
+    chainId = 1,
+    uri = "https://localhost/login",
+    version = "1",
+  ): Promise<LitAuthSig> => {
+    try {
+      this.authSig = await generateAuthSig(this.signer, chainId, uri, version);
+      return this.authSig;
+    } catch (err: any) {
+      throw new Error(`Error generating Auth Signature: ${err.message}`);
     }
   };
 
@@ -345,24 +379,48 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     if (!this.currentUserPKP) throw new Error();
     if (!this.kinoraMetricsAddress) throw new Error();
 
-    const payload = {
-      totalDuration: this.metrics.getAVD(),
-      numberOfClicks: this.metrics.getCTR(),
-      streamId: this.streamId,
-    };
+    let userMetrics: UserMetrics;
 
-    // encryptPayload and set toggle for user <> developer
+    if (
+      await this.kinoraMetricsAddress.getUserPlaybackIdByPlaybackId(
+        this.currentUserPKP.ethAddress,
+        this.livepeerPlayer.props.playbackId,
+      )
+    ) {
+      // update metrics for playback Id existing
+      userMetrics = {};
+    } else {
+      userMetrics = {
+        avd: this.metrics.getAVD(),
+        ctr: this.metrics.getCTR(),
+        assetEngagement: this.metrics.getAssetEngagement(),
+        userEngagementRatio: this.metrics.getUserEngagementRatio(),
+        multiPlaybackUsageRate: this.metrics.getMultistreamUsageRate(),
+        taskFailureRate: this.metrics.getTaskFailureRate(),
+        recordingPerSession: this.metrics.getRecordingPerSession(),
+      };
+    }
+
+    let payload: string = JSON.stringify(userMetrics);
 
     if (this.encryptUserMetrics) {
-      const encryptedPayload = {};
+      // user needs to encrypt their data and then have it stored on chain and allow the developer to view it
+      payload = {};
     }
 
     const tx = await createTxData(
       this.polygonProvider,
       KinoraMetricsAbi,
-      this.kinoraMetricsAddress,
+      this.kinoraMetricsAddress.address,
       "addUserMetrics",
-      [this.currentUserPKP.ethAddress, encryptedPayload],
+      [
+        this.currentUserPKP.ethAddress,
+        {
+          playbackId: this.livepeerPlayer.props.playbackId,
+          metricJSON: payload,
+          encrypted: this.encryptUserMetrics,
+        },
+      ],
       ChainIds[this.chain],
     );
 
@@ -371,7 +429,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       this.litNodeClient,
       tx,
       "addUserMetrics",
-      this.authSig,
+      this.authSig ? this.authSig : await this.generateAuthSignature(),
       this.developerPKPPublicKey,
     );
   };

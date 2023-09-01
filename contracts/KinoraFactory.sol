@@ -14,7 +14,7 @@ contract KinoraFactory {
     uint256 private _kinoraIDCount;
 
     struct Kinora {
-        string[] streamIds;
+        string[] playbackIds;
         address[3] contracts;
         address deployer;
         uint256 kinoraID;
@@ -69,7 +69,7 @@ contract KinoraFactory {
 
         Kinora memory _newKinoraFactoryDetails = Kinora({
             kinoraID: _kinoraIDCount,
-            streamIds: new string[](0),
+            playbackIds: new string[](0),
             contracts: [
                 _newKinoraAccessControlAddress,
                 _newKinoraMetricsAddress,
@@ -161,10 +161,10 @@ contract KinoraFactory {
         return _deployerPKPToKinora[_pkpAddress].deployer;
     }
 
-    function getKinoraStreamIdsToPKP(
+    function getKinoraPlaybackIdsToPKP(
         address _pkpAddress
     ) public view returns (string[] memory) {
-        return _deployerPKPToKinora[_pkpAddress].streamIds;
+        return _deployerPKPToKinora[_pkpAddress].playbackIds;
     }
 
     function getKinoraBlockTimestampToPKP(

@@ -1,0 +1,166 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_accessControlAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "playbackId",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "metricJSON",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "userPKPAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "encrypted",
+        "type": "bool"
+      }
+    ],
+    "name": "AddUserMetrics",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "addedUserPKPAddress",
+        "type": "address"
+      }
+    ],
+    "name": "AddUserPKP",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "removedUserPKPAddress",
+        "type": "address"
+      }
+    ],
+    "name": "RemoveUserPKP",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_userPKPAddress",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "playbackId",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "metricJSON",
+            "type": "string"
+          },
+          {
+            "internalType": "bool",
+            "name": "encrypted",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct MetricsParamsLibrary.MetricParams",
+        "name": "_args",
+        "type": "tuple"
+      }
+    ],
+    "name": "addUserMetrics",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getKinoraAccessControl",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_userPKPAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_playbackId",
+        "type": "string"
+      }
+    ],
+    "name": "getUserMetricsEncryptedByPlaybackId",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_userPKPAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_playbackId",
+        "type": "string"
+      }
+    ],
+    "name": "getUserMetricsJSONByPlaybackId",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
