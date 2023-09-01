@@ -9,6 +9,7 @@ import { Metrics } from "./metrics";
 import "@lit-protocol/lit-auth-client";
 import { ProviderType } from "@lit-protocol/constants";
 import { ethers } from "ethers";
+import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
 import { AuthMethod, IRelayPKP } from "@lit-protocol/types";
 import {
   IPFS_CID_PKP,
@@ -28,6 +29,8 @@ import {
   litExecute,
   getBytesFromMultihash,
   generateAuthSig,
+  encryptMetrics,
+  getSessionSig,
 } from "./utils/lit-protocol";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
@@ -51,6 +54,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   private kinoraMetricsAddress: ethers.Contract;
   private signer: ethers.Signer;
   private authSig: LitAuthSig;
+  private userPKPAuthSig: LitAuthSig;
   private litAuthClient = new LitAuthClient({
     litRelayConfig: {
       relayApiKey: `${process.env.LIT_RELAY_KEY}`,
@@ -266,6 +270,22 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         res = await this.mintPkp();
       }
 
+      const sessionSigs = await getSessionSig(
+        this.authMethod,
+        res,
+        this.litProvider,
+        this.litNodeClient,
+        ChainIds[this.chain],
+      );
+      const pkpWallet = new PKPEthersWallet({
+        controllerSessionSigs: sessionSigs,
+        pkpPubKey: res.publicKey,
+        rpc: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
+      });
+      const authSig = await generateAuthSig(pkpWallet);
+
+      this.userPKPAuthSig = authSig;
+
       const doesExist = await this.kinoraPkpDBContract.userExists(
         BigInt(res.tokenId).toString(),
       );
@@ -296,24 +316,11 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         this.litNodeClient,
         tx,
         "addUserPKP",
-        this.authSig ? this.authSig : await this.generateAuthSignature(),
+        this.authSig ? this.authSig : await generateAuthSig(this.signer),
         this.developerPKPPublicKey as `0x04${string}`,
       );
     } catch (err: any) {
       console.error(err.message);
-    }
-  };
-
-  private generateAuthSignature = async (
-    chainId = 1,
-    uri = "https://localhost/login",
-    version = "1",
-  ): Promise<LitAuthSig> => {
-    try {
-      this.authSig = await generateAuthSig(this.signer, chainId, uri, version);
-      return this.authSig;
-    } catch (err: any) {
-      throw new Error(`Error generating Auth Signature: ${err.message}`);
     }
   };
 
@@ -404,8 +411,14 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     let payload: string = JSON.stringify(userMetrics);
 
     if (this.encryptUserMetrics) {
-      // user needs to encrypt their data and then have it stored on chain and allow the developer to view it
-      payload = {};
+      payload = await encryptMetrics(
+        userMetrics,
+        ethers.utils.computeAddress(
+          this.developerPKPPublicKey,
+        ) as `0x${string}`,
+        this.currentUserPKP.ethAddress as `0x${string}`,
+        this.userPKPAuthSig,
+      );
     }
 
     const tx = await createTxData(
@@ -429,7 +442,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       this.litNodeClient,
       tx,
       "addUserMetrics",
-      this.authSig ? this.authSig : await this.generateAuthSignature(),
+      this.authSig ? this.authSig : await generateAuthSig(this.signer),
       this.developerPKPPublicKey,
     );
   };

@@ -3,8 +3,16 @@ import { IPFS_CID_PKP, CHRONICLE_PKP_CONTRACT } from "src/constants";
 import { joinSignature } from "@ethersproject/bytes";
 import { serialize } from "@ethersproject/transactions";
 import bs58 from "bs58";
+import * as LitJsSdk_authHelpers from "@lit-protocol/auth-helpers";
+import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import { SiweMessage } from "siwe";
-import { ContractABI, LitAuthSig } from "src/@types/kinora-sdk";
+import {
+  ChainIds,
+  ContractABI,
+  LitAuthSig,
+  UserMetrics,
+} from "src/@types/kinora-sdk";
+import { IRelayPKP } from "@lit-protocol/types";
 
 export const createTxData = async (
   provider: ethers.providers.JsonRpcProvider,
@@ -141,8 +149,99 @@ export const generateAuthSig = async (
   }
 };
 
-
 export const getBytesFromMultihash = (multihash: string): string => {
   const decoded = bs58.decode(multihash);
   return `0x${Buffer.from(decoded).toString("hex")}`;
+};
+
+export const encryptMetrics = async (
+  metrics: UserMetrics,
+  developerPKPAddress: `0x${string}`,
+  userPKPAddress: `0x${string}`,
+  userPKPAuthSig: LitAuthSig,
+): Promise<string> => {
+  try {
+    const { encryptedString, symmetricKey } = await LitJsSdk.encryptString(
+      JSON.stringify(metrics),
+    );
+
+    const encryptedSymmetricKey = await client.saveEncryptionKey({
+      accessControlConditions: [
+        {
+          contractAddress: "",
+          standardContractType: "",
+          chain: "polygon",
+          method: "",
+          parameters: [":userAddress"],
+          returnValueTest: {
+            comparator: "=",
+            value: developerPKPAddress.toLowerCase(),
+          },
+        },
+        {
+          contractAddress: "",
+          standardContractType: "",
+          chain: "polygon",
+          method: "",
+          parameters: [":userAddress"],
+          returnValueTest: {
+            comparator: "=",
+            value: userPKPAddress?.toLowerCase(),
+          },
+        },
+      ],
+      symmetricKey,
+      authSig: userPKPAuthSig,
+      chain: "polygon",
+    });
+
+    const buffer = await encryptedString.arrayBuffer();
+
+    return JSON.stringify({
+      encryptedString: JSON.stringify(Array.from(new Uint8Array(buffer))),
+      symmetricKey: LitJsSdk.uint8arrayToString(
+        encryptedSymmetricKey,
+        "base16",
+      ),
+    });
+  } catch (err: any) {
+    console.error(err.message);
+  }
+};
+
+export const getSessionSig = async (
+  authMethod: any,
+  currentPKP: IRelayPKP,
+  provider: any,
+  litNodeClient: any,
+  chainId: number,
+) => {
+  try {
+    await litNodeClient.connect();
+
+    const litResource = new LitJsSdk_authHelpers.LitPKPResource(
+      currentPKP.tokenId,
+    );
+
+    const sessionSigs = await provider.getSessionSigs({
+      pkpPublicKey: currentPKP.publicKey,
+      authMethod: {
+        authMethodType: 6,
+        accessToken: authMethod.accessToken,
+      },
+      sessionSigsParams: {
+        chain: ChainIds[chainId],
+        resourceAbilityRequests: [
+          {
+            resource: litResource,
+            ability: LitJsSdk_authHelpers.LitAbility.PKPSigning,
+          },
+        ],
+      },
+      litNodeClient,
+    });
+    return sessionSigs;
+  } catch (e: any) {
+    console.error(e.message);
+  }
 };
