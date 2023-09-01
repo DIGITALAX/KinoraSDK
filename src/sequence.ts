@@ -106,6 +106,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       PKPNFTAbi,
       this.signer,
     );
+    this.litNodeClient.connect();
 
     if (typeof window !== "undefined") {
       setInterval(this.sendMetricsOnChain, metricsOnChainInterval * 60 * 1000);
@@ -418,6 +419,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         ) as `0x${string}`,
         this.currentUserPKP.ethAddress as `0x${string}`,
         this.userPKPAuthSig,
+        this.litNodeClient,
       );
     }
 

@@ -159,13 +159,14 @@ export const encryptMetrics = async (
   developerPKPAddress: `0x${string}`,
   userPKPAddress: `0x${string}`,
   userPKPAuthSig: LitAuthSig,
+  litNodeClient: LitJsSdk.LitNodeClient,
 ): Promise<string> => {
   try {
     const { encryptedString, symmetricKey } = await LitJsSdk.encryptString(
       JSON.stringify(metrics),
     );
 
-    const encryptedSymmetricKey = await client.saveEncryptionKey({
+    const encryptedSymmetricKey = await litNodeClient.saveEncryptionKey({
       accessControlConditions: [
         {
           contractAddress: "",
