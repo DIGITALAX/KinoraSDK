@@ -68,7 +68,7 @@ contract KinoraMetrics {
     );
   }
 
-  function getUserMetricsEncryptedByPlaybackId(
+  function getUserEncryptedByPlaybackId(
     address _userPKPAddress,
     string memory _playbackId
   ) public view returns (bool) {

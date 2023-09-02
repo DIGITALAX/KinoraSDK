@@ -218,8 +218,6 @@ export const getSessionSig = async (
   chainId: number,
 ) => {
   try {
-    await litNodeClient.connect();
-
     const litResource = new LitJsSdk_authHelpers.LitPKPResource(
       currentPKP.tokenId,
     );
@@ -244,5 +242,52 @@ export const getSessionSig = async (
     return sessionSigs;
   } catch (e: any) {
     console.error(e.message);
+  }
+};
+
+export const decryptMetrics = async (
+  encryptMetrics: { encryptedString: ArrayBufferLike; symmetricKey: string },
+  developerPKPAddress: `0x${string}`,
+  userPKPAddress: `0x${string}`,
+  userPKPAuthSig: LitAuthSig,
+  litNodeClient: LitJsSdk.LitNodeClient,
+): Promise<string> => {
+  try {
+    const symmetricKey = await litNodeClient.getEncryptionKey({
+      accessControlConditions: [
+        {
+          contractAddress: "",
+          standardContractType: "",
+          chain: "polygon",
+          method: "",
+          parameters: [":userAddress"],
+          returnValueTest: {
+            comparator: "=",
+            value: developerPKPAddress.toLowerCase(),
+          },
+        },
+        {
+          contractAddress: "",
+          standardContractType: "",
+          chain: "polygon",
+          method: "",
+          parameters: [":userAddress"],
+          returnValueTest: {
+            comparator: "=",
+            value: userPKPAddress?.toLowerCase(),
+          },
+        },
+      ],
+      toDecrypt: encryptMetrics.symmetricKey,
+      authSig: userPKPAuthSig,
+      chain: "polygon",
+    });
+    const uintString = new Uint8Array(encryptMetrics.encryptedString).buffer;
+    const blob = new Blob([uintString], { type: "text/plain" });
+    const decryptedString = await LitJsSdk.decryptString(blob, symmetricKey);
+
+    return decryptedString;
+  } catch (err: any) {
+    console.error(err);
   }
 };
