@@ -31,6 +31,7 @@ import {
   generateAuthSig,
   encryptMetrics,
   getSessionSig,
+  decryptMetrics,
 } from "./utils/lit-protocol";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
@@ -75,6 +76,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     encryptUserMetrics: boolean,
     signer?: ethers.Signer,
     kinoraMetricsAddress?: `0x${string}`,
+    kinoraQuestAddress?: `0x${string}`,
   ) {
     this.livepeerPlayer = livepeerPlayer;
     this.redirectURL = redirectURL;
@@ -101,6 +103,12 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         kinoraMetricsAddress,
         KinoraMetricsAbi,
       );
+    if (kinoraQuestAddress) {
+      this.kinoraQuestAddress = new ethers.Contract(
+        kinoraQuestAddress,
+        KinoraQuestAbi,
+      );
+    }
     this.pkpContract = new ethers.Contract(
       CHRONICLE_PKP_CONTRACT,
       PKPNFTAbi,
@@ -260,6 +268,37 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     });
   };
 
+  instantiateNewQuest = async () => {
+    try {
+      // quest module for a dev to set up a new quest according to the metrics
+      // automate the dispatch of rewards associated with different metric combinations returned by the sdk for the user
+      // allow limited number of users / etc. to sign up per quest
+      // participants can active/join in on quest if match quest criteria
+      // fund quest with mileston rewards and create milestones
+    } catch (err: any) {
+      // add in error logs aqui
+    }
+  };
+
+  userJoinQuest = async () => {
+    try {
+    } catch (err: any) {
+      // add in error logs aqui
+    }
+  };
+
+  userCompleteQuestMilestone = async () => {
+    try {
+      // pay out user reward
+    } catch (err: any) {
+      // add in error logs aqui
+    }
+  };
+
+  getQuestHistory = () => {
+    // quest history encrypted on chain and retrievable by authenticated user
+  };
+
   getSDKLogs = () => {};
 
   getUserMetrics = () => {};
@@ -297,7 +336,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
 
       return res;
     } catch (err: any) {
-      console.error(err.message);
+      // add in error logs aqui
     }
   };
 
@@ -321,7 +360,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         this.developerPKPPublicKey as `0x04${string}`,
       );
     } catch (err: any) {
-      console.error(err.message);
+      // add in error logs aqui
     }
   };
 
@@ -395,10 +434,139 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         this.livepeerPlayer.props.playbackId,
       )
     ) {
-      // update metrics for playback Id existing
-      userMetrics = {};
+      let oldMetrics: string =
+        await this.kinoraMetricsAddress.getUserMetricsJSONByPlaybackId(
+          this.currentUserPKP.ethAddress,
+          this.livepeerPlayer.props.playbackId,
+        );
+
+      if (
+        await this.kinoraMetricsAddress.getUserEncryptedByPlaybackId(
+          this.currentUserPKP.ethAddress,
+          this.livepeerPlayer.props.playbackId,
+        )
+      ) {
+        oldMetrics = await decryptMetrics(
+          await JSON.parse(oldMetrics),
+          ethers.utils.computeAddress(
+            this.developerPKPPublicKey,
+          ) as `0x${string}`,
+          this.currentUserPKP.ethAddress as `0x${string}`,
+          this.userPKPAuthSig,
+          this.litNodeClient,
+        );
+      }
+
+      const oldMetricsValues: UserMetrics = await JSON.parse(oldMetrics);
+
+      userMetrics = {
+        totalDuration:
+          this.metrics.getTotalDuration() + oldMetricsValues.totalDuration,
+        numberOfImpressions:
+          this.metrics.getNumberOfImpressions() +
+          oldMetricsValues.numberOfImpressions,
+        numberOfClicks:
+          this.metrics.getNumberOfClicks() + oldMetricsValues.numberOfClicks,
+        totalIdleTime:
+          this.metrics.getTotalIdleTime() + oldMetricsValues.totalIdleTime,
+        numberOfRecordings:
+          this.metrics.getNumberOfRecordings() +
+          oldMetricsValues.numberOfRecordings,
+        numberOfFailedTasks:
+          this.metrics.getNumberofFailedTasks() +
+          oldMetricsValues.numberOfFailedTasks,
+        numberOfMultistreams:
+          this.metrics.getNumberOfMultistreams() +
+          oldMetricsValues.numberOfMultistreams,
+        numberOfAssets:
+          this.metrics.getNumberOfAssets() + oldMetricsValues.numberOfAssets,
+        numberOfUpdates:
+          this.metrics.getNumberOfUpdates() + oldMetricsValues.numberOfUpdates,
+        avd:
+          oldMetricsValues.numberOfImpressions +
+            this.metrics.getNumberOfImpressions() !==
+          0
+            ? (oldMetricsValues.avd * oldMetricsValues.numberOfImpressions +
+                this.metrics.getTotalDuration()) /
+              (oldMetricsValues.numberOfImpressions +
+                this.metrics.getNumberOfImpressions())
+            : 0,
+        ctr:
+          oldMetricsValues.numberOfImpressions +
+            this.metrics.getNumberOfImpressions() !==
+          0
+            ? (oldMetricsValues.ctr * oldMetricsValues.numberOfImpressions +
+                this.metrics.getNumberOfClicks() * 100) /
+              (oldMetricsValues.numberOfImpressions +
+                this.metrics.getNumberOfImpressions())
+            : 0,
+        assetEngagement:
+          oldMetricsValues.numberOfUpdates +
+            this.metrics.getNumberOfUpdates() !==
+          0
+            ? (oldMetricsValues.assetEngagement *
+                oldMetricsValues.numberOfUpdates +
+                this.metrics.getNumberOfAssets()) /
+              (oldMetricsValues.numberOfUpdates +
+                this.metrics.getNumberOfUpdates())
+            : 0,
+        userEngagementRatio:
+          oldMetricsValues.totalDuration +
+            oldMetricsValues.totalIdleTime +
+            this.metrics.getTotalDuration() +
+            this.metrics.getTotalIdleTime() !==
+          0
+            ? (oldMetricsValues.totalDuration +
+                this.metrics.getTotalDuration()) /
+              (oldMetricsValues.totalDuration +
+                oldMetricsValues.totalIdleTime +
+                this.metrics.getTotalDuration() +
+                this.metrics.getTotalIdleTime())
+            : 0,
+        multiPlaybackUsageRate:
+          oldMetricsValues.numberOfImpressions +
+            this.metrics.getNumberOfImpressions() !==
+          0
+            ? (oldMetricsValues.numberOfMultistreams *
+                oldMetricsValues.numberOfImpressions +
+                this.metrics.getMultistreamUsageRate()) /
+              (oldMetricsValues.numberOfImpressions +
+                this.metrics.getNumberOfImpressions())
+            : 0,
+        taskFailureRate:
+          oldMetricsValues.numberOfFailedTasks +
+            oldMetricsValues.numberOfUpdates +
+            this.metrics.getNumberofFailedTasks() +
+            this.metrics.getNumberOfUpdates() !==
+          0
+            ? (oldMetricsValues.numberOfFailedTasks +
+                this.metrics.getNumberofFailedTasks()) /
+              (oldMetricsValues.numberOfFailedTasks +
+                oldMetricsValues.numberOfUpdates +
+                this.metrics.getNumberofFailedTasks() +
+                this.metrics.getNumberOfUpdates())
+            : 0,
+        recordingPerSession:
+          oldMetricsValues.numberOfImpressions +
+            this.metrics.getNumberOfImpressions() !==
+          0
+            ? (oldMetricsValues.numberOfRecordings +
+                this.metrics.getNumberOfRecordings()) /
+              (oldMetricsValues.numberOfImpressions +
+                this.metrics.getNumberOfImpressions())
+            : 0,
+      };
     } else {
       userMetrics = {
+        totalDuration: this.metrics.getTotalDuration(),
+        numberOfImpressions: this.metrics.getNumberOfImpressions(),
+        numberOfClicks: this.metrics.getNumberOfClicks(),
+        totalIdleTime: this.metrics.getTotalIdleTime(),
+        numberOfRecordings: this.metrics.getNumberOfRecordings(),
+        numberOfFailedTasks: this.metrics.getNumberofFailedTasks(),
+        numberOfMultistreams: this.metrics.getNumberOfMultistreams(),
+        numberOfAssets: this.metrics.getNumberOfAssets(),
+        numberOfUpdates: this.metrics.getNumberOfUpdates(),
         avd: this.metrics.getAVD(),
         ctr: this.metrics.getCTR(),
         assetEngagement: this.metrics.getAssetEngagement(),
@@ -449,11 +617,3 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     );
   };
 }
-
-// Quests
-// quest module for a dev to set up a new quest according to the metrics
-// automate the dispatch of rewards associated with different metric combinations returned by the sdk for the user
-// allow limited number of users / etc. to sign up per quest
-// participants can active/join in on quest if match quest criteria
-// quest history encrypted on chain and retrievable by authenticated user
-// compute credit module attachment ??

@@ -81,4 +81,40 @@ export class Metrics {
   getUserEngagementRatio = () => {
     return this.totalDuration / (this.totalDuration + this.totalIdleTime);
   };
+
+  getNumberOfClicks = () => {
+    return this.numberOfClicks;
+  };
+
+  getNumberOfAssets = () => {
+    return this.numberOfAssets;
+  };
+
+  getNumberOfImpressions = () => {
+    return this.numberOfImpressions;
+  };
+
+  getTotalIdleTime = () => {
+    return this.totalIdleTime;
+  };
+
+  getNumberOfUpdates = () => {
+    return this.numberOfUpdates;
+  };
+
+  getNumberOfMultistreams = () => {
+    return this.numberOfMultistreams;
+  };
+
+  getNumberofFailedTasks = () => {
+    return this.numberOfFailedTasks;
+  };
+
+  getTotalDuration = () => {
+    return this.totalDuration;
+  };
+
+  getNumberOfRecordings = () => {
+    return this.numberOfRecordings;
+  };
 }

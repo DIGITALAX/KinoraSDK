@@ -128,7 +128,7 @@
         "type": "string"
       }
     ],
-    "name": "getUserMetricsEncryptedByPlaybackId",
+    "name": "getUserEncryptedByPlaybackId",
     "outputs": [
       {
         "internalType": "bool",
@@ -153,6 +153,30 @@
       }
     ],
     "name": "getUserMetricsJSONByPlaybackId",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_userPKPAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_playbackId",
+        "type": "string"
+      }
+    ],
+    "name": "getUserPlaybackIdByPlaybackId",
     "outputs": [
       {
         "internalType": "string",

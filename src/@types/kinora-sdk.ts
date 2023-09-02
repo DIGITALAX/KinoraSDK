@@ -63,4 +63,13 @@ export interface UserMetrics {
   multiPlaybackUsageRate: number;
   taskFailureRate: number;
   recordingPerSession: number;
+  totalDuration: number;
+  numberOfImpressions: number;
+  numberOfClicks: number;
+  totalIdleTime: number;
+  numberOfRecordings: number;
+  numberOfFailedTasks: number;
+  numberOfMultistreams: number;
+  numberOfAssets: number;
+  numberOfUpdates: number;
 }
