@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSE
 
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.19;
 
 import "./KinoraMetrics.sol";
 import "./KinoraQuest.sol";
@@ -117,13 +117,14 @@ contract KinoraFactory {
       address(_newKinoraAccessControlAddress)
     );
 
-    // Deploy KinoraQuestAddress
-    KinoraQuest _newKinoraQuestAddress = new KinoraQuest(
+    KinoraEscrow _newKinoraEscrowAddress = new KinoraEscrow(
       address(_newKinoraAccessControlAddress)
     );
 
-    KinoraEscrow _newKinoraEscrowAddress = new KinoraEscrow(
-      address(_newKinoraAccessControlAddress)
+    // Deploy KinoraQuestAddress
+    KinoraQuest _newKinoraQuestAddress = new KinoraQuest(
+      address(_newKinoraAccessControlAddress),
+      address(_newKinoraEscrowAddress)
     );
 
     return (
