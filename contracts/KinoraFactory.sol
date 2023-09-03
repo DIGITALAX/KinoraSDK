@@ -7,16 +7,19 @@ import "./KinoraQuest.sol";
 import "./KinoraAccessControl.sol";
 import "./KinoraEscrow.sol";
 import "./KinoraGlobalAccessControl.sol";
+import "./KinoraGlobalPKPDB.sol";
+import "./Kinora721QuestReward.sol";
 
 contract KinoraFactory {
   KinoraGlobalAccessControl private _globalAccessControl;
+  KinoraGlobalPKPDB private _globalPKPDB;
   string public name;
   string public symbol;
   uint256 private _kinoraIDCount;
 
   struct Kinora {
     string[] playbackIds;
-    address[4] contracts;
+    address[5] contracts;
     address deployer;
     uint256 kinoraID;
     uint256 timestamp;
@@ -28,10 +31,15 @@ contract KinoraFactory {
     address metricsAddress,
     address questAddress,
     address escrowAddress,
+    address questReward,
     uint256 timestamp
   );
   event KinoraGlobalAccessControlUpdate(
     address newAccessControlAddress,
+    address deployerAddress
+  );
+  event KinoraGlobalPKPDBUpdate(
+    address newPKPDBAddress,
     address deployerAddress
   );
 
@@ -46,10 +54,11 @@ contract KinoraFactory {
     _;
   }
 
-  constructor(address _accessControlsAddress) {
+  constructor(address _accessControlsAddress, address _pkpDBAddress) {
     name = "KinoraFactory";
     symbol = "KFAC";
     _globalAccessControl = KinoraGlobalAccessControl(_accessControlsAddress);
+    _globalPKPDB = KinoraGlobalPKPDB(_pkpDBAddress);
   }
 
   function deployFromKinoraFactory(address _pkpAddress) public {
@@ -59,11 +68,18 @@ contract KinoraFactory {
       address _newKinoraAccessControlAddress,
       address _newKinoraMetricsAddress,
       address _newKinoraQuestAddress,
-      address _newKinoraEscrowAddress
+      address _newKinoraEscrowAddress,
+      address _newKinora721QuestReward
     ) = _deploySuite(_kinoraDeployer, _pkpAddress);
 
     KinoraAccessControl(_newKinoraAccessControlAddress).addAdmin(
       _kinoraDeployer
+    );
+    KinoraEscrow(_newKinoraEscrowAddress).setKinoraQuest(
+      _newKinoraQuestAddress
+    );
+    KinoraEscrow(_newKinoraEscrowAddress).setKinora721QuestReward(
+      _newKinora721QuestReward
     );
 
     _kinoraIDCount++;
@@ -75,7 +91,8 @@ contract KinoraFactory {
         _newKinoraAccessControlAddress,
         _newKinoraMetricsAddress,
         _newKinoraQuestAddress,
-        _newKinoraEscrowAddress
+        _newKinoraEscrowAddress,
+        _newKinora721QuestReward
       ],
       deployer: _kinoraDeployer,
       timestamp: block.timestamp
@@ -90,6 +107,7 @@ contract KinoraFactory {
       _newKinoraMetricsAddress,
       _newKinoraQuestAddress,
       _newKinoraEscrowAddress,
+      _newKinora721QuestReward,
       block.timestamp
     );
   }
@@ -103,7 +121,8 @@ contract KinoraFactory {
       address newKinoraAccessControlAddress,
       address newKinoraMetricsAddress,
       address newKinoraQuestAddress,
-      address newKinoraEscrowAddress
+      address newKinoraEscrowAddress,
+      address newKinora721QuestReward
     )
   {
     // Deploy KinoraAccessControl
@@ -118,12 +137,19 @@ contract KinoraFactory {
     );
 
     KinoraEscrow _newKinoraEscrowAddress = new KinoraEscrow(
-      address(_newKinoraAccessControlAddress)
+      address(_newKinoraAccessControlAddress),
+      address(this)
     );
 
     // Deploy KinoraQuestAddress
     KinoraQuest _newKinoraQuestAddress = new KinoraQuest(
       address(_newKinoraAccessControlAddress),
+      address(_newKinoraEscrowAddress),
+      address(_globalPKPDB)
+    );
+
+    Kinora721QuestReward _newKinora721QuestReward = new Kinora721QuestReward(
+      address(_newKinoraQuestAddress),
       address(_newKinoraEscrowAddress)
     );
 
@@ -131,7 +157,8 @@ contract KinoraFactory {
       address(_newKinoraAccessControlAddress),
       address(_newKinoraMetricsAddress),
       address(_newKinoraQuestAddress),
-      address(_newKinoraEscrowAddress)
+      address(_newKinoraEscrowAddress),
+      address(_newKinora721QuestReward)
     );
   }
 
@@ -191,6 +218,10 @@ contract KinoraFactory {
     return address(_globalAccessControl);
   }
 
+  function getGlobalPKPDBContract() public view returns (address) {
+    return address(_globalPKPDB);
+  }
+
   function getKinoraIDCount() public view returns (uint256) {
     return _kinoraIDCount;
   }
@@ -200,5 +231,10 @@ contract KinoraFactory {
   ) external onlyAdmin {
     _globalAccessControl = KinoraGlobalAccessControl(_newAccessControlAddress);
     emit KinoraGlobalAccessControlUpdate(_newAccessControlAddress, msg.sender);
+  }
+
+  function setGlobalPKPDBControl(address _newPKPDBAddress) external onlyAdmin {
+    _globalPKPDB = KinoraGlobalPKPDB(_newPKPDBAddress);
+    emit KinoraGlobalPKPDBUpdate(_newPKPDBAddress, msg.sender);
   }
 }

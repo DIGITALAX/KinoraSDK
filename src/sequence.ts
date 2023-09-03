@@ -274,7 +274,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       // automate the dispatch of rewards associated with different metric combinations returned by the sdk for the user
       // allow limited number of users / etc. to sign up per quest
       // participants can active/join in on quest if match quest criteria
-      // fund quest with mileston rewards and create milestones
+      // fund quest with mileston rewards and create milestones, make sure to split by max users that can join a quest
     } catch (err: any) {
       // add in error logs aqui
     }
