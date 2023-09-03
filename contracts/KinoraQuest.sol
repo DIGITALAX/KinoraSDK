@@ -80,6 +80,8 @@ contract KinoraQuest {
 
   event QuestInstantiated(uint256 indexed questCount, string uriDetails);
   event QuestMilestoneAdded(uint256 indexed questId, uint256 milestoneId);
+  event QuestMilestoneUpdated(uint256 indexed questId, uint256 milestoneId);
+  event QuestUpdated(uint256 indexed questId, string newUriDetails);
   event UserCompleteQuestMilestone(
     uint256 indexed questId,
     uint256 milestoneId,
@@ -121,7 +123,19 @@ contract KinoraQuest {
     emit QuestInstantiated(_questCount, _uriDetails);
   }
 
-  function updateQuestDetails() public onlyUserPKPOrAdmin {}
+  function updateQuestDetails(
+    string memory _newURIDetails,
+    Milestone[] memory _newMilestones,
+    Status _newStatus,
+    uint256 _newMaxParticipantCount,
+    uint256 _questId
+  ) public onlyUserPKPOrAdmin {
+    _allQuests[_questId]._uriDetails = _newURIDetails;
+    _allQuests[_questId]._milestones = _newMilestones;
+    _allQuests[_questId]._status = _newStatus;
+    _allQuests[_questId]._maxParticipantCount = _newMaxParticipantCount;
+    emit QuestUpdated(_questId, _newURIDetails);
+  }
 
   function addQuestMilestone(
     Reward memory _questReward,
@@ -145,7 +159,31 @@ contract KinoraQuest {
     );
   }
 
-  function updateMilestoneDetails() public onlyUserPKPOrAdmin {}
+  function updateMilestoneDetails(
+    uint256[] memory _newTokenIds,
+    string memory _newURIDetails,
+    RewardType _newType,
+    address _newTokenAddress,
+    uint256 _questId,
+    uint256 _milestoneId,
+    uint256 _newPoints,
+    uint256 _newAmount
+  ) public onlyUserPKPOrAdmin {
+    _allQuests[_questId]._milestones[_milestoneId]._uriDetails = _newURIDetails;
+    _allQuests[_questId]._milestones[_milestoneId]._numberOfPoints = _newPoints;
+    _allQuests[_questId]._milestones[_milestoneId]._reward._type = _newType;
+    _allQuests[_questId]
+      ._milestones[_milestoneId]
+      ._reward
+      ._tokenAddress = _newTokenAddress;
+    _allQuests[_questId]._milestones[_milestoneId]._reward._amount = _newAmount;
+    _allQuests[_questId]
+      ._milestones[_milestoneId]
+      ._reward
+      ._tokenIds = _newTokenIds;
+
+    emit QuestMilestoneUpdated(_questId, _milestoneId);
+  }
 
   function removeQuestMilestone(
     uint256 _questId,
