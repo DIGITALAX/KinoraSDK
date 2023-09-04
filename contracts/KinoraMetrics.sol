@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "./KinoraAccessControl.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 library MetricsParamsLibrary {
   struct MetricParams {
@@ -11,8 +12,9 @@ library MetricsParamsLibrary {
   }
 }
 
-contract KinoraMetrics {
+contract KinoraMetrics is Initializable {
   KinoraAccessControl private _accessControl;
+  address private _factory;
 
   struct UserLivePeerMetrics {
     string _playbackId;
@@ -32,6 +34,14 @@ contract KinoraMetrics {
     bool encrypted
   );
 
+  modifier onlyFactory() {
+    require(
+      msg.sender == _factory,
+      "KinoraMetrics: Only Assigned PKP can perform this action."
+    );
+    _;
+  }
+
   modifier onlyUserPKP() {
     require(
       msg.sender == _accessControl.getAssignedPKPAddress(),
@@ -40,7 +50,11 @@ contract KinoraMetrics {
     _;
   }
 
-  constructor(address _accessControlAddress) {
+  constructor(address _factoryAddress) {
+    _factory = _factoryAddress;
+  }
+
+  function initialize(address _accessControlAddress) public onlyFactory {
     _accessControl = KinoraAccessControl(_accessControlAddress);
   }
 
@@ -96,5 +110,9 @@ contract KinoraMetrics {
 
   function getKinoraAccessControl() public view returns (address) {
     return address(_accessControl);
+  }
+
+  function getKinoraFactory() public view returns (address) {
+    return _factory;
   }
 }

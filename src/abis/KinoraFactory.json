@@ -5,6 +5,36 @@
         "internalType": "address",
         "name": "_accessControlsAddress",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_pkpDBAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_logicAddressAC",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_logicAddressQ",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_logicAddressE",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_logicAddressM",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_logicAddressQR",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -39,31 +69,18 @@
       },
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "timestamp",
-        "type": "uint256"
-      }
-    ],
-    "name": "KinoraFactoryDeployed",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
         "internalType": "address",
-        "name": "newAccessControlAddress",
+        "name": "escrowAddress",
         "type": "address"
       },
       {
         "indexed": false,
         "internalType": "address",
-        "name": "deployerAddress",
+        "name": "questReward",
         "type": "address"
       }
     ],
-    "name": "KinoraGlobalAccessControlUpdate",
+    "name": "KinoraFactoryDeployed",
     "type": "event"
   },
   {
@@ -88,6 +105,25 @@
       }
     ],
     "name": "getDeployedKinoraAccessControlToPKP",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_pkpAddress",
+        "type": "address"
+      }
+    ],
+    "name": "getDeployedKinoraEscrowToPKP",
     "outputs": [
       {
         "internalType": "address",
@@ -169,19 +205,13 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_pkpAddress",
-        "type": "address"
-      }
-    ],
-    "name": "getKinoraBlockTimestampToPKP",
+    "inputs": [],
+    "name": "getGlobalPKPDBContract",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "address",
         "name": "",
-        "type": "uint256"
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -249,9 +279,9 @@
     "name": "getKinoraPlaybackIdsToPKP",
     "outputs": [
       {
-        "internalType": "string[]",
+        "internalType": "bytes32",
         "name": "",
-        "type": "string[]"
+        "type": "bytes32"
       }
     ],
     "stateMutability": "view",
@@ -279,6 +309,19 @@
       }
     ],
     "name": "setGlobalAccessControl",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_newPKPDBAddress",
+        "type": "address"
+      }
+    ],
+    "name": "setGlobalPKPDBControl",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

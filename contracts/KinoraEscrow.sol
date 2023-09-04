@@ -5,14 +5,14 @@ pragma solidity ^0.8.19;
 import "./KinoraAccessControl.sol";
 import "./KinoraQuest.sol";
 import "./Kinora721QuestReward.sol";
-import "./KinoraFactory.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract KinoraEscrow {
+contract KinoraEscrow is Initializable {
   KinoraAccessControl private _accessControl;
   KinoraQuest private _quest;
-  KinoraFactory private _factory;
+  address private _factory;
   Kinora721QuestReward private _721QuestReward;
 
   struct ERC20Token {
@@ -26,9 +26,12 @@ contract KinoraEscrow {
     bool _tokenExists;
   }
 
-  constructor(address _accessControlAddress, address _factoryAddress) {
+  constructor(address _factoryAddress) {
+    _factory = _factoryAddress;
+  }
+
+  function initialize(address _accessControlAddress) public onlyFactory {
     _accessControl = KinoraAccessControl(_accessControlAddress);
-    _factory = KinoraFactory(_factoryAddress);
   }
 
   mapping(uint256 => mapping(uint256 => mapping(address => ERC20Token)))
@@ -55,7 +58,7 @@ contract KinoraEscrow {
 
   modifier onlyFactory() {
     require(
-      msg.sender == address(_factory),
+      msg.sender == _factory,
       "KinoraEscrow: Only Assigned PKP can perform this action."
     );
     _;
@@ -218,15 +221,13 @@ contract KinoraEscrow {
     emit ERC721URISetUpdated(_tokenIds, _uri, _questId, _milestoneId);
   }
 
-  function setKinoraQuest(
-    address _questContract
-  ) public onlyFactory returns (address) {
+  function setKinoraQuest(address _questContract) public onlyFactory {
     _quest = KinoraQuest(_questContract);
   }
 
   function setKinora721QuestReward(
     address _questRewardContract
-  ) public onlyFactory returns (address) {
+  ) public onlyFactory {
     _721QuestReward = Kinora721QuestReward(_questRewardContract);
   }
 
@@ -243,7 +244,7 @@ contract KinoraEscrow {
   }
 
   function getKinoraFactory() public view returns (address) {
-    return address(_factory);
+    return _factory;
   }
 
   function getQuestMilestoneIdToERC20Amount(

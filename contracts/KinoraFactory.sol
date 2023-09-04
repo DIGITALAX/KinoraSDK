@@ -6,23 +6,30 @@ import "./KinoraMetrics.sol";
 import "./KinoraQuest.sol";
 import "./KinoraAccessControl.sol";
 import "./KinoraEscrow.sol";
-import "./KinoraGlobalAccessControl.sol";
-import "./KinoraGlobalPKPDB.sol";
 import "./Kinora721QuestReward.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
+
+interface IKinoraAccessControl {
+  function isAdmin(address _address) external view returns (bool);
+}
 
 contract KinoraFactory {
-  KinoraGlobalAccessControl private _globalAccessControl;
-  KinoraGlobalPKPDB private _globalPKPDB;
+  address private _globalAccessControl;
+  address private _globalPKPDB;
+  address private _kinoraAccessControl;
+  address private _kinoraQuest;
+  address private _kinoraEscrow;
+  address private _kinoraMetrics;
+  address private _kinoraQuestReward;
   string public name;
   string public symbol;
   uint256 private _kinoraIDCount;
 
   struct Kinora {
-    string[] playbackIds;
     address[5] contracts;
+    bytes32 playbackIdsString;
     address deployer;
     uint256 kinoraID;
-    uint256 timestamp;
   }
 
   event KinoraFactoryDeployed(
@@ -31,16 +38,7 @@ contract KinoraFactory {
     address metricsAddress,
     address questAddress,
     address escrowAddress,
-    address questReward,
-    uint256 timestamp
-  );
-  event KinoraGlobalAccessControlUpdate(
-    address newAccessControlAddress,
-    address deployerAddress
-  );
-  event KinoraGlobalPKPDBUpdate(
-    address newPKPDBAddress,
-    address deployerAddress
+    address questReward
   );
 
   mapping(address => address[]) private _deployerToPKPs;
@@ -48,67 +46,64 @@ contract KinoraFactory {
 
   modifier onlyAdmin() {
     require(
-      _globalAccessControl.isAdmin(msg.sender),
-      "GlobalKinoraAccessControl: Only admin can perform this action."
+      IKinoraAccessControl(_globalAccessControl).isAdmin(msg.sender),
+      "GlobalKinoraAccessControl: Admin Only."
     );
     _;
   }
 
-  constructor(address _accessControlsAddress, address _pkpDBAddress) {
+  constructor(
+    address _accessControlsAddress,
+    address _pkpDBAddress,
+    address _logicAddressAC,
+    address _logicAddressQ,
+    address _logicAddressE,
+    address _logicAddressM,
+    address _logicAddressQR
+  ) {
     name = "KinoraFactory";
     symbol = "KFAC";
-    _globalAccessControl = KinoraGlobalAccessControl(_accessControlsAddress);
-    _globalPKPDB = KinoraGlobalPKPDB(_pkpDBAddress);
+    _globalAccessControl = _accessControlsAddress;
+    _globalPKPDB = _pkpDBAddress;
+    _kinoraAccessControl = _logicAddressAC;
+    _kinoraQuest = _logicAddressQ;
+    _kinoraEscrow = _logicAddressE;
+    _kinoraMetrics = _logicAddressM;
+    _kinoraQuestReward = _logicAddressQR;
   }
 
   function deployFromKinoraFactory(address _pkpAddress) public {
-    address _kinoraDeployer = msg.sender;
-
     (
-      address _newKinoraAccessControlAddress,
-      address _newKinoraMetricsAddress,
-      address _newKinoraQuestAddress,
-      address _newKinoraEscrowAddress,
-      address _newKinora721QuestReward
-    ) = _deploySuite(_kinoraDeployer, _pkpAddress);
+      address _newKAC,
+      address _newKM,
+      address _newKQ,
+      address _newKE,
+      address _newKQR
+    ) = _deploySuite(msg.sender, _pkpAddress);
 
-    KinoraAccessControl(_newKinoraAccessControlAddress).addAdmin(
-      _kinoraDeployer
-    );
-    KinoraEscrow(_newKinoraEscrowAddress).setKinoraQuest(
-      _newKinoraQuestAddress
-    );
-    KinoraEscrow(_newKinoraEscrowAddress).setKinora721QuestReward(
-      _newKinora721QuestReward
-    );
+    KinoraAccessControl(_newKAC).addAdmin(msg.sender);
+    KinoraEscrow(_newKE).setKinoraQuest(_newKQ);
+    KinoraEscrow(_newKE).setKinora721QuestReward(_newKQR);
 
     _kinoraIDCount++;
 
     Kinora memory _newKinoraFactoryDetails = Kinora({
       kinoraID: _kinoraIDCount,
-      playbackIds: new string[](0),
-      contracts: [
-        _newKinoraAccessControlAddress,
-        _newKinoraMetricsAddress,
-        _newKinoraQuestAddress,
-        _newKinoraEscrowAddress,
-        _newKinora721QuestReward
-      ],
-      deployer: _kinoraDeployer,
-      timestamp: block.timestamp
+      playbackIdsString: "",
+      contracts: [_newKAC, _newKM, _newKQ, _newKE, _newKQR],
+      deployer: msg.sender
     });
 
-    _deployerToPKPs[_kinoraDeployer].push(_pkpAddress);
+    _deployerToPKPs[msg.sender].push(_pkpAddress);
     _deployerPKPToKinora[_pkpAddress] = _newKinoraFactoryDetails;
 
     emit KinoraFactoryDeployed(
       msg.sender,
-      _newKinoraAccessControlAddress,
-      _newKinoraMetricsAddress,
-      _newKinoraQuestAddress,
-      _newKinoraEscrowAddress,
-      _newKinora721QuestReward,
-      block.timestamp
+      _newKAC,
+      _newKM,
+      _newKQ,
+      _newKE,
+      _newKQR
     );
   }
 
@@ -118,47 +113,40 @@ contract KinoraFactory {
   )
     private
     returns (
-      address newKinoraAccessControlAddress,
-      address newKinoraMetricsAddress,
-      address newKinoraQuestAddress,
-      address newKinoraEscrowAddress,
-      address newKinora721QuestReward
+      address _newKACA,
+      address _newKMA,
+      address _newKQA,
+      address _newKEA,
+      address _newKQRA
     )
   {
+    address _newKAC = Clones.clone(_kinoraAccessControl);
+    address _newKM = Clones.clone(_kinoraMetrics);
+    address _newKE = Clones.clone(_kinoraEscrow);
+    address _newKQ = Clones.clone(_kinoraQuest);
+    address _newKQR = Clones.clone(_kinoraQuestReward);
+
     // Deploy KinoraAccessControl
-    KinoraAccessControl _newKinoraAccessControlAddress = new KinoraAccessControl(
-        _pkpAddress,
-        _kinoraDeployer
-      );
+    KinoraAccessControl(_newKAC).initialize(_pkpAddress, _kinoraDeployer);
 
     // Deploy KinoraMetricsAddress
-    KinoraMetrics _newKinoraMetricsAddress = new KinoraMetrics(
-      address(_newKinoraAccessControlAddress)
-    );
+    KinoraMetrics(_newKM).initialize(_newKAC);
 
-    KinoraEscrow _newKinoraEscrowAddress = new KinoraEscrow(
-      address(_newKinoraAccessControlAddress),
-      address(this)
-    );
+    // Deploy KinoraEscrowAddress
+    KinoraEscrow(_newKE).initialize(_newKAC);
 
     // Deploy KinoraQuestAddress
-    KinoraQuest _newKinoraQuestAddress = new KinoraQuest(
-      address(_newKinoraAccessControlAddress),
-      address(_newKinoraEscrowAddress),
-      address(_globalPKPDB)
-    );
+    KinoraQuest(_newKQ).initialize(_newKAC, _newKE, _globalPKPDB);
 
-    Kinora721QuestReward _newKinora721QuestReward = new Kinora721QuestReward(
-      address(_newKinoraQuestAddress),
-      address(_newKinoraEscrowAddress)
-    );
+    // Deploy Kinora721QuestRewardAddress
+    Kinora721QuestReward(_newKQR).initialize(_newKQ, _newKE);
 
     return (
-      address(_newKinoraAccessControlAddress),
-      address(_newKinoraMetricsAddress),
-      address(_newKinoraQuestAddress),
-      address(_newKinoraEscrowAddress),
-      address(_newKinora721QuestReward)
+      address(_newKAC),
+      address(_newKM),
+      address(_newKQ),
+      address(_newKE),
+      address(_newKQR)
     );
   }
 
@@ -204,22 +192,16 @@ contract KinoraFactory {
 
   function getKinoraPlaybackIdsToPKP(
     address _pkpAddress
-  ) public view returns (string[] memory) {
-    return _deployerPKPToKinora[_pkpAddress].playbackIds;
-  }
-
-  function getKinoraBlockTimestampToPKP(
-    address _pkpAddress
-  ) public view returns (uint256) {
-    return _deployerPKPToKinora[_pkpAddress].timestamp;
+  ) public view returns (bytes32) {
+    return _deployerPKPToKinora[_pkpAddress].playbackIdsString;
   }
 
   function getGlobalAccessControlContract() public view returns (address) {
-    return address(_globalAccessControl);
+    return _globalAccessControl;
   }
 
   function getGlobalPKPDBContract() public view returns (address) {
-    return address(_globalPKPDB);
+    return _globalPKPDB;
   }
 
   function getKinoraIDCount() public view returns (uint256) {
@@ -229,12 +211,10 @@ contract KinoraFactory {
   function setGlobalAccessControl(
     address _newAccessControlAddress
   ) external onlyAdmin {
-    _globalAccessControl = KinoraGlobalAccessControl(_newAccessControlAddress);
-    emit KinoraGlobalAccessControlUpdate(_newAccessControlAddress, msg.sender);
+    _globalAccessControl = _newAccessControlAddress;
   }
 
   function setGlobalPKPDBControl(address _newPKPDBAddress) external onlyAdmin {
-    _globalPKPDB = KinoraGlobalPKPDB(_newPKPDBAddress);
-    emit KinoraGlobalPKPDBUpdate(_newPKPDBAddress, msg.sender);
+    _globalPKPDB = _newPKPDBAddress;
   }
 }
