@@ -2,11 +2,22 @@ import { PlayerProps } from "@livepeer/react";
 import { HlsVideoConfig } from "livepeer/media/browser/hls";
 import { WebRTCVideoConfig } from "livepeer/media/browser/webrtc";
 import { ControlsOptions } from "livepeer/media/browser";
+import { ethers } from "ethers";
 import {
   DiscordProvider,
   EthWalletProvider,
   GoogleProvider,
 } from "@lit-protocol/lit-auth-client";
+
+export enum RewardType {
+  ERC20,
+  ERC721,
+}
+
+export enum Status {
+  Open,
+  Closed,
+}
 
 export type LivepeerPlayer<TPlaybackPolicyObject extends object, TSlice> = {
   on: (eventName: string, callback: Function) => void;
@@ -72,4 +83,42 @@ export interface UserMetrics {
   numberOfMultistreams: number;
   numberOfAssets: number;
   numberOfUpdates: number;
+}
+
+export interface Reward {
+  type: RewardType;
+  tokenAddress: `0x${string}`;
+  amount: number;
+  tokenIds: number[];
+}
+
+export interface QuestURI {
+  questCoverImage: string;
+  questDescription: string;
+  questTitle: string;
+}
+
+export interface MilestoneURI {
+  milestoneCoverImage: string;
+  milestoneDescription: string;
+  milestoneTitle: string;
+}
+
+export interface Milestone {
+  uriDetails: MilestoneURI;
+  reward: Reward;
+  numberOfPoints: number;
+}
+
+export interface GeneratedTxData {
+  to: `0x${string}`;
+  nonce: number;
+  chainId: number;
+  gasLimit: ethers.BigNumber;
+  maxFeePerGas: ethers.BigNumber;
+  maxPriorityFeePerGas: ethers.BigNumber;
+  from: `0x${string}` | "{{publicKey}}";
+  data: ethers.ContractInterface;
+  value: ethers.BigNumber;
+  type: number;
 }

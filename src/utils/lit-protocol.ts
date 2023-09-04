@@ -6,13 +6,15 @@ import bs58 from "bs58";
 import * as LitJsSdk_authHelpers from "@lit-protocol/auth-helpers";
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import { SiweMessage } from "siwe";
+
 import {
   ChainIds,
   ContractABI,
+  GeneratedTxData,
   LitAuthSig,
   UserMetrics,
 } from "src/@types/kinora-sdk";
-import { IRelayPKP } from "@lit-protocol/types";
+import { IRelayPKP, SessionSigs } from "@lit-protocol/types";
 
 export const createTxData = async (
   provider: ethers.providers.JsonRpcProvider,
@@ -21,7 +23,7 @@ export const createTxData = async (
   functionName: string,
   args: any[],
   chainId: number,
-) => {
+): Promise<GeneratedTxData> => {
   try {
     const contractInterface = new ethers.utils.Interface(abi);
 
@@ -35,7 +37,7 @@ export const createTxData = async (
 
     const maxPriorityFeePerGas = ethers.utils.parseUnits("40", "gwei");
     return {
-      to: contractAddress,
+      to: contractAddress as `0x${string}`,
       nonce: (await provider.getTransactionCount(CHRONICLE_PKP_CONTRACT)) || 0,
       chainId: chainId,
       gasLimit: ethers.BigNumber.from("25000000"),
@@ -59,7 +61,7 @@ export const litExecute = async (
   authSig: any,
   publicKey: `0x04${string}`,
   retryCount: number = 0,
-) => {
+): Promise<{ txHash: string }> => {
   const maxRetries = 5;
   try {
     const results = await litClient.executeJs({
@@ -98,6 +100,10 @@ export const litExecute = async (
     const transactionHash = await provider.sendTransaction(serialized);
 
     await transactionHash.wait();
+
+    return {
+      txHash: transactionHash.hash,
+    };
   } catch (err: any) {
     if (
       (err.message.includes("timeout") ||
@@ -216,7 +222,7 @@ export const getSessionSig = async (
   provider: any,
   litNodeClient: any,
   chainId: number,
-) => {
+): Promise<SessionSigs> => {
   try {
     const litResource = new LitJsSdk_authHelpers.LitPKPResource(
       currentPKP.tokenId,
