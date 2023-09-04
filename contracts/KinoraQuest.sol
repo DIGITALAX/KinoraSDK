@@ -5,11 +5,13 @@ pragma solidity ^0.8.19;
 import "./KinoraAccessControl.sol";
 import "./KinoraEscrow.sol";
 import "./KinoraGlobalPKPDB.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract KinoraQuest {
+contract KinoraQuest is Initializable {
   KinoraAccessControl private _accessControl;
   KinoraGlobalPKPDB private _pkpDB;
   KinoraEscrow private _escrow;
+  address private _factory;
   uint256 private _questCount;
   uint256 private _userCount;
 
@@ -78,6 +80,14 @@ contract KinoraQuest {
     _;
   }
 
+  modifier onlyFactory() {
+    require(
+      msg.sender == address(_factory),
+      "KinoraQuest: Only Assigned PKP can perform this action."
+    );
+    _;
+  }
+
   event QuestInstantiated(uint256 indexed questCount, string uriDetails);
   event QuestMilestoneAdded(uint256 indexed questId, uint256 milestoneId);
   event QuestMilestoneUpdated(uint256 indexed questId, uint256 milestoneId);
@@ -91,11 +101,15 @@ contract KinoraQuest {
   event QuestTerminated(uint256 indexed questId);
   event UserJoinQuest(uint256 indexed questId, address userAddress);
 
-  constructor(
+  constructor(address _factoryAddress) {
+    _factory = _factoryAddress;
+  }
+
+  function initialize(
     address _accessControlAddress,
     address _escrowAddress,
     address _pkpDBAddress
-  ) {
+  ) public onlyFactory {
     _accessControl = KinoraAccessControl(_accessControlAddress);
     _escrow = KinoraEscrow(_escrowAddress);
     _pkpDB = KinoraGlobalPKPDB(_pkpDBAddress);
@@ -109,16 +123,15 @@ contract KinoraQuest {
     _questCount++;
     address[] memory _emptyParticipants;
 
-    Quest memory newQuest = Quest({
-      _uriDetails: _uriDetails,
-      _milestones: _initialMilestones,
-      _participants: _emptyParticipants,
-      _status: Status.Open,
-      _questId: _questCount,
-      _maxParticipantCount: _maxParticipantCount
-    });
+    _allQuests[_questCount]._uriDetails = _uriDetails;
+    _allQuests[_questCount]._status = Status.Open;
+    _allQuests[_questCount]._questId = _questCount;
+    _allQuests[_questCount]._participants = _emptyParticipants;
+    _allQuests[_questCount]._maxParticipantCount = _maxParticipantCount;
 
-    _allQuests[_questCount] = newQuest;
+    for (uint256 i = 0; i < _initialMilestones.length; i++) {
+      _allQuests[_questCount]._milestones.push(_initialMilestones[i]);
+    }
 
     emit QuestInstantiated(_questCount, _uriDetails);
   }
@@ -131,9 +144,15 @@ contract KinoraQuest {
     uint256 _questId
   ) public onlyUserPKPOrAdmin {
     _allQuests[_questId]._uriDetails = _newURIDetails;
-    _allQuests[_questId]._milestones = _newMilestones;
     _allQuests[_questId]._status = _newStatus;
     _allQuests[_questId]._maxParticipantCount = _newMaxParticipantCount;
+
+    delete _allQuests[_questId]._milestones;
+
+    for (uint i = 0; i < _newMilestones.length; i++) {
+      _allQuests[_questId]._milestones.push(_newMilestones[i]);
+    }
+
     emit QuestUpdated(_questId, _newURIDetails);
   }
 
@@ -428,5 +447,9 @@ contract KinoraQuest {
     uint256 _milestoneId
   ) public view returns (uint256[] memory) {
     return _allQuests[_questId]._milestones[_milestoneId]._reward._tokenIds;
+  }
+
+  function getKinoraFactory() public view returns (address) {
+    return _factory;
   }
 }

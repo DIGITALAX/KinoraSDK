@@ -23,6 +23,7 @@ import KinoraFactoryAbi from "./abis/KinoraFactory.json";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
 import KinoraQuestAbi from "./abis/KinoraQuest.json";
 import PKPNFTAbi from "./abis/PKPNFT.json";
+import KinoraReward721Abi from "./abis/KinoraReward721Abi.json";
 import { DiscordProvider, GoogleProvider } from "@lit-protocol/lit-auth-client";
 import {
   createTxData,
@@ -52,6 +53,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   private kinoraPkpDBContract: ethers.Contract;
   private pkpContract: ethers.Contract;
   private kinoraQuestAddress: ethers.Contract;
+  private kinoraReward721Address: ethers.Contract;
   private kinoraMetricsAddress: ethers.Contract;
   private signer: ethers.Signer;
   private authSig: LitAuthSig;
@@ -77,6 +79,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     signer?: ethers.Signer,
     kinoraMetricsAddress?: `0x${string}`,
     kinoraQuestAddress?: `0x${string}`,
+    kinoraReward721Address?: `0x${string}`,
   ) {
     this.livepeerPlayer = livepeerPlayer;
     this.redirectURL = redirectURL;
@@ -107,6 +110,12 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       this.kinoraQuestAddress = new ethers.Contract(
         kinoraQuestAddress,
         KinoraQuestAbi,
+      );
+    }
+    if (kinoraReward721Address) {
+      this.kinoraReward721Address = new ethers.Contract(
+        kinoraReward721Address,
+        KinoraReward721Abi,
       );
     }
     this.pkpContract = new ethers.Contract(
@@ -290,6 +299,13 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   userCompleteQuestMilestone = async () => {
     try {
       // pay out user reward
+    } catch (err: any) {
+      // add in error logs aqui
+    }
+  };
+
+  userMintERC721Reward = async () => {
+    try {
     } catch (err: any) {
       // add in error logs aqui
     }
