@@ -3,12 +3,18 @@ import {
   LitAuthSig,
   LitProvider,
   LivepeerPlayer,
+  Milestone,
+  MilestoneURI,
+  QuestURI,
+  RewardType,
+  Status,
   UserMetrics,
 } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import "@lit-protocol/lit-auth-client";
 import { ProviderType } from "@lit-protocol/constants";
 import { ethers } from "ethers";
+import { IPFSHTTPClient, create } from "ipfs-http-client";
 import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
 import { AuthMethod, IRelayPKP } from "@lit-protocol/types";
 import {
@@ -49,12 +55,13 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   private chain: string = "polygon";
   private redirectURL: string;
   private developerPKPPublicKey: `0x04${string}`;
+  private kinoraReward721Address: `0x${string}`;
   private encryptUserMetrics: boolean;
   private kinoraPkpDBContract: ethers.Contract;
   private pkpContract: ethers.Contract;
   private kinoraQuestAddress: ethers.Contract;
-  private kinoraReward721Address: ethers.Contract;
   private kinoraMetricsAddress: ethers.Contract;
+  private ipfsClient: IPFSHTTPClient;
   private signer: ethers.Signer;
   private authSig: LitAuthSig;
   private userPKPAuthSig: LitAuthSig;
@@ -80,6 +87,10 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     kinoraMetricsAddress?: `0x${string}`,
     kinoraQuestAddress?: `0x${string}`,
     kinoraReward721Address?: `0x${string}`,
+    auth?: {
+      projectId: string;
+      projectSecret: string;
+    },
   ) {
     this.livepeerPlayer = livepeerPlayer;
     this.redirectURL = redirectURL;
@@ -113,11 +124,19 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       );
     }
     if (kinoraReward721Address) {
-      this.kinoraReward721Address = new ethers.Contract(
-        kinoraReward721Address,
-        KinoraReward721Abi,
-      );
+      this.kinoraReward721Address = kinoraReward721Address;
     }
+    if (auth)
+      this.ipfsClient = create({
+        url: "https://ipfs.infura.io:5001/api/v0",
+        headers: {
+          authorization:
+            "Basic " +
+            Buffer.from(auth.projectId + ":" + auth.projectSecret).toString(
+              "base64",
+            ),
+        },
+      });
     this.pkpContract = new ethers.Contract(
       CHRONICLE_PKP_CONTRACT,
       PKPNFTAbi,
@@ -138,7 +157,9 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   developerFactoryContractDeploy = async (): Promise<{
     kinoraAccessControlAddress: `0x${string}`;
     kinoraMetricsAddress: `0x${string}`;
+    kinoraEscrowAddress: `0x${string}`;
     kinoraQuestAddress: `0x${string}`;
+    kinoraQuestRewardAddress: `0x${string}`;
     pkpEthAddress: string;
     pkpPublicKey: string;
   }> => {
@@ -189,11 +210,14 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         filteredLogs[0].args[3],
         KinoraQuestAbi,
       );
+      this.kinoraReward721Address = filteredLogs[0].args[5];
 
       return {
         kinoraAccessControlAddress: filteredLogs[0].args[1],
         kinoraMetricsAddress: filteredLogs[0].args[2],
         kinoraQuestAddress: filteredLogs[0].args[3],
+        kinoraEscrowAddress: filteredLogs[0].args[4],
+        kinoraQuestRewardAddress: filteredLogs[0].args[5],
         pkpEthAddress: ethers.utils.computeAddress(publicKey),
         pkpPublicKey: publicKey,
       };
@@ -222,9 +246,9 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   };
 
   authenticateUserRedirect = async (): Promise<void> => {
+    if (!this.developerPKPPublicKey) throw new Error();
     try {
       this.authMethod = await this.litProvider.authenticate();
-
       this.currentUserPKP = await this.handlePKPs();
     } catch (err: any) {
       // add in error logs aqui
@@ -277,35 +301,339 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     });
   };
 
-  instantiateNewQuest = async () => {
+  instantiateNewQuest = async (questInputs: {
+    questURIDetails: QuestURI;
+    maxParticipantCount: number;
+    milestones: Milestone[];
+  }): Promise<{
+    txHash: string;
+    questId: string;
+  }> => {
+    if (!this.kinoraQuestAddress) throw new Error();
+    if (!this.ipfsClient) throw new Error();
     try {
-      // quest module for a dev to set up a new quest according to the metrics
-      // automate the dispatch of rewards associated with different metric combinations returned by the sdk for the user
-      // allow limited number of users / etc. to sign up per quest
-      // participants can active/join in on quest if match quest criteria
-      // fund quest with mileston rewards and create milestones, make sure to split by max users that can join a quest
+      // verify questjoin condition here from inputed data
+
+      const added = await this.ipfsClient.add(
+        JSON.stringify({
+          ...questInputs.questURIDetails,
+          questJoinCondition,
+        }),
+      );
+      const uri = added.path;
+
+      const txHash = await this.kinoraQuestAddress.instantiateNewQuest(
+        "ipfs://" + uri,
+        questInputs.maxParticipantCount,
+      );
+
+      const questId = await this.kinoraQuestAddress.getTotalQuestCount();
+
+      for (let i = 0; i < questInputs.milestones.length; i++) {
+        const added = await this.ipfsClient.add(
+          JSON.stringify({
+            questCoverImage: questInputs.milestones[i].uriDetails,
+          }),
+        );
+        const uri = added.path;
+
+        await this.kinoraQuestAddress.addQuestMilestone(
+          questInputs.milestones[i].reward,
+          "ipfs://" + uri,
+          questId,
+          questInputs.milestones[i].numberOfPoints,
+        );
+      }
+
+      return {
+        txHash,
+        questId,
+      };
     } catch (err: any) {
       // add in error logs aqui
     }
   };
 
-  userJoinQuest = async () => {
+  addQuestMilestones = async (
+    questMilestones: Milestone[],
+    questId: number,
+  ): Promise<{ txHash: string[] }> => {
+    if (!this.kinoraQuestAddress) throw new Error();
+    if (!this.ipfsClient) throw new Error();
     try {
+      let txHashes: string[] = [];
+
+      for (let i = 0; i < questMilestones.length; i++) {
+        const added = await this.ipfsClient.add(
+          JSON.stringify({
+            ...questMilestones[i].uriDetails,
+            milestoneCompleteCondition,
+          }),
+        );
+        const uri = added.path;
+
+        const txHash = await this.kinoraQuestAddress.addQuestMilestone(
+          questMilestones[i].reward,
+          "ipfs://" + uri,
+          questId,
+          questMilestones[i].numberOfPoints,
+        );
+        txHashes.push(txHash);
+      }
+
+      return {
+        txHash: txHashes,
+      };
     } catch (err: any) {
       // add in error logs aqui
     }
   };
 
-  userCompleteQuestMilestone = async () => {
+  updateQuestDetails = async (questDetails: {
+    questId: number;
+    newURIDetails: QuestURI;
+    newMilestones: Milestone[];
+    newStatus: Status;
+    newMaxParticipantCount: number;
+  }): Promise<{ txHash: string }> => {
+    if (!this.kinoraQuestAddress) throw new Error();
+    if (!this.ipfsClient) throw new Error();
     try {
-      // pay out user reward
+      const added = await this.ipfsClient.add(
+        JSON.stringify({ ...questDetails.newURIDetails, questJoinCondition }),
+      );
+      const uri = added.path;
+
+      let newMilestones: Milestone[] = [];
+
+      for (let i = 0; i < questDetails.newMilestones.length; i++) {
+        const added = await this.ipfsClient.add(
+          JSON.stringify({
+            ...questDetails.newMilestones[i].uriDetails,
+            milestoneCompleteCondition,
+          }),
+        );
+        const uri = added.path;
+
+        newMilestones.push({
+          ...questDetails.newMilestones[i],
+          uriDetails: ("ipfs://" + uri) as any,
+        });
+      }
+
+      const txHash = await this.kinoraQuestAddress.updateQuestDetails(
+        "ipfs://" + uri,
+        newMilestones,
+        questDetails.newStatus,
+        questDetails.newMaxParticipantCount,
+        questDetails.questId,
+      );
+
+      return {
+        txHash,
+      };
     } catch (err: any) {
       // add in error logs aqui
     }
   };
 
-  userMintERC721Reward = async () => {
+  updateQuestStatus = async (
+    questId: number,
+    newStatus: Status,
+  ): Promise<{ txHash: string }> => {
+    if (!this.kinoraQuestAddress) throw new Error();
     try {
+      const txHash = await this.kinoraQuestAddress.updateQuestStatus(
+        questId,
+        newStatus,
+      );
+
+      return {
+        txHash,
+      };
+    } catch (err: any) {
+      // add in error logs aqui
+    }
+  };
+
+  updateMilestoneDetails = async (milestoneDetails: {
+    questId: number;
+    milestoneId: number;
+    newMilestoneURIDetails: MilestoneURI;
+    newERC721TokenIds: number[];
+    newRewardType: RewardType;
+    newTokenAddress: `0x${string}`;
+    newNumberOfPoints: number;
+    newERC20Amount: number;
+  }): Promise<{ txHash: string }> => {
+    if (!this.kinoraQuestAddress) throw new Error();
+    if (!this.ipfsClient) throw new Error();
+    try {
+      const added = await this.ipfsClient.add(
+        JSON.stringify({
+          ...milestoneDetails.newMilestoneURIDetails,
+          milestoneCompleteCondition,
+        }),
+      );
+      const uri = added.path;
+
+      const txHash = await this.kinoraQuestAddress.updateMilestoneDetails(
+        milestoneDetails.newERC721TokenIds,
+        "ipfs://" + uri,
+        milestoneDetails.newRewardType,
+        milestoneDetails.newTokenAddress,
+        milestoneDetails.questId,
+        milestoneDetails.milestoneId,
+        milestoneDetails.newNumberOfPoints,
+        milestoneDetails.newERC20Amount,
+      );
+
+      return {
+        txHash,
+      };
+    } catch (err: any) {
+      // add in error logs aqui
+    }
+  };
+
+  removeQuestMilestone = async (
+    questId: number,
+    milestoneId: number,
+  ): Promise<{ txHash: string }> => {
+    if (!this.kinoraQuestAddress) throw new Error();
+    try {
+      const txHash = await this.kinoraQuestAddress.removeQuestMilestone(
+        questId,
+        milestoneId,
+      );
+
+      return {
+        txHash,
+      };
+    } catch (err: any) {
+      // add in error logs aqui
+    }
+  };
+
+  terminateQuest = async (questId: number): Promise<{ txHash: string }> => {
+    if (!this.kinoraQuestAddress) throw new Error();
+    try {
+      const txHash = await this.kinoraQuestAddress.terminateQuest(questId);
+
+      return {
+        txHash,
+      };
+    } catch (err: any) {
+      // add in error logs aqui
+    }
+  };
+
+  userJoinQuest = async (questId: number): Promise<{ txHash: string }> => {
+    if (!this.kinoraQuestAddress.address) throw new Error();
+    if (!this.developerPKPPublicKey) throw new Error();
+    if (!this.currentUserPKP.ethAddress) throw new Error();
+
+    // check against join quest condition completed data from uri details of the quest
+
+    try {
+      const tx = await createTxData(
+        this.polygonProvider,
+        KinoraQuestAbi,
+        this.kinoraQuestAddress.address,
+        "userJoinQuest",
+        [questId, this.currentUserPKP.ethAddress],
+        ChainIds[this.chain],
+      );
+
+      const { txHash } = await litExecute(
+        this.polygonProvider,
+        this.litNodeClient,
+        tx,
+        "userJoinQuest",
+        this.authSig ? this.authSig : await generateAuthSig(this.signer),
+        this.developerPKPPublicKey as `0x04${string}`,
+      );
+
+      return {
+        txHash,
+      };
+    } catch (err: any) {
+      // add in error logs aqui
+    }
+  };
+
+  userCompleteQuestMilestone = async (
+    questId: number,
+    milestoneId: number,
+  ): Promise<{ txHash: string }> => {
+    if (!this.kinoraQuestAddress.address) throw new Error();
+    if (!this.developerPKPPublicKey) throw new Error();
+    if (!this.currentUserPKP.ethAddress) throw new Error();
+
+    // check against milestone completed data from uri details of the milestone
+
+    try {
+      const tx = await createTxData(
+        this.polygonProvider,
+        KinoraQuestAbi,
+        this.kinoraQuestAddress.address,
+        "userCompleteMilestone",
+        [questId, milestoneId, this.currentUserPKP.ethAddress],
+        ChainIds[this.chain],
+      );
+
+      const { txHash } = await litExecute(
+        this.polygonProvider,
+        this.litNodeClient,
+        tx,
+        "userCompleteMilestone",
+        this.authSig ? this.authSig : await generateAuthSig(this.signer),
+        this.developerPKPPublicKey as `0x04${string}`,
+      );
+
+      return { txHash };
+    } catch (err: any) {
+      // add in error logs aqui
+    }
+  };
+
+  userMintERC721Reward = async (
+    questId: number,
+    milestoneId: number,
+    userPKPAddress: `0x${string}`,
+    nodeproviderRPCURL?: string,
+  ): Promise<{ txHash: string }> => {
+    if (!this.kinoraReward721Address) throw new Error();
+    try {
+      let provider:
+        | ethers.providers.Web3Provider
+        | ethers.providers.JsonRpcProvider;
+
+      if (
+        typeof window !== "undefined" &&
+        typeof (window as any).ethereum !== "undefined"
+      ) {
+        provider = new ethers.providers.Web3Provider((window as any).ethereum);
+      } else {
+        provider = new ethers.providers.JsonRpcProvider(nodeproviderRPCURL);
+      }
+
+      const signer = provider.getSigner();
+      const rewardContract = new ethers.Contract(
+        this.kinoraReward721Address,
+        KinoraReward721Abi,
+        signer,
+      );
+
+      const txHash = await rewardContract.mintRewardNFT(
+        userPKPAddress,
+        questId,
+        milestoneId,
+      );
+
+      return {
+        txHash,
+      };
     } catch (err: any) {
       // add in error logs aqui
     }
@@ -367,7 +695,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         ChainIds[this.chain],
       );
 
-      await litExecute(
+      const { txHash } = await litExecute(
         this.polygonProvider,
         this.litNodeClient,
         tx,
@@ -375,6 +703,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         this.authSig ? this.authSig : await generateAuthSig(this.signer),
         this.developerPKPPublicKey as `0x04${string}`,
       );
+
+      // log tx hash here!!
     } catch (err: any) {
       // add in error logs aqui
     }
@@ -623,7 +953,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       ChainIds[this.chain],
     );
 
-    await litExecute(
+    const { txHash } = await litExecute(
       this.polygonProvider,
       this.litNodeClient,
       tx,
@@ -631,5 +961,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       this.authSig ? this.authSig : await generateAuthSig(this.signer),
       this.developerPKPPublicKey,
     );
+
+    // log tx hash here!!
   };
 }

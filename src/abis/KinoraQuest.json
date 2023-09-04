@@ -630,60 +630,6 @@
   {
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "_uriDetails",
-            "type": "string"
-          },
-          {
-            "components": [
-              {
-                "internalType": "enum KinoraQuest.RewardType",
-                "name": "_type",
-                "type": "uint8"
-              },
-              {
-                "internalType": "address",
-                "name": "_tokenAddress",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "_amount",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256[]",
-                "name": "_tokenIds",
-                "type": "uint256[]"
-              }
-            ],
-            "internalType": "struct KinoraQuest.Reward",
-            "name": "_reward",
-            "type": "tuple"
-          },
-          {
-            "internalType": "enum KinoraQuest.Status",
-            "name": "_status",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint256",
-            "name": "_numberOfPoints",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "_milestoneId",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct KinoraQuest.Milestone[]",
-        "name": "_initialMilestones",
-        "type": "tuple[]"
-      },
-      {
         "internalType": "string",
         "name": "_uriDetails",
         "type": "string"

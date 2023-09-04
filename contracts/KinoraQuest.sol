@@ -97,6 +97,7 @@ contract KinoraQuest is Initializable {
     uint256 milestoneId,
     address userAddress
   );
+  event QuestStatusUpdated(uint256 indexed questId, Status status);
   event QuestMilestoneRemoved(uint256 indexed questId, uint256 milestoneId);
   event QuestTerminated(uint256 indexed questId);
   event UserJoinQuest(uint256 indexed questId, address userAddress);
@@ -116,21 +117,21 @@ contract KinoraQuest is Initializable {
   }
 
   function instantiateNewQuest(
-    Milestone[] memory _initialMilestones,
     string memory _uriDetails,
     uint256 _maxParticipantCount
   ) public onlyUserPKP {
     _questCount++;
     address[] memory _emptyParticipants;
+    Milestone[] memory _emptyMilestones;
 
-    _allQuests[_questCount]._uriDetails = _uriDetails;
-    _allQuests[_questCount]._status = Status.Open;
     _allQuests[_questCount]._questId = _questCount;
+    _allQuests[_questCount]._uriDetails = _uriDetails;
     _allQuests[_questCount]._participants = _emptyParticipants;
+    _allQuests[_questCount]._status = Status.Open;
     _allQuests[_questCount]._maxParticipantCount = _maxParticipantCount;
 
-    for (uint256 i = 0; i < _initialMilestones.length; i++) {
-      _allQuests[_questCount]._milestones.push(_initialMilestones[i]);
+    for (uint256 i = 0; i < _emptyMilestones.length; i++) {
+      _allQuests[_questCount]._milestones.push(_emptyMilestones[i]);
     }
 
     emit QuestInstantiated(_questCount, _uriDetails);
@@ -161,7 +162,7 @@ contract KinoraQuest is Initializable {
     string memory _uriDetails,
     uint256 _questId,
     uint256 _pointCount
-  ) public onlyUserPKP questOpen(_questId) {
+  ) public onlyUserPKPOrAdmin questOpen(_questId) {
     _allQuests[_questId]._milestones.push(
       Milestone({
         _uriDetails: _uriDetails,
@@ -207,7 +208,7 @@ contract KinoraQuest is Initializable {
   function removeQuestMilestone(
     uint256 _questId,
     uint256 _milestoneId
-  ) public onlyUserPKP questOpen(_questId) {
+  ) public onlyUserPKPOrAdmin questOpen(_questId) {
     require(
       _allQuests[_questId]._milestones[_milestoneId - 1]._status == Status.Open,
       "KinoraQuest: Milestone already Closed."
@@ -220,10 +221,19 @@ contract KinoraQuest is Initializable {
 
   function terminateQuest(
     uint256 _questId
-  ) public onlyUserPKP questOpen(_questId) {
+  ) public onlyUserPKPOrAdmin questOpen(_questId) {
     _allQuests[_questId]._status = Status.Closed;
 
     emit QuestTerminated(_questId);
+  }
+
+  function updateQuestStatus(
+    uint256 _questId,
+    Status _newStatus
+  ) public onlyUserPKPOrAdmin {
+    _allQuests[_questId]._status = _newStatus;
+
+    emit QuestStatusUpdated(_questId, _newStatus);
   }
 
   function userJoinQuest(
