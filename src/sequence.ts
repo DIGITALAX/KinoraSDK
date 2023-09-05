@@ -9,6 +9,7 @@ import {
   RewardType,
   Status,
   UserMetrics,
+  QuestEligibility,
 } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import "@lit-protocol/lit-auth-client";
@@ -41,6 +42,7 @@ import {
   decryptMetrics,
 } from "./utils/lit-protocol";
 import { JsonRpcProvider } from "@ethersproject/providers";
+import getLensValues from "./apollo/queries/getBookmarked";
 
 export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   private livepeerPlayer: LivepeerPlayer<TPlaybackPolicyObject, TSlice>;
@@ -54,6 +56,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   private rpcURL: string;
   private chain: string = "polygon";
   private redirectURL: string;
+  private lensPubId: string;
+  private userProfileId: string;
   private developerPKPPublicKey: `0x04${string}`;
   private kinoraReward721Address: `0x${string}`;
   private encryptUserMetrics: boolean;
@@ -83,6 +87,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     metricsOnChainInterval: number, // in minutes,
     developerPKPPublicKey: `0x04${string}` | undefined, // dev may need to mint first
     encryptUserMetrics: boolean,
+    lensPubId?: string,
+    userProfileId?: string,
     signer?: ethers.Signer,
     kinoraMetricsAddress?: `0x${string}`,
     kinoraQuestAddress?: `0x${string}`,
@@ -97,6 +103,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     this.rpcURL = rpcURL;
     this.developerPKPPublicKey = developerPKPPublicKey;
     this.encryptUserMetrics = encryptUserMetrics;
+    if (userProfileId) this.userProfileId = userProfileId;
+    if (lensPubId) this.lensPubId = lensPubId;
     this.signer = signer ? signer : ethers.Wallet.createRandom();
     this.metrics = new Metrics();
     this.polygonProvider = new ethers.providers.JsonRpcProvider(
@@ -302,7 +310,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   };
 
   instantiateNewQuest = async (questInputs: {
-    questURIDetails: QuestURI;
+    uriDetails: QuestURI;
     maxParticipantCount: number;
     milestones: Milestone[];
   }): Promise<{
@@ -312,13 +320,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     if (!this.kinoraQuestAddress) throw new Error();
     if (!this.ipfsClient) throw new Error();
     try {
-      // verify questjoin condition here from inputed data
-
       const added = await this.ipfsClient.add(
-        JSON.stringify({
-          ...questInputs.questURIDetails,
-          questJoinCondition,
-        }),
+        JSON.stringify(questInputs.uriDetails),
       );
       const uri = added.path;
 
@@ -365,10 +368,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
 
       for (let i = 0; i < questMilestones.length; i++) {
         const added = await this.ipfsClient.add(
-          JSON.stringify({
-            ...questMilestones[i].uriDetails,
-            milestoneCompleteCondition,
-          }),
+          JSON.stringify(questMilestones[i].uriDetails),
         );
         const uri = added.path;
 
@@ -400,7 +400,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     if (!this.ipfsClient) throw new Error();
     try {
       const added = await this.ipfsClient.add(
-        JSON.stringify({ ...questDetails.newURIDetails, questJoinCondition }),
+        JSON.stringify(questDetails.newURIDetails),
       );
       const uri = added.path;
 
@@ -408,10 +408,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
 
       for (let i = 0; i < questDetails.newMilestones.length; i++) {
         const added = await this.ipfsClient.add(
-          JSON.stringify({
-            ...questDetails.newMilestones[i].uriDetails,
-            milestoneCompleteCondition,
-          }),
+          JSON.stringify(questDetails.newMilestones[i].uriDetails),
         );
         const uri = added.path;
 
@@ -470,10 +467,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     if (!this.ipfsClient) throw new Error();
     try {
       const added = await this.ipfsClient.add(
-        JSON.stringify({
-          ...milestoneDetails.newMilestoneURIDetails,
-          milestoneCompleteCondition,
-        }),
+        JSON.stringify(milestoneDetails.newMilestoneURIDetails),
       );
       const uri = added.path;
 
@@ -533,7 +527,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     if (!this.developerPKPPublicKey) throw new Error();
     if (!this.currentUserPKP.ethAddress) throw new Error();
 
-    // check against join quest condition completed data from uri details of the quest
+    const joinCondition = await this.checkQuestMilestoneMetrics(questId);
 
     try {
       const tx = await createTxData(
@@ -570,7 +564,10 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     if (!this.developerPKPPublicKey) throw new Error();
     if (!this.currentUserPKP.ethAddress) throw new Error();
 
-    // check against milestone completed data from uri details of the milestone
+    const joinCondition = await this.checkQuestMilestoneMetrics(
+      questId,
+      milestoneId,
+    );
 
     try {
       const tx = await createTxData(
@@ -774,6 +771,22 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
 
     let userMetrics: UserMetrics;
 
+    let lensValues: {
+      mirrorLens: boolean;
+      likeLens: boolean;
+      collectLens: boolean;
+      commentLens: boolean;
+      bookmarkLens: boolean;
+      notInterestedLens: boolean;
+    } = {
+      mirrorLens: false,
+      likeLens: false,
+      collectLens: false,
+      commentLens: false,
+      bookmarkLens: false,
+      notInterestedLens: false,
+    };
+
     if (
       await this.kinoraMetricsAddress.getUserPlaybackIdByPlaybackId(
         this.currentUserPKP.ethAddress,
@@ -804,6 +817,22 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       }
 
       const oldMetricsValues: UserMetrics = await JSON.parse(oldMetrics);
+
+      if (this.userProfileId) {
+        const { data } = await getLensValues(
+          this.lensPubId,
+          this.userProfileId,
+        );
+
+        lensValues = {
+          mirrorLens: data?.publication?.mirrors?.length > 0 ? true : false,
+          likeLens: data?.publication[0]?.reaction === "UPVOTE" ? true : false,
+          collectLens,
+          commentLens,
+          bookmarkLens: data?.publication?.bookmarked,
+          notInterestedLens: data?.publication?.notInterested,
+        };
+      }
 
       userMetrics = {
         totalDuration:
@@ -901,8 +930,30 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
               (oldMetricsValues.numberOfImpressions +
                 this.metrics.getNumberOfImpressions())
             : 0,
+        mirrorLens: lensValues.mirrorLens,
+        likeLens: lensValues.likeLens,
+        collectLens: lensValues.collectLens,
+        commentLens: lensValues.commentLens,
+        bookmarkLens: lensValues.bookmarkLens,
+        notInterestedLens: lensValues.notInterestedLens,
       };
     } else {
+      if (this.userProfileId) {
+        const { data } = await getLensValues(
+          this.lensPubId,
+          this.userProfileId,
+        );
+
+        lensValues = {
+          mirrorLens: data?.publication?.mirrors?.length > 0 ? true : false,
+          likeLens: data?.publication[0]?.reaction === "UPVOTE" ? true : false,
+          collectLens,
+          commentLens,
+          bookmarkLens: data?.publication?.bookmarked,
+          notInterestedLens: data?.publication?.notInterested,
+        };
+      }
+
       userMetrics = {
         totalDuration: this.metrics.getTotalDuration(),
         numberOfImpressions: this.metrics.getNumberOfImpressions(),
@@ -920,6 +971,12 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         multiPlaybackUsageRate: this.metrics.getMultistreamUsageRate(),
         taskFailureRate: this.metrics.getTaskFailureRate(),
         recordingPerSession: this.metrics.getRecordingPerSession(),
+        mirrorLens: lensValues.mirrorLens,
+        likeLens: lensValues.likeLens,
+        collectLens: lensValues.collectLens,
+        commentLens: lensValues.commentLens,
+        bookmarkLens: lensValues.bookmarkLens,
+        notInterestedLens: lensValues.notInterestedLens,
       };
     }
 
@@ -963,5 +1020,122 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     );
 
     // log tx hash here!!
+  };
+
+  private checkQuestMilestoneMetrics = async (
+    questId: number,
+    milestoneId?: number,
+  ): Promise<boolean> => {
+    try {
+      let userEligible = false;
+
+      let currentMetrics: string =
+        await this.kinoraMetricsAddress.getUserMetricsJSONByPlaybackId(
+          this.currentUserPKP.ethAddress,
+          this.livepeerPlayer.props.playbackId,
+        );
+
+      if (
+        await this.kinoraMetricsAddress.getUserEncryptedByPlaybackId(
+          this.currentUserPKP.ethAddress,
+          this.livepeerPlayer.props.playbackId,
+        )
+      ) {
+        currentMetrics = await decryptMetrics(
+          await JSON.parse(currentMetrics),
+          ethers.utils.computeAddress(
+            this.developerPKPPublicKey,
+          ) as `0x${string}`,
+          this.currentUserPKP.ethAddress as `0x${string}`,
+          this.userPKPAuthSig,
+          this.litNodeClient,
+        );
+      }
+
+      const currentUserMetrics: UserMetrics = await JSON.parse(currentMetrics);
+
+      if (!milestoneId) {
+        const questUriDetails =
+          await this.kinoraQuestAddress.getQuestURIDetails(questId);
+        const decryptedURI = await decryptMetrics(
+          await JSON.parse(questUriDetails),
+          ethers.utils.computeAddress(
+            this.developerPKPPublicKey,
+          ) as `0x${string}`,
+          this.currentUserPKP.ethAddress as `0x${string}`,
+          this.userPKPAuthSig,
+          this.litNodeClient,
+        );
+
+        const uriParsed: QuestURI = await JSON.parse(decryptedURI);
+
+        userEligible = this.metricComparison(
+          currentUserMetrics,
+          uriParsed.joinCondition,
+        );
+      } else {
+        const milestoneUriDetails =
+          await this.kinoraQuestAddress.getQuestMilestoneURIDetails(
+            questId,
+            milestoneId,
+          );
+        const decryptedURI = await decryptMetrics(
+          await JSON.parse(milestoneUriDetails),
+          ethers.utils.computeAddress(
+            this.developerPKPPublicKey,
+          ) as `0x${string}`,
+          this.currentUserPKP.ethAddress as `0x${string}`,
+          this.userPKPAuthSig,
+          this.litNodeClient,
+        );
+
+        const uriParsed: MilestoneURI = await JSON.parse(decryptedURI);
+
+        userEligible = this.metricComparison(
+          currentUserMetrics,
+          uriParsed.completionCondition,
+        );
+      }
+
+      return userEligible;
+    } catch (err: any) {
+      // log error aqui
+    }
+  };
+
+  private metricComparison = (
+    userMetrics: UserMetrics,
+    eligibilityCriteria: QuestEligibility,
+  ): boolean => {
+    for (const key in eligibilityCriteria) {
+      const criteria = eligibilityCriteria[key as keyof QuestEligibility];
+
+      if (!criteria) continue;
+
+      const userValue = userMetrics[key as keyof UserMetrics];
+      const conditions: boolean[] = [];
+
+      if ("minValue" in criteria && "maxValue" in criteria) {
+        if (typeof userValue === "number") {
+          conditions.push(userValue >= criteria.minValue);
+          conditions.push(userValue <= criteria.maxValue);
+        }
+      } else if ("boolValue" in criteria) {
+        if (typeof userValue === "boolean") {
+          conditions.push(userValue === criteria.boolValue);
+        }
+      }
+
+      if (criteria.operator === "and") {
+        if (!conditions.every(Boolean)) {
+          return false;
+        }
+      } else if (criteria.operator === "or") {
+        if (!conditions.some(Boolean)) {
+          return false;
+        }
+      }
+    }
+    return true;
   };
 }
