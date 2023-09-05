@@ -83,6 +83,12 @@ export interface UserMetrics {
   numberOfMultistreams: number;
   numberOfAssets: number;
   numberOfUpdates: number;
+  mirrorLens: boolean;
+  likeLens: boolean;
+  collectLens: boolean;
+  commentLens: boolean;
+  bookmarkLens: boolean;
+  notInterestedLens: boolean;
 }
 
 export interface Reward {
@@ -96,12 +102,14 @@ export interface QuestURI {
   questCoverImage: string;
   questDescription: string;
   questTitle: string;
+  joinCondition: QuestEligibility;
 }
 
 export interface MilestoneURI {
   milestoneCoverImage: string;
   milestoneDescription: string;
   milestoneTitle: string;
+  completionCondition: QuestEligibility;
 }
 
 export interface Milestone {
@@ -121,4 +129,155 @@ export interface GeneratedTxData {
   data: ethers.ContractInterface;
   value: ethers.BigNumber;
   type: number;
+}
+
+export interface QuestEligibility {
+  avd:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  ctr:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  assetEngagement:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  userEngagementRatio:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  multiPlaybackUsageRate:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  taskFailureRate:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  recordingPerSession:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  totalDuration:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  numberOfImpressions:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  numberOfClicks:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  totalIdleTime:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  numberOfRecordings:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  numberOfFailedTasks:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  numberOfMultistreams:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  numberOfAssets:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  numberOfUpdates:
+    | {
+        minValue: number;
+        maxValue: number;
+        operator: "or" | "and";
+      }
+    | undefined;
+  mirrorLens:
+    | {
+        boolValue: boolean;
+        operator: "or" | "and";
+      }
+    | undefined;
+  likeLens:
+    | {
+        boolValue: boolean;
+        operator: "or" | "and";
+      }
+    | undefined;
+  collectLens:
+    | {
+        boolValue: boolean;
+        operator: "or" | "and";
+      }
+    | undefined;
+  commentLens:
+    | {
+        boolValue: boolean;
+        operator: "or" | "and";
+      }
+    | undefined;
+  bookmarkLens:
+    | {
+        boolValue: boolean;
+        operator: "or" | "and";
+      }
+    | undefined;
+  notInterestedLens:
+    | {
+        boolValue: boolean;
+        operator: "or" | "and";
+      }
+    | undefined;
 }
