@@ -61,7 +61,7 @@ export const litExecute = async (
   authSig: any,
   publicKey: `0x04${string}`,
   retryCount: number = 0,
-): Promise<{ txHash: string }> => {
+): Promise<{ error: boolean; txHash?: string; message?: string, litResponse?: any }> => {
   const maxRetries = 5;
   try {
     const results = await litClient.executeJs({
@@ -102,7 +102,9 @@ export const litExecute = async (
     await transactionHash.wait();
 
     return {
+      error: false,
       txHash: transactionHash.hash,
+      litResponse: results
     };
   } catch (err: any) {
     if (
@@ -121,7 +123,10 @@ export const litExecute = async (
         retryCount + 1,
       );
     } else {
-      console.error(err.message);
+      return {
+        error: true,
+        message: err.message,
+      };
     }
   }
 };

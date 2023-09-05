@@ -10,6 +10,8 @@ import {
   Status,
   UserMetrics,
   QuestEligibility,
+  ILogEntry,
+  LogCategory,
 } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import "@lit-protocol/lit-auth-client";
@@ -41,10 +43,14 @@ import {
   getSessionSig,
   decryptMetrics,
 } from "./utils/lit-protocol";
+import { EventEmitter } from "events";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import getLensValues from "./apollo/queries/getBookmarked";
+import getLensValues from "./apollo/queries/getLensValues";
 
-export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
+export class Sequence<
+  TPlaybackPolicyObject extends object,
+  TSlice,
+> extends EventEmitter {
   private livepeerPlayer: LivepeerPlayer<TPlaybackPolicyObject, TSlice>;
   private metrics: Metrics;
   private currentUserPKP: IRelayPKP;
@@ -53,6 +59,9 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   private polygonProvider: JsonRpcProvider;
   private chronicleProvider: JsonRpcProvider;
   private authMethod: AuthMethod;
+  private logSize = 1000;
+  private logIndex = 0;
+  private logs: ILogEntry[] = new Array(this.logSize);
   private rpcURL: string;
   private chain: string = "polygon";
   private redirectURL: string;
@@ -61,6 +70,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
   private developerPKPPublicKey: `0x04${string}`;
   private kinoraReward721Address: `0x${string}`;
   private encryptUserMetrics: boolean;
+  private errorHandlingModeStrict: boolean = false;
   private kinoraPkpDBContract: ethers.Contract;
   private pkpContract: ethers.Contract;
   private kinoraQuestAddress: ethers.Contract;
@@ -87,6 +97,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     metricsOnChainInterval: number, // in minutes,
     developerPKPPublicKey: `0x04${string}` | undefined, // dev may need to mint first
     encryptUserMetrics: boolean,
+    errorHandlingModeStrict: boolean = false,
     lensPubId?: string,
     userProfileId?: string,
     signer?: ethers.Signer,
@@ -98,6 +109,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       projectSecret: string;
     },
   ) {
+    super();
+    this.errorHandlingModeStrict = errorHandlingModeStrict;
     this.livepeerPlayer = livepeerPlayer;
     this.redirectURL = redirectURL;
     this.rpcURL = rpcURL;
@@ -249,24 +262,46 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       this.providerType !== ProviderType.EthWallet &&
         (await (this.litProvider as GoogleProvider | DiscordProvider).signIn());
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `User Authentication failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error authenticating user: ${err.message}`);
+      }
     }
   };
 
   authenticateUserRedirect = async (): Promise<void> => {
-    if (!this.developerPKPPublicKey) throw new Error();
+    if (!this.developerPKPPublicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
     try {
       this.authMethod = await this.litProvider.authenticate();
       this.currentUserPKP = await this.handlePKPs();
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `User Authentication failed on redirect.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(
+          `Error authenticating user on redirect: ${err.message}`,
+        );
+      }
     }
   };
 
   bindEvents = (): void => {
-    if (!this.developerPKPPublicKey) throw new Error();
-    if (!this.currentUserPKP) throw new Error();
-    if (!this.kinoraMetricsAddress) throw new Error();
+    if (!this.developerPKPPublicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.currentUserPKP)
+      throw new Error("Set user's PKP before continuing.");
+    if (!this.kinoraMetricsAddress)
+      throw new Error("Set Kinora Metrics Address before continuing.");
 
     this.livepeerPlayer.on("stream.started", () => {
       this.metrics.updateImpressions();
@@ -317,8 +352,10 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     txHash: string;
     questId: string;
   }> => {
-    if (!this.kinoraQuestAddress) throw new Error();
-    if (!this.ipfsClient) throw new Error();
+    if (!this.kinoraQuestAddress)
+      throw new Error("Set Kinora Quest Address before continuing.");
+    if (!this.ipfsClient)
+      throw new Error("Provide IPFS Auth before continuing.");
     try {
       const added = await this.ipfsClient.add(
         JSON.stringify(questInputs.uriDetails),
@@ -353,7 +390,15 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         questId,
       };
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `Quest instantiation failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error instantiating new Quest: ${err.message}`);
+      }
     }
   };
 
@@ -361,8 +406,10 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     questMilestones: Milestone[],
     questId: number,
   ): Promise<{ txHash: string[] }> => {
-    if (!this.kinoraQuestAddress) throw new Error();
-    if (!this.ipfsClient) throw new Error();
+    if (!this.kinoraQuestAddress)
+      throw new Error("Set Kinora Quest Address before continuing.");
+    if (!this.ipfsClient)
+      throw new Error("Provide IPFS Auth before continuing.");
     try {
       let txHashes: string[] = [];
 
@@ -385,7 +432,15 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         txHash: txHashes,
       };
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `Add Quest Milestone failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error adding Quest Milestone: ${err.message}`);
+      }
     }
   };
 
@@ -396,8 +451,10 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     newStatus: Status;
     newMaxParticipantCount: number;
   }): Promise<{ txHash: string }> => {
-    if (!this.kinoraQuestAddress) throw new Error();
-    if (!this.ipfsClient) throw new Error();
+    if (!this.kinoraQuestAddress)
+      throw new Error("Set Kinora Quest Address before continuing.");
+    if (!this.ipfsClient)
+      throw new Error("Provide IPFS Auth before continuing.");
     try {
       const added = await this.ipfsClient.add(
         JSON.stringify(questDetails.newURIDetails),
@@ -430,7 +487,15 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         txHash,
       };
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `Quest details udpated failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error updating Quest details: ${err.message}`);
+      }
     }
   };
 
@@ -438,7 +503,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     questId: number,
     newStatus: Status,
   ): Promise<{ txHash: string }> => {
-    if (!this.kinoraQuestAddress) throw new Error();
+    if (!this.kinoraQuestAddress) throw new Error("");
     try {
       const txHash = await this.kinoraQuestAddress.updateQuestStatus(
         questId,
@@ -449,7 +514,15 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         txHash,
       };
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `Quest status update failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error updating Quest status: ${err.message}`);
+      }
     }
   };
 
@@ -463,8 +536,10 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     newNumberOfPoints: number;
     newERC20Amount: number;
   }): Promise<{ txHash: string }> => {
-    if (!this.kinoraQuestAddress) throw new Error();
-    if (!this.ipfsClient) throw new Error();
+    if (!this.kinoraQuestAddress)
+      throw new Error("Set Kinora Quest Address before continuing.");
+    if (!this.ipfsClient)
+      throw new Error("Provide IPFS Auth before continuing.");
     try {
       const added = await this.ipfsClient.add(
         JSON.stringify(milestoneDetails.newMilestoneURIDetails),
@@ -486,7 +561,15 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         txHash,
       };
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `Quest Milestone update failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error updating Quest Milestone: ${err.message}`);
+      }
     }
   };
 
@@ -494,7 +577,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     questId: number,
     milestoneId: number,
   ): Promise<{ txHash: string }> => {
-    if (!this.kinoraQuestAddress) throw new Error();
+    if (!this.kinoraQuestAddress)
+      throw new Error("Set Kinora Quest Address before continuing.");
     try {
       const txHash = await this.kinoraQuestAddress.removeQuestMilestone(
         questId,
@@ -505,12 +589,21 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         txHash,
       };
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `Remove Quest Milestone failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error removing Quest Milestone: ${err.message}`);
+      }
     }
   };
 
   terminateQuest = async (questId: number): Promise<{ txHash: string }> => {
-    if (!this.kinoraQuestAddress) throw new Error();
+    if (!this.kinoraQuestAddress)
+      throw new Error("Set Kinora Quest Address before continuing.");
     try {
       const txHash = await this.kinoraQuestAddress.terminateQuest(questId);
 
@@ -518,16 +611,41 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         txHash,
       };
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `Terminate Quest failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error terminating Quest: ${err.message}`);
+      }
     }
   };
 
   userJoinQuest = async (questId: number): Promise<{ txHash: string }> => {
-    if (!this.kinoraQuestAddress.address) throw new Error();
-    if (!this.developerPKPPublicKey) throw new Error();
-    if (!this.currentUserPKP.ethAddress) throw new Error();
+    if (!this.kinoraQuestAddress.address)
+      throw new Error("Set Kinora Quest Address before continuing.");
+    if (!this.developerPKPPublicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.currentUserPKP.ethAddress)
+      throw new Error("Set user's PKP before continuing.");
 
     const joinCondition = await this.checkQuestMilestoneMetrics(questId);
+
+    if (!joinCondition) {
+      this.log(
+        LogCategory.ERROR,
+        `User failed to meet Quest Join Condition.`,
+        "Error authenticating user for Quest",
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error authenticating user for Quest`);
+      }
+
+      return;
+    }
 
     try {
       const tx = await createTxData(
@@ -539,7 +657,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         ChainIds[this.chain],
       );
 
-      const { txHash } = await litExecute(
+      const { txHash, error, message, litResponse } = await litExecute(
         this.polygonProvider,
         this.litNodeClient,
         tx,
@@ -547,12 +665,46 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         this.authSig ? this.authSig : await generateAuthSig(this.signer),
         this.developerPKPPublicKey as `0x04${string}`,
       );
+      if (error) {
+        this.log(
+          LogCategory.ERROR,
+          `User Join Quest failed on Broadcast.`,
+          message,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error user joining Quest and broadcasting: ${message}`,
+          );
+        }
+      } else {
+        this.log(
+          LogCategory.RESPONSE,
+          `User Joined Quest successfully. Lit Action Response.`,
+          litResponse,
+          new Date().toISOString(),
+        );
+        this.log(
+          LogCategory.BROADCAST,
+          `Broadcast on-chain.`,
+          txHash,
+          new Date().toISOString(),
+        );
+      }
 
       return {
         txHash,
       };
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `User Join Quest failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error user joining Quest: ${err.message}`);
+      }
     }
   };
 
@@ -560,14 +712,31 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     questId: number,
     milestoneId: number,
   ): Promise<{ txHash: string }> => {
-    if (!this.kinoraQuestAddress.address) throw new Error();
-    if (!this.developerPKPPublicKey) throw new Error();
-    if (!this.currentUserPKP.ethAddress) throw new Error();
+    if (!this.kinoraQuestAddress.address)
+      throw new Error("Set Kinora Quest Address before continuing.");
+    if (!this.developerPKPPublicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.currentUserPKP.ethAddress)
+      throw new Error("Set user's PKP before continuing.");
 
-    const joinCondition = await this.checkQuestMilestoneMetrics(
+    const completeCondition = await this.checkQuestMilestoneMetrics(
       questId,
       milestoneId,
     );
+
+    if (!completeCondition) {
+      this.log(
+        LogCategory.ERROR,
+        `User failed to meet Quest Join Condition.`,
+        "Error authenticating user for Quest",
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error authenticating user for Quest.`);
+      }
+
+      return;
+    }
 
     try {
       const tx = await createTxData(
@@ -579,7 +748,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         ChainIds[this.chain],
       );
 
-      const { txHash } = await litExecute(
+      const { txHash, error, message, litResponse } = await litExecute(
         this.polygonProvider,
         this.litNodeClient,
         tx,
@@ -588,9 +757,46 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         this.developerPKPPublicKey as `0x04${string}`,
       );
 
+      if (error) {
+        if (error) {
+          this.log(
+            LogCategory.ERROR,
+            `User Complete Milestone failed on Broadcast.`,
+            message,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error completing User Milestone and broadcasting: ${message}`,
+            );
+          }
+        }
+      } else {
+        this.log(
+          LogCategory.RESPONSE,
+          `User Completed Milestone successfully. Lit Action Response.`,
+          litResponse,
+          new Date().toISOString(),
+        );
+        this.log(
+          LogCategory.BROADCAST,
+          `Broadcast on-chain.`,
+          txHash,
+          new Date().toISOString(),
+        );
+      }
+
       return { txHash };
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `User completing milestone failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error completing user Milestone: ${err.message}`);
+      }
     }
   };
 
@@ -600,7 +806,8 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
     userPKPAddress: `0x${string}`,
     nodeproviderRPCURL?: string,
   ): Promise<{ txHash: string }> => {
-    if (!this.kinoraReward721Address) throw new Error();
+    if (!this.kinoraReward721Address)
+      throw new Error("Set Kinora ERC721 Reward Address before continuing.");
     try {
       let provider:
         | ethers.providers.Web3Provider
@@ -628,21 +835,98 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         milestoneId,
       );
 
+      this.log(
+        LogCategory.BROADCAST,
+        `Mint NFT Reward 721 on-chain.`,
+        txHash,
+        new Date().toISOString(),
+      );
+
       return {
         txHash,
       };
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `User minting ERC721 reward failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error minting ERC721 reward: ${err.message}`);
+      }
     }
   };
 
-  getQuestHistory = () => {
-    // quest history encrypted on chain and retrievable by authenticated user
+  getQuestHistory = async (): Promise<
+    {
+      questId: number;
+      questURIDetails: QuestURI;
+      questMilestoneDetails: MilestoneURI;
+      milestonesCompleted: number[];
+    }[]
+  > => {
+    if (!this.currentUserPKP.ethAddress)
+      throw new Error("Set user's PKP before continuing.");
+    if (!this.kinoraQuestAddress)
+      throw new Error("Set Kinora Quest Address before continuing.");
+    try {
+      const questsJoined = this.kinoraQuestAddress.getUserQuestsJoined(
+        this.currentUserPKP.ethAddress,
+      );
+
+      let questHistory: {
+        questId: number;
+        questURIDetails: QuestURI;
+        questMilestoneDetails: MilestoneURI;
+        milestonesCompleted: number[];
+      }[] = [];
+
+      const completedMilestonesPerQuest =
+        await this.kinoraQuestAddress.getUserMilestonesCompletedPerQuest(
+          this.currentUserPKP.ethAddress,
+        );
+
+      for (let i = 0; i < questsJoined.length; i++) {
+        const questDetailsURI =
+          await this.kinoraQuestAddress.getQuestURIDetails();
+        const getQuestMilestoneURIDetails =
+          await this.kinoraQuestAddress.getQuestMilestoneURIDetails();
+
+        questHistory.push({
+          questId: questsJoined[i],
+          questURIDetails: await JSON.parse(questDetailsURI),
+          questMilestoneDetails: await JSON.parse(getQuestMilestoneURIDetails),
+          milestonesCompleted: completedMilestonesPerQuest[i],
+        });
+      }
+
+      return questHistory;
+    } catch (err: any) {
+      this.log(
+        LogCategory.ERROR,
+        `Retrieve Quest history failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error retrieving Quest history: ${err.message}`);
+      }
+    }
   };
 
-  getSDKLogs = () => {};
+  getLogs = (category?: LogCategory): ILogEntry[] => {
+    const logsInOrder = [
+      ...this.logs.slice(this.logIndex),
+      ...this.logs.slice(0, this.logIndex),
+    ].filter((log) => log !== undefined);
 
-  getUserMetrics = () => {};
+    if (!category) {
+      return logsInOrder;
+    }
+
+    return logsInOrder.filter((log) => log.category === category);
+  };
 
   private handlePKPs = async (): Promise<IRelayPKP> => {
     try {
@@ -677,7 +961,15 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
 
       return res;
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `Mint of PKP failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error minting PKP: ${err.message}`);
+      }
     }
   };
 
@@ -692,7 +984,7 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         ChainIds[this.chain],
       );
 
-      const { txHash } = await litExecute(
+      const { txHash, message, error, litResponse } = await litExecute(
         this.polygonProvider,
         this.litNodeClient,
         tx,
@@ -701,44 +993,90 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         this.developerPKPPublicKey as `0x04${string}`,
       );
 
-      // log tx hash here!!
+      if (error) {
+        this.log(
+          LogCategory.ERROR,
+          `Store Auth on-chain failed on Broadcast.`,
+          message,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error storing auth on-chain and broadcasting: ${message}`,
+          );
+        }
+      } else {
+        this.log(
+          LogCategory.RESPONSE,
+          `Stored Auth on-chain successfully. Lit Action Response.`,
+          litResponse,
+          new Date().toISOString(),
+        );
+        this.log(
+          LogCategory.BROADCAST,
+          `Broadcast on-chain.`,
+          txHash,
+          new Date().toISOString(),
+        );
+      }
     } catch (err: any) {
-      // add in error logs aqui
+      this.log(
+        LogCategory.ERROR,
+        `Store PKP data on-chain failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error storing PKP data on-chain: ${err.message}`);
+      }
     }
   };
 
   private mintPkp = async (): Promise<IRelayPKP> => {
     // mint a new pkp
-    if (this.litProvider && this.authMethod) {
-      const txHash = await this.litProvider.mintPKPThroughRelayer(
-        this.authMethod,
+    try {
+      if (this.litProvider && this.authMethod) {
+        const txHash = await this.litProvider.mintPKPThroughRelayer(
+          this.authMethod,
+        );
+        const receipt = await this.chronicleProvider.getTransactionReceipt(
+          txHash,
+        );
+
+        if (receipt && receipt.logs) {
+          const parsedLogs = receipt.logs
+            .map((log) => {
+              try {
+                return this.pkpContract.interface.parseLog(log);
+              } catch (e) {
+                return null;
+              }
+            })
+            .filter((parsedLog) => parsedLog !== null);
+
+          const filteredLogs = parsedLogs.filter((parsedLog) => {
+            return parsedLog.name === "Transfer";
+          });
+
+          const tokenId = filteredLogs[0].args[2];
+          const publicKey = await this.pkpContract.getPubkey(tokenId);
+
+          return {
+            ethAddress: ethers.utils.computeAddress(publicKey as any),
+            publicKey: publicKey,
+            tokenId: tokenId.toHexString(),
+          };
+        }
+      }
+    } catch (err: any) {
+      this.log(
+        LogCategory.ERROR,
+        `Mint PKP failed.`,
+        err.message,
+        new Date().toISOString(),
       );
-      const receipt = await this.chronicleProvider.getTransactionReceipt(
-        txHash,
-      );
-
-      if (receipt && receipt.logs) {
-        const parsedLogs = receipt.logs
-          .map((log) => {
-            try {
-              return this.pkpContract.interface.parseLog(log);
-            } catch (e) {
-              return null;
-            }
-          })
-          .filter((parsedLog) => parsedLog !== null);
-
-        const filteredLogs = parsedLogs.filter((parsedLog) => {
-          return parsedLog.name === "Transfer";
-        });
-
-        const tokenId = filteredLogs[0].args[2];
-        const publicKey = await this.pkpContract.getPubkey(tokenId);
-        return {
-          ethAddress: ethers.utils.computeAddress(publicKey as any),
-          publicKey: publicKey,
-          tokenId: tokenId.toHexString(),
-        };
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error minting new PKP: ${err.message}`);
       }
     }
   };
@@ -759,54 +1097,241 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
           }
         }
       }
-    } catch (error) {
-      console.error(error);
+    } catch (err: any) {
+      this.log(
+        LogCategory.ERROR,
+        `Fetch PKP failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error fetching PKP: ${err.message}`);
+      }
     }
   };
 
   private sendMetricsOnChain = async (): Promise<void> => {
-    if (!this.developerPKPPublicKey) throw new Error();
-    if (!this.currentUserPKP) throw new Error();
-    if (!this.kinoraMetricsAddress) throw new Error();
+    if (!this.developerPKPPublicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.currentUserPKP)
+      throw new Error("Set user's PKP before continuing.");
+    if (!this.kinoraMetricsAddress)
+      throw new Error("Set Kinora Metrics Address before continuing.");
+    try {
+      let userMetrics: UserMetrics;
 
-    let userMetrics: UserMetrics;
-
-    let lensValues: {
-      mirrorLens: boolean;
-      likeLens: boolean;
-      collectLens: boolean;
-      commentLens: boolean;
-      bookmarkLens: boolean;
-      notInterestedLens: boolean;
-    } = {
-      mirrorLens: false,
-      likeLens: false,
-      collectLens: false,
-      commentLens: false,
-      bookmarkLens: false,
-      notInterestedLens: false,
-    };
-
-    if (
-      await this.kinoraMetricsAddress.getUserPlaybackIdByPlaybackId(
-        this.currentUserPKP.ethAddress,
-        this.livepeerPlayer.props.playbackId,
-      )
-    ) {
-      let oldMetrics: string =
-        await this.kinoraMetricsAddress.getUserMetricsJSONByPlaybackId(
-          this.currentUserPKP.ethAddress,
-          this.livepeerPlayer.props.playbackId,
-        );
+      let lensValues: {
+        mirrorLens: boolean;
+        likeLens: boolean;
+        bookmarkLens: boolean;
+        notInterestedLens: boolean;
+      } = {
+        mirrorLens: false,
+        likeLens: false,
+        bookmarkLens: false,
+        notInterestedLens: false,
+      };
 
       if (
-        await this.kinoraMetricsAddress.getUserEncryptedByPlaybackId(
+        await this.kinoraMetricsAddress.getUserPlaybackIdByPlaybackId(
           this.currentUserPKP.ethAddress,
           this.livepeerPlayer.props.playbackId,
         )
       ) {
-        oldMetrics = await decryptMetrics(
-          await JSON.parse(oldMetrics),
+        let oldMetrics: string =
+          await this.kinoraMetricsAddress.getUserMetricsJSONByPlaybackId(
+            this.currentUserPKP.ethAddress,
+            this.livepeerPlayer.props.playbackId,
+          );
+
+        if (
+          await this.kinoraMetricsAddress.getUserEncryptedByPlaybackId(
+            this.currentUserPKP.ethAddress,
+            this.livepeerPlayer.props.playbackId,
+          )
+        ) {
+          oldMetrics = await decryptMetrics(
+            await JSON.parse(oldMetrics),
+            ethers.utils.computeAddress(
+              this.developerPKPPublicKey,
+            ) as `0x${string}`,
+            this.currentUserPKP.ethAddress as `0x${string}`,
+            this.userPKPAuthSig,
+            this.litNodeClient,
+          );
+        }
+
+        const oldMetricsValues: UserMetrics = await JSON.parse(oldMetrics);
+
+        if (this.userProfileId) {
+          const { data } = await getLensValues(
+            this.lensPubId,
+            this.userProfileId,
+          );
+
+          lensValues = {
+            mirrorLens: data?.publication?.mirrors?.length > 0 ? true : false,
+            likeLens:
+              data?.publication[0]?.reaction === "UPVOTE" ? true : false,
+            bookmarkLens: data?.publication?.bookmarked,
+            notInterestedLens: data?.publication?.notInterested,
+          };
+        }
+
+        userMetrics = {
+          totalDuration:
+            this.metrics.getTotalDuration() + oldMetricsValues.totalDuration,
+          numberOfImpressions:
+            this.metrics.getNumberOfImpressions() +
+            oldMetricsValues.numberOfImpressions,
+          numberOfClicks:
+            this.metrics.getNumberOfClicks() + oldMetricsValues.numberOfClicks,
+          totalIdleTime:
+            this.metrics.getTotalIdleTime() + oldMetricsValues.totalIdleTime,
+          numberOfRecordings:
+            this.metrics.getNumberOfRecordings() +
+            oldMetricsValues.numberOfRecordings,
+          numberOfFailedTasks:
+            this.metrics.getNumberofFailedTasks() +
+            oldMetricsValues.numberOfFailedTasks,
+          numberOfMultistreams:
+            this.metrics.getNumberOfMultistreams() +
+            oldMetricsValues.numberOfMultistreams,
+          numberOfAssets:
+            this.metrics.getNumberOfAssets() + oldMetricsValues.numberOfAssets,
+          numberOfUpdates:
+            this.metrics.getNumberOfUpdates() +
+            oldMetricsValues.numberOfUpdates,
+          avd:
+            oldMetricsValues.numberOfImpressions +
+              this.metrics.getNumberOfImpressions() !==
+            0
+              ? (oldMetricsValues.avd * oldMetricsValues.numberOfImpressions +
+                  this.metrics.getTotalDuration()) /
+                (oldMetricsValues.numberOfImpressions +
+                  this.metrics.getNumberOfImpressions())
+              : 0,
+          ctr:
+            oldMetricsValues.numberOfImpressions +
+              this.metrics.getNumberOfImpressions() !==
+            0
+              ? (oldMetricsValues.ctr * oldMetricsValues.numberOfImpressions +
+                  this.metrics.getNumberOfClicks() * 100) /
+                (oldMetricsValues.numberOfImpressions +
+                  this.metrics.getNumberOfImpressions())
+              : 0,
+          assetEngagement:
+            oldMetricsValues.numberOfUpdates +
+              this.metrics.getNumberOfUpdates() !==
+            0
+              ? (oldMetricsValues.assetEngagement *
+                  oldMetricsValues.numberOfUpdates +
+                  this.metrics.getNumberOfAssets()) /
+                (oldMetricsValues.numberOfUpdates +
+                  this.metrics.getNumberOfUpdates())
+              : 0,
+          userEngagementRatio:
+            oldMetricsValues.totalDuration +
+              oldMetricsValues.totalIdleTime +
+              this.metrics.getTotalDuration() +
+              this.metrics.getTotalIdleTime() !==
+            0
+              ? (oldMetricsValues.totalDuration +
+                  this.metrics.getTotalDuration()) /
+                (oldMetricsValues.totalDuration +
+                  oldMetricsValues.totalIdleTime +
+                  this.metrics.getTotalDuration() +
+                  this.metrics.getTotalIdleTime())
+              : 0,
+          multiPlaybackUsageRate:
+            oldMetricsValues.numberOfImpressions +
+              this.metrics.getNumberOfImpressions() !==
+            0
+              ? (oldMetricsValues.numberOfMultistreams *
+                  oldMetricsValues.numberOfImpressions +
+                  this.metrics.getMultistreamUsageRate()) /
+                (oldMetricsValues.numberOfImpressions +
+                  this.metrics.getNumberOfImpressions())
+              : 0,
+          taskFailureRate:
+            oldMetricsValues.numberOfFailedTasks +
+              oldMetricsValues.numberOfUpdates +
+              this.metrics.getNumberofFailedTasks() +
+              this.metrics.getNumberOfUpdates() !==
+            0
+              ? (oldMetricsValues.numberOfFailedTasks +
+                  this.metrics.getNumberofFailedTasks()) /
+                (oldMetricsValues.numberOfFailedTasks +
+                  oldMetricsValues.numberOfUpdates +
+                  this.metrics.getNumberofFailedTasks() +
+                  this.metrics.getNumberOfUpdates())
+              : 0,
+          recordingPerSession:
+            oldMetricsValues.numberOfImpressions +
+              this.metrics.getNumberOfImpressions() !==
+            0
+              ? (oldMetricsValues.numberOfRecordings +
+                  this.metrics.getNumberOfRecordings()) /
+                (oldMetricsValues.numberOfImpressions +
+                  this.metrics.getNumberOfImpressions())
+              : 0,
+          mirrorLens: lensValues.mirrorLens,
+          likeLens: lensValues.likeLens,
+          bookmarkLens: lensValues.bookmarkLens,
+          notInterestedLens: lensValues.notInterestedLens,
+        };
+      } else {
+        if (this.userProfileId) {
+          const { data } = await getLensValues(
+            this.lensPubId,
+            this.userProfileId,
+          );
+
+          lensValues = {
+            mirrorLens: data?.publication?.mirrors?.length > 0 ? true : false,
+            likeLens:
+              data?.publication[0]?.reaction === "UPVOTE" ? true : false,
+            bookmarkLens: data?.publication?.bookmarked,
+            notInterestedLens: data?.publication?.notInterested,
+          };
+        }
+
+        userMetrics = {
+          totalDuration: this.metrics.getTotalDuration(),
+          numberOfImpressions: this.metrics.getNumberOfImpressions(),
+          numberOfClicks: this.metrics.getNumberOfClicks(),
+          totalIdleTime: this.metrics.getTotalIdleTime(),
+          numberOfRecordings: this.metrics.getNumberOfRecordings(),
+          numberOfFailedTasks: this.metrics.getNumberofFailedTasks(),
+          numberOfMultistreams: this.metrics.getNumberOfMultistreams(),
+          numberOfAssets: this.metrics.getNumberOfAssets(),
+          numberOfUpdates: this.metrics.getNumberOfUpdates(),
+          avd: this.metrics.getAVD(),
+          ctr: this.metrics.getCTR(),
+          assetEngagement: this.metrics.getAssetEngagement(),
+          userEngagementRatio: this.metrics.getUserEngagementRatio(),
+          multiPlaybackUsageRate: this.metrics.getMultistreamUsageRate(),
+          taskFailureRate: this.metrics.getTaskFailureRate(),
+          recordingPerSession: this.metrics.getRecordingPerSession(),
+          mirrorLens: lensValues.mirrorLens,
+          likeLens: lensValues.likeLens,
+          bookmarkLens: lensValues.bookmarkLens,
+          notInterestedLens: lensValues.notInterestedLens,
+        };
+      }
+
+      let payload: string = JSON.stringify(userMetrics);
+
+      this.log(
+        LogCategory.METRICS,
+        `User metrics updated.`,
+        payload,
+        new Date().toISOString(),
+      );
+
+      if (this.encryptUserMetrics) {
+        payload = await encryptMetrics(
+          userMetrics,
           ethers.utils.computeAddress(
             this.developerPKPPublicKey,
           ) as `0x${string}`,
@@ -816,210 +1341,68 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
         );
       }
 
-      const oldMetricsValues: UserMetrics = await JSON.parse(oldMetrics);
-
-      if (this.userProfileId) {
-        const { data } = await getLensValues(
-          this.lensPubId,
-          this.userProfileId,
-        );
-
-        lensValues = {
-          mirrorLens: data?.publication?.mirrors?.length > 0 ? true : false,
-          likeLens: data?.publication[0]?.reaction === "UPVOTE" ? true : false,
-          collectLens,
-          commentLens,
-          bookmarkLens: data?.publication?.bookmarked,
-          notInterestedLens: data?.publication?.notInterested,
-        };
-      }
-
-      userMetrics = {
-        totalDuration:
-          this.metrics.getTotalDuration() + oldMetricsValues.totalDuration,
-        numberOfImpressions:
-          this.metrics.getNumberOfImpressions() +
-          oldMetricsValues.numberOfImpressions,
-        numberOfClicks:
-          this.metrics.getNumberOfClicks() + oldMetricsValues.numberOfClicks,
-        totalIdleTime:
-          this.metrics.getTotalIdleTime() + oldMetricsValues.totalIdleTime,
-        numberOfRecordings:
-          this.metrics.getNumberOfRecordings() +
-          oldMetricsValues.numberOfRecordings,
-        numberOfFailedTasks:
-          this.metrics.getNumberofFailedTasks() +
-          oldMetricsValues.numberOfFailedTasks,
-        numberOfMultistreams:
-          this.metrics.getNumberOfMultistreams() +
-          oldMetricsValues.numberOfMultistreams,
-        numberOfAssets:
-          this.metrics.getNumberOfAssets() + oldMetricsValues.numberOfAssets,
-        numberOfUpdates:
-          this.metrics.getNumberOfUpdates() + oldMetricsValues.numberOfUpdates,
-        avd:
-          oldMetricsValues.numberOfImpressions +
-            this.metrics.getNumberOfImpressions() !==
-          0
-            ? (oldMetricsValues.avd * oldMetricsValues.numberOfImpressions +
-                this.metrics.getTotalDuration()) /
-              (oldMetricsValues.numberOfImpressions +
-                this.metrics.getNumberOfImpressions())
-            : 0,
-        ctr:
-          oldMetricsValues.numberOfImpressions +
-            this.metrics.getNumberOfImpressions() !==
-          0
-            ? (oldMetricsValues.ctr * oldMetricsValues.numberOfImpressions +
-                this.metrics.getNumberOfClicks() * 100) /
-              (oldMetricsValues.numberOfImpressions +
-                this.metrics.getNumberOfImpressions())
-            : 0,
-        assetEngagement:
-          oldMetricsValues.numberOfUpdates +
-            this.metrics.getNumberOfUpdates() !==
-          0
-            ? (oldMetricsValues.assetEngagement *
-                oldMetricsValues.numberOfUpdates +
-                this.metrics.getNumberOfAssets()) /
-              (oldMetricsValues.numberOfUpdates +
-                this.metrics.getNumberOfUpdates())
-            : 0,
-        userEngagementRatio:
-          oldMetricsValues.totalDuration +
-            oldMetricsValues.totalIdleTime +
-            this.metrics.getTotalDuration() +
-            this.metrics.getTotalIdleTime() !==
-          0
-            ? (oldMetricsValues.totalDuration +
-                this.metrics.getTotalDuration()) /
-              (oldMetricsValues.totalDuration +
-                oldMetricsValues.totalIdleTime +
-                this.metrics.getTotalDuration() +
-                this.metrics.getTotalIdleTime())
-            : 0,
-        multiPlaybackUsageRate:
-          oldMetricsValues.numberOfImpressions +
-            this.metrics.getNumberOfImpressions() !==
-          0
-            ? (oldMetricsValues.numberOfMultistreams *
-                oldMetricsValues.numberOfImpressions +
-                this.metrics.getMultistreamUsageRate()) /
-              (oldMetricsValues.numberOfImpressions +
-                this.metrics.getNumberOfImpressions())
-            : 0,
-        taskFailureRate:
-          oldMetricsValues.numberOfFailedTasks +
-            oldMetricsValues.numberOfUpdates +
-            this.metrics.getNumberofFailedTasks() +
-            this.metrics.getNumberOfUpdates() !==
-          0
-            ? (oldMetricsValues.numberOfFailedTasks +
-                this.metrics.getNumberofFailedTasks()) /
-              (oldMetricsValues.numberOfFailedTasks +
-                oldMetricsValues.numberOfUpdates +
-                this.metrics.getNumberofFailedTasks() +
-                this.metrics.getNumberOfUpdates())
-            : 0,
-        recordingPerSession:
-          oldMetricsValues.numberOfImpressions +
-            this.metrics.getNumberOfImpressions() !==
-          0
-            ? (oldMetricsValues.numberOfRecordings +
-                this.metrics.getNumberOfRecordings()) /
-              (oldMetricsValues.numberOfImpressions +
-                this.metrics.getNumberOfImpressions())
-            : 0,
-        mirrorLens: lensValues.mirrorLens,
-        likeLens: lensValues.likeLens,
-        collectLens: lensValues.collectLens,
-        commentLens: lensValues.commentLens,
-        bookmarkLens: lensValues.bookmarkLens,
-        notInterestedLens: lensValues.notInterestedLens,
-      };
-    } else {
-      if (this.userProfileId) {
-        const { data } = await getLensValues(
-          this.lensPubId,
-          this.userProfileId,
-        );
-
-        lensValues = {
-          mirrorLens: data?.publication?.mirrors?.length > 0 ? true : false,
-          likeLens: data?.publication[0]?.reaction === "UPVOTE" ? true : false,
-          collectLens,
-          commentLens,
-          bookmarkLens: data?.publication?.bookmarked,
-          notInterestedLens: data?.publication?.notInterested,
-        };
-      }
-
-      userMetrics = {
-        totalDuration: this.metrics.getTotalDuration(),
-        numberOfImpressions: this.metrics.getNumberOfImpressions(),
-        numberOfClicks: this.metrics.getNumberOfClicks(),
-        totalIdleTime: this.metrics.getTotalIdleTime(),
-        numberOfRecordings: this.metrics.getNumberOfRecordings(),
-        numberOfFailedTasks: this.metrics.getNumberofFailedTasks(),
-        numberOfMultistreams: this.metrics.getNumberOfMultistreams(),
-        numberOfAssets: this.metrics.getNumberOfAssets(),
-        numberOfUpdates: this.metrics.getNumberOfUpdates(),
-        avd: this.metrics.getAVD(),
-        ctr: this.metrics.getCTR(),
-        assetEngagement: this.metrics.getAssetEngagement(),
-        userEngagementRatio: this.metrics.getUserEngagementRatio(),
-        multiPlaybackUsageRate: this.metrics.getMultistreamUsageRate(),
-        taskFailureRate: this.metrics.getTaskFailureRate(),
-        recordingPerSession: this.metrics.getRecordingPerSession(),
-        mirrorLens: lensValues.mirrorLens,
-        likeLens: lensValues.likeLens,
-        collectLens: lensValues.collectLens,
-        commentLens: lensValues.commentLens,
-        bookmarkLens: lensValues.bookmarkLens,
-        notInterestedLens: lensValues.notInterestedLens,
-      };
-    }
-
-    let payload: string = JSON.stringify(userMetrics);
-
-    if (this.encryptUserMetrics) {
-      payload = await encryptMetrics(
-        userMetrics,
-        ethers.utils.computeAddress(
-          this.developerPKPPublicKey,
-        ) as `0x${string}`,
-        this.currentUserPKP.ethAddress as `0x${string}`,
-        this.userPKPAuthSig,
-        this.litNodeClient,
+      const tx = await createTxData(
+        this.polygonProvider,
+        KinoraMetricsAbi,
+        this.kinoraMetricsAddress.address,
+        "addUserMetrics",
+        [
+          this.currentUserPKP.ethAddress,
+          {
+            playbackId: this.livepeerPlayer.props.playbackId,
+            metricJSON: payload,
+            encrypted: this.encryptUserMetrics,
+          },
+        ],
+        ChainIds[this.chain],
       );
+
+      const { txHash, error, message, litResponse } = await litExecute(
+        this.polygonProvider,
+        this.litNodeClient,
+        tx,
+        "addUserMetrics",
+        this.authSig ? this.authSig : await generateAuthSig(this.signer),
+        this.developerPKPPublicKey,
+      );
+
+      if (error) {
+        this.log(
+          LogCategory.ERROR,
+          `User add Metrics on-chain failed on Broadcast.`,
+          message,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error adding User Metrics and broadcasting: ${message}`,
+          );
+        }
+      } else {
+        this.log(
+          LogCategory.RESPONSE,
+          `User Metrics added successfully. Lit Action Response.`,
+          litResponse,
+          new Date().toISOString(),
+        );
+        this.log(
+          LogCategory.BROADCAST,
+          `Broadcast on-chain.`,
+          txHash,
+          new Date().toISOString(),
+        );
+      }
+    } catch (err: any) {
+      this.log(
+        LogCategory.ERROR,
+        `Send metrics on-chain failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error sending metrics on-chain: ${err.message}`);
+      }
     }
-
-    const tx = await createTxData(
-      this.polygonProvider,
-      KinoraMetricsAbi,
-      this.kinoraMetricsAddress.address,
-      "addUserMetrics",
-      [
-        this.currentUserPKP.ethAddress,
-        {
-          playbackId: this.livepeerPlayer.props.playbackId,
-          metricJSON: payload,
-          encrypted: this.encryptUserMetrics,
-        },
-      ],
-      ChainIds[this.chain],
-    );
-
-    const { txHash } = await litExecute(
-      this.polygonProvider,
-      this.litNodeClient,
-      tx,
-      "addUserMetrics",
-      this.authSig ? this.authSig : await generateAuthSig(this.signer),
-      this.developerPKPPublicKey,
-    );
-
-    // log tx hash here!!
   };
 
   private checkQuestMilestoneMetrics = async (
@@ -1099,7 +1482,15 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
 
       return userEligible;
     } catch (err: any) {
-      // log error aqui
+      this.log(
+        LogCategory.ERROR,
+        `Check Quest metrics failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error checking Quest metrics: ${err.message}`);
+      }
     }
   };
 
@@ -1137,5 +1528,27 @@ export class Sequence<TPlaybackPolicyObject extends object, TSlice> {
       }
     }
     return true;
+  };
+
+  private log = (
+    category: LogCategory,
+    message: string,
+    responseObject: string,
+    isoDate: string,
+  ) => {
+    if (typeof responseObject === "object") {
+      responseObject = JSON.stringify(responseObject);
+    }
+
+    this.logs[this.logIndex] = { category, message, responseObject, isoDate };
+    this.logIndex = (this.logIndex + 1) % this.logSize;
+    this.emit(
+      "log",
+      JSON.stringify({
+        message,
+        responseObject,
+        isoDate,
+      }),
+    );
   };
 }
