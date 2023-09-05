@@ -85,8 +85,6 @@ export interface UserMetrics {
   numberOfUpdates: number;
   mirrorLens: boolean;
   likeLens: boolean;
-  collectLens: boolean;
-  commentLens: boolean;
   bookmarkLens: boolean;
   notInterestedLens: boolean;
 }
@@ -256,18 +254,6 @@ export interface QuestEligibility {
         operator: "or" | "and";
       }
     | undefined;
-  collectLens:
-    | {
-        boolValue: boolean;
-        operator: "or" | "and";
-      }
-    | undefined;
-  commentLens:
-    | {
-        boolValue: boolean;
-        operator: "or" | "and";
-      }
-    | undefined;
   bookmarkLens:
     | {
         boolValue: boolean;
@@ -280,4 +266,19 @@ export interface QuestEligibility {
         operator: "or" | "and";
       }
     | undefined;
+}
+
+export enum LogCategory {
+  ERROR = 0,
+  RESPONSE = 1,
+  QUEST = 2,
+  METRICS = 3,
+  BROADCAST = 4,
+}
+
+export interface ILogEntry {
+  category: LogCategory;
+  message: string;
+  responseObject: string;
+  isoDate: string
 }
