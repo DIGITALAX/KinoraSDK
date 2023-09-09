@@ -9,4 +9,6 @@ export const LIT_RPC: string = "https://chain-rpc.litprotocol.com/http";
 
 export const BASE_URL: string = "https://api.lens.dev";
 
-export const INFURA_GATEWAY: string = "https://chromadin.infura-ipfs.io/"
+export const INFURA_GATEWAY: string = "https://chromadin.infura-ipfs.io/";
+
+export const ADD_USER_LIT_ACTION_HASH: string = "";
