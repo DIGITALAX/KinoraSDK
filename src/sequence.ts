@@ -28,6 +28,7 @@ import {
   CHRONICLE_PKP_CONTRACT,
   CHRONICLE_PKP_PERMISSIONS_CONTRACT,
   INFURA_GATEWAY,
+  ADD_USER_LIT_ACTION_HASH,
 } from "./constants";
 import KinoraPKPDBAbi from "./abis/KinoraPKPDB.json";
 import KinoraFactoryAbi from "./abis/KinoraFactory.json";
@@ -51,6 +52,7 @@ import {
   getLitActionCodeForJoinQuest,
   getLitActionCodeForMilestoneCompletion,
   getLitActionCodeForAddUserMetrics,
+  removeLitAction,
 } from "./utils/lit-protocol";
 import { EventEmitter } from "events";
 import { JsonRpcProvider } from "@ethersproject/providers";
@@ -63,6 +65,7 @@ export class Sequence<
   private livepeerPlayer: LivepeerPlayer<TPlaybackPolicyObject, TSlice>;
   private metrics: Metrics;
   private currentUserPKP: IRelayPKP;
+  private currentUserPKPWallet: PKPEthersWallet;
   private providerType: ProviderType;
   private litProvider: LitProvider;
   private polygonProvider: JsonRpcProvider;
@@ -300,9 +303,97 @@ export class Sequence<
     try {
       this.multihashDevKey = generateSecureRandomKey();
 
-      // update smart contracts here
+      const questCount = await this.kinoraQuestAddress.getTotalQuestCount();
 
-      // need to add new action and remove old action
+      let newJoinHashes: string[] = [];
+      let newCompletionHashes: string[] = [];
+
+      for (let i = 0; i < questCount; i++) {
+        const questURI = await this.kinoraQuestAddress.getQuestURIDetails(
+          i + 1,
+        );
+        const oldJoinHashBytes = await this.kinoraQuestAddress.getQuestJoinHash(
+          i + 1,
+        );
+
+        const response = await axios.get(`${INFURA_GATEWAY}/ipfs/${questURI}`);
+
+        const joinCondition = (await JSON.parse(response.data)).joinCondition;
+
+        const newJoinHash = getBytesFromMultihash(
+          joinCondition + this.multihashDevKey,
+        );
+
+        newJoinHashes.push(newJoinHash);
+
+        const {
+          error: removeError,
+          message: removeMessage,
+          txHash: removeTx,
+        } = await removeLitAction(
+          this.pkpPermissionsContract,
+          this.developerPKPData.tokenId,
+          oldJoinHashBytes,
+        );
+
+        const {
+          error,
+          message,
+          txHash: assignTx,
+        } = await assignLitAction(
+          this.pkpPermissionsContract,
+          this.developerPKPData.tokenId,
+          newJoinHash,
+        );
+
+        for (let j = 0; ; j++) {
+          const milestoneURI =
+            await this.kinoraQuestAddress.getQuestMilestoneURIDetails(j + 1);
+
+          const response = await axios.get(
+            `${INFURA_GATEWAY}/ipfs/${milestoneURI}`,
+          );
+
+          const completionCondition = (await JSON.parse(response.data))
+            .completionCondition;
+
+          const newMilestoneHash = getBytesFromMultihash(
+            completionCondition + this.multihashDevKey,
+          );
+
+          newCompletionHashes.push(newMilestoneHash);
+
+          const oldCompletionHashBytes =
+            await this.kinoraQuestAddress.getQuestMilestoneCompletionHash(
+              i + 1,
+              j + 1,
+            );
+          const {
+            error: removeError,
+            message: removeMessage,
+            txHash: removeTx,
+          } = await removeLitAction(
+            this.pkpPermissionsContract,
+            this.developerPKPData.tokenId,
+            oldCompletionHashBytes,
+          );
+
+          const {
+            error,
+            message,
+            txHash: assignTx,
+          } = await assignLitAction(
+            this.pkpPermissionsContract,
+            this.developerPKPData.tokenId,
+            newMilestoneHash,
+          );
+        }
+      }
+
+      await this.kinoraQuestAddress.updateAllJoinHashes(newJoinHashes);
+      await this.kinoraQuestAddress.updateAllCompletionHashes(
+        newCompletionHashes,
+      );
 
       return {
         multihashDevKey: this.multihashDevKey,
@@ -505,7 +596,6 @@ export class Sequence<
 
       const txHashKinora = await this.kinoraQuestAddress.instantiateNewQuest(
         "ipfs://" + uri,
-        getBytesFromMultihash(litActionHash),
         questInputs.maxParticipantCount,
       );
 
@@ -520,8 +610,9 @@ export class Sequence<
         const uri = added.path;
 
         const uriHash = getBytesFromMultihash(
-          JSON.stringify(questInputs.milestones[i].uriDetails) +
-            this.multihashDevKey,
+          JSON.stringify(
+            questInputs.milestones[i].uriDetails.completionCondition,
+          ) + this.multihashDevKey,
         );
 
         const litAction = getLitActionCodeForMilestoneCompletion(
@@ -558,7 +649,6 @@ export class Sequence<
         await this.kinoraQuestAddress.addQuestMilestone(
           questInputs.milestones[i].reward,
           "ipfs://" + uri,
-          getBytesFromMultihash(litActionHash),
           questId,
           questInputs.milestones[i].numberOfPoints,
         );
@@ -615,7 +705,8 @@ export class Sequence<
         const uri = added.path;
 
         const uriHash = getBytesFromMultihash(
-          JSON.stringify(questMilestones[i].uriDetails) + this.multihashDevKey,
+          JSON.stringify(questMilestones[i].uriDetails.completionCondition) +
+            this.multihashDevKey,
         );
 
         const litAction = getLitActionCodeForMilestoneCompletion(
@@ -656,7 +747,6 @@ export class Sequence<
         const txHash = await this.kinoraQuestAddress.addQuestMilestone(
           questMilestones[i].reward,
           "ipfs://" + uri,
-          getBytesFromMultihash(litActionHash),
           questId,
           questMilestones[i].numberOfPoints,
         );
@@ -704,6 +794,55 @@ export class Sequence<
       );
       const uri = added.path;
 
+      const uriHash = getBytesFromMultihash(
+        JSON.stringify(questDetails.newURIDetails.joinCondition) +
+          this.multihashDevKey,
+      );
+
+      const litAction = getLitActionCodeForJoinQuest(
+        uriHash,
+        this.kinoraQuestAddress.address,
+      );
+
+      const litActionHash = (await this.ipfsClient.add(litAction)).path;
+
+      const oldJoinHashBytes = await this.kinoraQuestAddress.getQuestJoinHash(
+        questDetails.questId,
+      );
+
+      const {
+        error: removeError,
+        message: removeMessage,
+        txHash: removeTx,
+      } = await removeLitAction(
+        this.pkpPermissionsContract,
+        this.developerPKPData.tokenId,
+        oldJoinHashBytes,
+      );
+
+      const {
+        error,
+        message,
+        txHash: assignTx,
+      } = await assignLitAction(
+        this.pkpPermissionsContract,
+        this.developerPKPData.tokenId,
+        getBytesFromMultihash(litActionHash),
+      );
+
+      if (error) {
+        this.log(
+          LogCategory.ERROR,
+          `Assign Join Quest Lit Action failed.`,
+          message,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(`Error assigning Join Quest Lit Action: ${message}`);
+        }
+        return;
+      }
+
       let newMilestones: Milestone[] = [];
 
       for (let i = 0; i < questDetails.newMilestones.length; i++) {
@@ -711,6 +850,55 @@ export class Sequence<
           JSON.stringify(questDetails.newMilestones[i].uriDetails),
         );
         const uri = added.path;
+
+        const uriHash = getBytesFromMultihash(
+          JSON.stringify(
+            questDetails.newMilestones[i].uriDetails.completionCondition,
+          ) + this.multihashDevKey,
+        );
+
+        const litAction = getLitActionCodeForMilestoneCompletion(
+          uriHash,
+          this.kinoraQuestAddress.address,
+        );
+
+        const litActionHash = (await this.ipfsClient.add(litAction)).path;
+
+        const {
+          error,
+          message,
+          txHash: addMilestoneTx,
+        } = await assignLitAction(
+          this.pkpPermissionsContract,
+          this.developerPKPData.tokenId,
+          getBytesFromMultihash(litActionHash),
+        );
+
+        const oldLitActionBytes =
+          await this.kinoraQuestAddress.getQuestMilestoneCompletionHash(
+            questDetails.questId,
+            i + 1,
+          );
+
+        const {
+          error: removeError,
+          message: removeMessage,
+          txHash: removeTx,
+        } = await removeLitAction(
+          this.pkpPermissionsContract,
+          this.developerPKPData.tokenId,
+          oldLitActionBytes,
+        );
+
+        const {
+          error: assignError,
+          message: assignMessage,
+          txHash,
+        } = await assignLitAction(
+          this.pkpPermissionsContract,
+          this.developerPKPData.tokenId,
+          getBytesFromMultihash(litActionHash),
+        );
 
         newMilestones.push({
           ...questDetails.newMilestones[i],
@@ -802,11 +990,51 @@ export class Sequence<
       );
       const uri = added.path;
 
+      const uriHash = getBytesFromMultihash(
+        JSON.stringify(
+          milestoneDetails.newMilestoneURIDetails.completionCondition,
+        ) + this.multihashDevKey,
+      );
+
+      const litAction = getLitActionCodeForMilestoneCompletion(
+        uriHash,
+        this.kinoraQuestAddress.address,
+      );
+
+      const litActionHash = (await this.ipfsClient.add(litAction)).path;
+
+      const oldLitActionBytes =
+        await this.kinoraQuestAddress.getQuestMilestoneCompletionHash(
+          milestoneDetails.questId,
+          milestoneDetails.milestoneId,
+        );
+
+      const {
+        error: removeError,
+        message: removeMessage,
+        txHash: removeTx,
+      } = await removeLitAction(
+        this.pkpPermissionsContract,
+        this.developerPKPData.tokenId,
+        oldLitActionBytes,
+      );
+
+      const {
+        error: assignError,
+        message: assignMessage,
+        txHash: assignTx,
+      } = await assignLitAction(
+        this.pkpPermissionsContract,
+        this.developerPKPData.tokenId,
+        getBytesFromMultihash(litActionHash),
+      );
+
       const txHash = await this.kinoraQuestAddress.updateMilestoneDetails(
         milestoneDetails.newERC721TokenIds,
         "ipfs://" + uri,
         milestoneDetails.newRewardType,
         milestoneDetails.newTokenAddress,
+        uriHash,
         milestoneDetails.questId,
         milestoneDetails.milestoneId,
         milestoneDetails.newNumberOfPoints,
@@ -848,6 +1076,22 @@ export class Sequence<
         milestoneId,
       );
 
+      const oldLitActionBytes =
+        await this.kinoraQuestAddress.getQuestMilestoneCompletionHash(
+          questId,
+          milestoneId,
+        );
+
+      const {
+        error: removeError,
+        message: removeMessage,
+        txHash: removeTx,
+      } = await removeLitAction(
+        this.pkpPermissionsContract,
+        this.developerPKPData.tokenId,
+        oldLitActionBytes,
+      );
+
       return {
         txHash,
       };
@@ -875,6 +1119,20 @@ export class Sequence<
       throw new Error("Set multi hash dev key before continuing.");
     try {
       const txHash = await this.kinoraQuestAddress.terminateQuest(questId);
+
+      const oldLitActionBytes = await this.kinoraQuestAddress.getQuestJoinHash(
+        questId,
+      );
+
+      const {
+        error: removeError,
+        message: removeMessage,
+        txHash: removeTx,
+      } = await removeLitAction(
+        this.pkpPermissionsContract,
+        this.developerPKPData.tokenId,
+        oldLitActionBytes,
+      );
 
       return {
         txHash,
@@ -1190,6 +1448,7 @@ export class Sequence<
     questId: number,
     milestoneId: number,
     userPKPAddress: `0x${string}`,
+    mintToAddress: `0x${string}`,
     nodeproviderRPCURL?: string,
   ): Promise<{ txHash: string }> => {
     if (!this.kinoraReward721Address)
@@ -1208,18 +1467,26 @@ export class Sequence<
         provider = new ethers.providers.JsonRpcProvider(nodeproviderRPCURL);
       }
 
-      const signer = provider.getSigner();
-      const rewardContract = new ethers.Contract(
-        this.kinoraReward721Address,
+      const { error, message, generatedTxData } = await createTxData(
+        provider,
         KinoraReward721Abi,
-        signer,
+        "mintRewardNFT",
+        [userPKPAddress, questId, milestoneId],
       );
 
-      const txHash = await rewardContract.mintRewardNFT(
-        userPKPAddress,
-        questId,
-        milestoneId,
-      );
+      const signedTx = await this.currentUserPKPWallet.signTransaction({
+        from: this.kinoraReward721Address,
+        to: mintToAddress,
+        gasLimit: generatedTxData.gasLimit,
+        maxFeePerGas: generatedTxData.maxFeePerGas,
+        maxPriorityFeePerGas: generatedTxData.maxPriorityFeePerGas,
+        data: generatedTxData.data as any,
+        nonce: generatedTxData.nonce,
+        value: ethers.BigNumber.from(0),
+        chainId: 137,
+      });
+
+      const txHash = await this.currentUserPKPWallet.sendTransaction(signedTx);
 
       this.log(
         LogCategory.BROADCAST,
@@ -1274,14 +1541,18 @@ export class Sequence<
         );
 
       for (let i = 0; i < questsJoined.length; i++) {
-        const questDetailsURI =
-          await this.kinoraQuestAddress.getQuestURIDetails();
+        const questURI = await this.kinoraQuestAddress.getQuestURIDetails(
+          questsJoined[i],
+        );
+
+        const response = await axios.get(`${INFURA_GATEWAY}/ipfs/${questURI}`);
+
         const getQuestMilestoneURIDetails =
           await this.kinoraQuestAddress.getQuestMilestoneURIDetails();
 
         questHistory.push({
           questId: questsJoined[i],
-          questURIDetails: await JSON.parse(questDetailsURI),
+          questURIDetails: await JSON.parse(response.data),
           questMilestoneDetails: await JSON.parse(getQuestMilestoneURIDetails),
           milestonesCompleted: completedMilestonesPerQuest[i],
         });
@@ -1342,7 +1613,7 @@ export class Sequence<
         return;
       }
 
-      const pkpWallet = new PKPEthersWallet({
+      this.currentUserPKPWallet = new PKPEthersWallet({
         controllerSessionSigs: sessionSigs,
         pkpPubKey: res.publicKey,
         rpc: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
@@ -1351,7 +1622,7 @@ export class Sequence<
         error: generateError,
         message: generateMessage,
         litAuthSig,
-      } = await generateAuthSig(pkpWallet);
+      } = await generateAuthSig(this.currentUserPKPWallet);
 
       if (generateError) {
         this.log(
@@ -1990,10 +2261,13 @@ export class Sequence<
       const currentUserMetrics: UserMetrics = await JSON.parse(currentMetrics);
 
       if (!milestoneId) {
-        const questUriDetails =
-          await this.kinoraQuestAddress.getQuestURIDetails(questId);
+        const questURI = await this.kinoraQuestAddress.getQuestURIDetails(
+          questId,
+        );
 
-        const uriParsed: QuestURI = await JSON.parse(questUriDetails);
+        const response = await axios.get(`${INFURA_GATEWAY}/ipfs/${questURI}`);
+
+        const uriParsed: QuestURI = await JSON.parse(response.data);
 
         userEligible = this.metricComparison(
           currentUserMetrics,

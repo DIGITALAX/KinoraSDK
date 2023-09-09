@@ -103,7 +103,6 @@ contract KinoraQuest is Initializable {
   event QuestMilestoneUpdated(
     uint256 indexed questId,
     uint256 milestoneId,
-    bytes32 joinHash,
     bytes32 completionHash
   );
   event QuestUpdated(
@@ -210,7 +209,6 @@ contract KinoraQuest is Initializable {
     string memory _newURIDetails,
     RewardType _newType,
     address _newTokenAddress,
-    bytes32 _joinHash,
     bytes32 _completionHash,
     uint256 _questId,
     uint256 _milestoneId,
@@ -219,7 +217,6 @@ contract KinoraQuest is Initializable {
   ) public onlyUserPKPOrAdmin {
     _allQuests[_questId]._milestones[_milestoneId]._uriDetails = _newURIDetails;
     _allQuests[_questId]._milestones[_milestoneId]._numberOfPoints = _newPoints;
-    _allQuests[_questId]._joinHash = _joinHash;
     _allQuests[_questId]
       ._milestones[_milestoneId]
       ._completionHash = _completionHash;
@@ -235,12 +232,7 @@ contract KinoraQuest is Initializable {
       ._reward
       ._tokenIds = _newTokenIds;
 
-    emit QuestMilestoneUpdated(
-      _questId,
-      _milestoneId,
-      _joinHash,
-      _completionHash
-    );
+    emit QuestMilestoneUpdated(_questId, _milestoneId, _completionHash);
   }
 
   function removeQuestMilestone(
@@ -289,10 +281,6 @@ contract KinoraQuest is Initializable {
     );
 
     bool _canJoinQuest = true;
-
-    if (_allQuests[_questId]._joinHash ) {
-
-    }
 
     if (_allUsers[_userAddress]._userAddress == _userAddress) {
       for (
@@ -390,6 +378,33 @@ contract KinoraQuest is Initializable {
     }
 
     emit UserCompleteQuestMilestone(_questId, _milestoneId, _userAddress);
+  }
+
+  function updateAllJoinHashes(
+    bytes32[] memory _newJoinHashes
+  ) public onlyUserPKPOrAdmin {
+    require(
+      _newJoinHashes.length == _questCount,
+      "KinoraQuest: Join Hash array length must match the total quest count."
+    );
+    for (uint256 i = 0; i < _questCount; i++) {
+      _allQuests[_questCount + 1]._joinHash = _newJoinHashes[i];
+    }
+  }
+
+  function updateAllCompletionHashes(
+    bytes32[] memory _newCompletionHashes
+  ) public onlyUserPKPOrAdmin {
+    for (uint256 i = 0; i < _questCount; i++) {
+      for (
+        uint256 j = 0;
+        j < _allQuests[_questCount + 1]._milestones.length;
+        j++
+      )
+        _allQuests[_questCount + 1]
+          ._milestones[j]
+          ._completionHash = _newCompletionHashes[j];
+    }
   }
 
   function getKinoraAccessControl() public view returns (address) {
