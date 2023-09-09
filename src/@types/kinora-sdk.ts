@@ -2,7 +2,7 @@ import { PlayerProps } from "@livepeer/react";
 import { HlsVideoConfig } from "livepeer/media/browser/hls";
 import { WebRTCVideoConfig } from "livepeer/media/browser/webrtc";
 import { ControlsOptions } from "livepeer/media/browser";
-import { ethers } from "ethers";
+import { Bytes, ethers } from "ethers";
 import {
   DiscordProvider,
   EthWalletProvider,
@@ -112,21 +112,17 @@ export interface MilestoneURI {
 
 export interface Milestone {
   uriDetails: MilestoneURI;
+  completionHash: Bytes,
   reward: Reward;
   numberOfPoints: number;
 }
 
 export interface GeneratedTxData {
-  to: `0x${string}`;
   nonce: number;
-  chainId: number;
   gasLimit: ethers.BigNumber;
   maxFeePerGas: ethers.BigNumber;
   maxPriorityFeePerGas: ethers.BigNumber;
-  from: `0x${string}` | "{{publicKey}}";
   data: ethers.ContractInterface;
-  value: ethers.BigNumber;
-  type: number;
 }
 
 export interface QuestEligibility {

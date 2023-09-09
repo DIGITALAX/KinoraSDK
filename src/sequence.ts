@@ -15,22 +15,25 @@ import {
 } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import "@lit-protocol/lit-auth-client";
+import axios from "axios";
 import { ProviderType } from "@lit-protocol/constants";
 import { ethers } from "ethers";
 import { IPFSHTTPClient, create } from "ipfs-http-client";
 import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
 import { AuthMethod, IRelayPKP } from "@lit-protocol/types";
 import {
-  IPFS_CID_PKP,
   KINORA_FACTORY_CONTRACT,
   KINORA_PKP_DB_CONTRACT,
   LIT_RPC,
   CHRONICLE_PKP_CONTRACT,
+  CHRONICLE_PKP_PERMISSIONS_CONTRACT,
+  INFURA_GATEWAY,
 } from "./constants";
 import KinoraPKPDBAbi from "./abis/KinoraPKPDB.json";
 import KinoraFactoryAbi from "./abis/KinoraFactory.json";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
 import KinoraQuestAbi from "./abis/KinoraQuest.json";
+import PKPPermissionsAbi from "./abis/PKPPermissionsAbi.json";
 import PKPNFTAbi from "./abis/PKPNFT.json";
 import KinoraReward721Abi from "./abis/KinoraReward721Abi.json";
 import { DiscordProvider, GoogleProvider } from "@lit-protocol/lit-auth-client";
@@ -42,6 +45,12 @@ import {
   encryptMetrics,
   getSessionSig,
   decryptMetrics,
+  generateSecureRandomKey,
+  mintNextPKP,
+  assignLitAction,
+  getLitActionCodeForJoinQuest,
+  getLitActionCodeForMilestoneCompletion,
+  getLitActionCodeForAddUserMetrics,
 } from "./utils/lit-protocol";
 import { EventEmitter } from "events";
 import { JsonRpcProvider } from "@ethersproject/providers";
@@ -64,15 +73,21 @@ export class Sequence<
   private logs: ILogEntry[] = new Array(this.logSize);
   private rpcURL: string;
   private chain: string = "polygon";
+  private multihashDevKey: string;
   private redirectURL: string;
   private lensPubId: string;
   private userProfileId: string;
-  private developerPKPPublicKey: `0x04${string}`;
+  private developerPKPData: {
+    publicKey: `0x04${string}`;
+    tokenId: string;
+    ethAddress: `0x${string}`;
+  };
   private kinoraReward721Address: `0x${string}`;
   private encryptUserMetrics: boolean;
   private errorHandlingModeStrict: boolean = false;
   private kinoraPkpDBContract: ethers.Contract;
   private pkpContract: ethers.Contract;
+  private pkpPermissionsContract: ethers.Contract;
   private kinoraQuestAddress: ethers.Contract;
   private kinoraMetricsAddress: ethers.Contract;
   private ipfsClient: IPFSHTTPClient;
@@ -95,11 +110,13 @@ export class Sequence<
     redirectURL: string,
     rpcURL: string,
     metricsOnChainInterval: number, // in minutes,
-    developerPKPPublicKey: `0x04${string}` | undefined, // dev may need to mint first
     encryptUserMetrics: boolean,
     errorHandlingModeStrict: boolean = false,
+    developerPKPPublicKey?: `0x04${string}`,
+    developerPKPTokenId?: string,
     lensPubId?: string,
     userProfileId?: string,
+    multihashDevKey?: string,
     signer?: ethers.Signer,
     kinoraMetricsAddress?: `0x${string}`,
     kinoraQuestAddress?: `0x${string}`,
@@ -114,7 +131,14 @@ export class Sequence<
     this.livepeerPlayer = livepeerPlayer;
     this.redirectURL = redirectURL;
     this.rpcURL = rpcURL;
-    this.developerPKPPublicKey = developerPKPPublicKey;
+    this.developerPKPData = {
+      publicKey: developerPKPPublicKey,
+      tokenId: developerPKPTokenId,
+      ethAddress: ethers.utils.computeAddress(
+        developerPKPPublicKey,
+      ) as `0x${string}`,
+    };
+    this.multihashDevKey = multihashDevKey;
     this.encryptUserMetrics = encryptUserMetrics;
     if (userProfileId) this.userProfileId = userProfileId;
     if (lensPubId) this.lensPubId = lensPubId;
@@ -163,6 +187,11 @@ export class Sequence<
       PKPNFTAbi,
       this.signer,
     );
+    this.pkpPermissionsContract = new ethers.Contract(
+      CHRONICLE_PKP_PERMISSIONS_CONTRACT,
+      PKPPermissionsAbi,
+      this.signer,
+    );
     this.litNodeClient.connect();
 
     if (typeof window !== "undefined") {
@@ -176,6 +205,7 @@ export class Sequence<
   }
 
   developerFactoryContractDeploy = async (): Promise<{
+    multihashDevKey: string;
     kinoraAccessControlAddress: `0x${string}`;
     kinoraMetricsAddress: `0x${string}`;
     kinoraEscrowAddress: `0x${string}`;
@@ -183,18 +213,29 @@ export class Sequence<
     kinoraQuestRewardAddress: `0x${string}`;
     pkpEthAddress: string;
     pkpPublicKey: string;
+    pkpTokenId: string;
   }> => {
-    const tx = await this.pkpContract.mintGrantAndBurnNext(
-      2,
-      getBytesFromMultihash(IPFS_CID_PKP),
-      { value: "1" },
+    this.multihashDevKey = generateSecureRandomKey();
+    const { pkpTokenId, publicKey, error, message } = await mintNextPKP(
+      this.pkpContract,
     );
-    const receipt = await tx.wait();
-    const logs = receipt.logs;
-    const pkpTokenId = BigInt(logs[0].topics[3]).toString();
-    const publicKey = await this.pkpContract.getPubkey(pkpTokenId);
-    this.developerPKPPublicKey = publicKey;
-
+    this.developerPKPData = {
+      publicKey: publicKey,
+      tokenId: pkpTokenId,
+      ethAddress: ethers.utils.computeAddress(publicKey) as `0x${string}`,
+    };
+    if (error) {
+      this.log(
+        LogCategory.ERROR,
+        `Mint developer PKP failed.`,
+        message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error minting developer PKP: ${message}`);
+      }
+      return;
+    }
     const factoryContract = new ethers.Contract(
       KINORA_FACTORY_CONTRACT,
       KinoraFactoryAbi,
@@ -202,7 +243,7 @@ export class Sequence<
     );
 
     const txHash = await factoryContract.deployFromKinoraFactory(
-      ethers.utils.computeAddress(publicKey),
+      this.developerPKPData.ethAddress,
     );
 
     const receiptFactory = await this.chronicleProvider.getTransactionReceipt(
@@ -234,14 +275,48 @@ export class Sequence<
       this.kinoraReward721Address = filteredLogs[0].args[5];
 
       return {
+        multihashDevKey: this.multihashDevKey,
         kinoraAccessControlAddress: filteredLogs[0].args[1],
         kinoraMetricsAddress: filteredLogs[0].args[2],
         kinoraQuestAddress: filteredLogs[0].args[3],
         kinoraEscrowAddress: filteredLogs[0].args[4],
         kinoraQuestRewardAddress: filteredLogs[0].args[5],
-        pkpEthAddress: ethers.utils.computeAddress(publicKey),
-        pkpPublicKey: publicKey,
+        pkpEthAddress: this.developerPKPData.ethAddress,
+        pkpPublicKey: this.developerPKPData.publicKey,
+        pkpTokenId: this.developerPKPData.tokenId,
       };
+    }
+  };
+
+  generateNewMultiHashDevKey = async (): Promise<{
+    multihashDevKey: string;
+  }> => {
+    if (!this.ipfsClient)
+      throw new Error("Provide IPFS Auth before continuing.");
+    if (!this.developerPKPData.publicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
+    try {
+      this.multihashDevKey = generateSecureRandomKey();
+
+      // update smart contracts here
+
+      // need to add new action and remove old action
+
+      return {
+        multihashDevKey: this.multihashDevKey,
+      };
+    } catch (err: any) {
+      this.log(
+        LogCategory.ERROR,
+        `User Authentication failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error authenticating user: ${err.message}`);
+      }
     }
   };
 
@@ -275,11 +350,32 @@ export class Sequence<
   };
 
   authenticateUserRedirect = async (): Promise<void> => {
-    if (!this.developerPKPPublicKey)
+    if (!this.developerPKPData.publicKey)
       throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.ipfsClient)
+      throw new Error("Provide IPFS Auth before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
     try {
       this.authMethod = await this.litProvider.authenticate();
       this.currentUserPKP = await this.handlePKPs();
+
+      const uriHash = getBytesFromMultihash(
+        this.currentUserPKP.ethAddress + this.multihashDevKey,
+      );
+
+      const litAction = getLitActionCodeForAddUserMetrics(
+        uriHash,
+        this.kinoraQuestAddress.address,
+      );
+
+      const litActionHash = (await this.ipfsClient.add(litAction)).path;
+
+      await assignLitAction(
+        this.pkpPermissionsContract,
+        this.developerPKPData.tokenId,
+        getBytesFromMultihash(litActionHash),
+      );
     } catch (err: any) {
       this.log(
         LogCategory.ERROR,
@@ -296,8 +392,12 @@ export class Sequence<
   };
 
   bindEvents = (): void => {
-    if (!this.developerPKPPublicKey)
+    if (!this.developerPKPData.publicKey)
       throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.multihashDevKey)
+      throw new Error("Set multi hash dev key before continuing.");
     if (!this.currentUserPKP)
       throw new Error("Set user's PKP before continuing.");
     if (!this.kinoraMetricsAddress)
@@ -349,45 +449,128 @@ export class Sequence<
     maxParticipantCount: number;
     milestones: Milestone[];
   }): Promise<{
-    txHash: string;
+    txHashInstantiateQuest: string;
+    txHashAssignLitActionJoinQuest: string;
+    txHashesAssignLitActionMilestoneCompletion: string[];
     questId: string;
+    litActionIPFSCidJoinQuest: string;
+    litActionIPFSCidMilestones: string[];
   }> => {
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
     if (!this.ipfsClient)
       throw new Error("Provide IPFS Auth before continuing.");
+    if (!this.multihashDevKey)
+      throw new Error("Set multi hash dev key before continuing.");
+    if (!this.developerPKPData.publicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
     try {
       const added = await this.ipfsClient.add(
         JSON.stringify(questInputs.uriDetails),
       );
       const uri = added.path;
 
-      const txHash = await this.kinoraQuestAddress.instantiateNewQuest(
+      const uriHash = getBytesFromMultihash(
+        JSON.stringify(questInputs.uriDetails.joinCondition) +
+          this.multihashDevKey,
+      );
+
+      const litAction = getLitActionCodeForJoinQuest(
+        uriHash,
+        this.kinoraQuestAddress.address,
+      );
+
+      const litActionHash = (await this.ipfsClient.add(litAction)).path;
+
+      const { error, message, txHash } = await assignLitAction(
+        this.pkpPermissionsContract,
+        this.developerPKPData.tokenId,
+        getBytesFromMultihash(litActionHash),
+      );
+
+      if (error) {
+        this.log(
+          LogCategory.ERROR,
+          `Assign Join Quest Lit Action failed.`,
+          message,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(`Error assigning Join Quest Lit Action: ${message}`);
+        }
+        return;
+      }
+
+      const txHashKinora = await this.kinoraQuestAddress.instantiateNewQuest(
         "ipfs://" + uri,
+        getBytesFromMultihash(litActionHash),
         questInputs.maxParticipantCount,
       );
 
       const questId = await this.kinoraQuestAddress.getTotalQuestCount();
+      const milestoneLitActionHashes: string[] = [];
+      const milestoneLitActionTx: string[] = [];
 
       for (let i = 0; i < questInputs.milestones.length; i++) {
         const added = await this.ipfsClient.add(
-          JSON.stringify({
-            questCoverImage: questInputs.milestones[i].uriDetails,
-          }),
+          JSON.stringify(questInputs.milestones[i].uriDetails),
         );
         const uri = added.path;
+
+        const uriHash = getBytesFromMultihash(
+          JSON.stringify(questInputs.milestones[i].uriDetails) +
+            this.multihashDevKey,
+        );
+
+        const litAction = getLitActionCodeForMilestoneCompletion(
+          uriHash,
+          this.kinoraQuestAddress.address,
+        );
+
+        const litActionHash = (await this.ipfsClient.add(litAction)).path;
+        milestoneLitActionHashes.push(litActionHash);
+
+        const { error, message, txHash } = await assignLitAction(
+          this.pkpPermissionsContract,
+          this.developerPKPData.tokenId,
+          getBytesFromMultihash(litActionHash),
+        );
+
+        if (error) {
+          this.log(
+            LogCategory.ERROR,
+            `Assign Join Quest Lit Action failed.`,
+            message,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error assigning Join Quest Lit Action: ${message}`,
+            );
+          }
+          return;
+        }
+
+        milestoneLitActionTx.push(txHash);
 
         await this.kinoraQuestAddress.addQuestMilestone(
           questInputs.milestones[i].reward,
           "ipfs://" + uri,
+          getBytesFromMultihash(litActionHash),
           questId,
           questInputs.milestones[i].numberOfPoints,
         );
       }
 
       return {
-        txHash,
+        txHashInstantiateQuest: txHashKinora,
+        txHashAssignLitActionJoinQuest: txHash,
+        txHashesAssignLitActionMilestoneCompletion: milestoneLitActionTx,
         questId,
+        litActionIPFSCidJoinQuest: litActionHash,
+        litActionIPFSCidMilestones: milestoneLitActionHashes,
       };
     } catch (err: any) {
       this.log(
@@ -405,13 +588,25 @@ export class Sequence<
   addQuestMilestones = async (
     questMilestones: Milestone[],
     questId: number,
-  ): Promise<{ txHash: string[] }> => {
+  ): Promise<{
+    txHashesAddMilestone: string[];
+    txHashesAssignLitAction: string[];
+    litActionIPFSCids: string[];
+  }> => {
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
     if (!this.ipfsClient)
       throw new Error("Provide IPFS Auth before continuing.");
+    if (!this.multihashDevKey)
+      throw new Error("Set multi hash dev key before continuing.");
+    if (!this.developerPKPData.publicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
     try {
       let txHashes: string[] = [];
+      let txHashesAssignAction: string[] = [];
+      let litActionHashes: string[] = [];
 
       for (let i = 0; i < questMilestones.length; i++) {
         const added = await this.ipfsClient.add(
@@ -419,9 +614,49 @@ export class Sequence<
         );
         const uri = added.path;
 
+        const uriHash = getBytesFromMultihash(
+          JSON.stringify(questMilestones[i].uriDetails) + this.multihashDevKey,
+        );
+
+        const litAction = getLitActionCodeForMilestoneCompletion(
+          uriHash,
+          this.kinoraQuestAddress.address,
+        );
+
+        const litActionHash = (await this.ipfsClient.add(litAction)).path;
+        litActionHashes.push(litActionHash);
+
+        const {
+          error,
+          message,
+          txHash: addMilestone,
+        } = await assignLitAction(
+          this.pkpPermissionsContract,
+          this.developerPKPData.tokenId,
+          getBytesFromMultihash(litActionHash),
+        );
+
+        txHashesAssignAction.push(addMilestone);
+
+        if (error) {
+          this.log(
+            LogCategory.ERROR,
+            `Assign Join Quest Lit Action failed.`,
+            message,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error assigning Join Quest Lit Action: ${message}`,
+            );
+          }
+          return;
+        }
+
         const txHash = await this.kinoraQuestAddress.addQuestMilestone(
           questMilestones[i].reward,
           "ipfs://" + uri,
+          getBytesFromMultihash(litActionHash),
           questId,
           questMilestones[i].numberOfPoints,
         );
@@ -429,7 +664,9 @@ export class Sequence<
       }
 
       return {
-        txHash: txHashes,
+        txHashesAddMilestone: txHashes,
+        txHashesAssignLitAction: txHashesAssignAction,
+        litActionIPFSCids: litActionHashes,
       };
     } catch (err: any) {
       this.log(
@@ -455,6 +692,12 @@ export class Sequence<
       throw new Error("Set Kinora Quest Address before continuing.");
     if (!this.ipfsClient)
       throw new Error("Provide IPFS Auth before continuing.");
+    if (!this.developerPKPData.publicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.multihashDevKey)
+      throw new Error("Set multi hash dev key before continuing.");
     try {
       const added = await this.ipfsClient.add(
         JSON.stringify(questDetails.newURIDetails),
@@ -503,7 +746,14 @@ export class Sequence<
     questId: number,
     newStatus: Status,
   ): Promise<{ txHash: string }> => {
-    if (!this.kinoraQuestAddress) throw new Error("");
+    if (!this.kinoraQuestAddress)
+      throw new Error("Set Kinora Quest address before continuing.");
+    if (!this.developerPKPData.publicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.multihashDevKey)
+      throw new Error("Set multi hash dev key before continuing.");
     try {
       const txHash = await this.kinoraQuestAddress.updateQuestStatus(
         questId,
@@ -540,6 +790,12 @@ export class Sequence<
       throw new Error("Set Kinora Quest Address before continuing.");
     if (!this.ipfsClient)
       throw new Error("Provide IPFS Auth before continuing.");
+    if (!this.developerPKPData.publicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.multihashDevKey)
+      throw new Error("Set multi hash dev key before continuing.");
     try {
       const added = await this.ipfsClient.add(
         JSON.stringify(milestoneDetails.newMilestoneURIDetails),
@@ -579,6 +835,13 @@ export class Sequence<
   ): Promise<{ txHash: string }> => {
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
+    if (!this.developerPKPData.publicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.multihashDevKey)
+      throw new Error("Set multi hash dev key before continuing.");
+
     try {
       const txHash = await this.kinoraQuestAddress.removeQuestMilestone(
         questId,
@@ -604,6 +867,12 @@ export class Sequence<
   terminateQuest = async (questId: number): Promise<{ txHash: string }> => {
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
+    if (!this.developerPKPData.publicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.multihashDevKey)
+      throw new Error("Set multi hash dev key before continuing.");
     try {
       const txHash = await this.kinoraQuestAddress.terminateQuest(questId);
 
@@ -623,11 +892,18 @@ export class Sequence<
     }
   };
 
-  userJoinQuest = async (questId: number): Promise<{ txHash: string }> => {
+  userJoinQuest = async (
+    questId: number,
+    joinQuestLitActionIPFSCid: string,
+  ): Promise<{ txHash: string }> => {
     if (!this.kinoraQuestAddress.address)
       throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.developerPKPPublicKey)
+    if (!this.developerPKPData.publicKey)
       throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.multihashDevKey)
+      throw new Error("Set multi hash dev key before continuing.");
     if (!this.currentUserPKP.ethAddress)
       throw new Error("Set user's PKP before continuing.");
 
@@ -648,22 +924,73 @@ export class Sequence<
     }
 
     try {
-      const tx = await createTxData(
+      const {
+        error: txError,
+        message: txMessage,
+        generatedTxData,
+      } = await createTxData(
         this.polygonProvider,
         KinoraQuestAbi,
-        this.kinoraQuestAddress.address,
         "userJoinQuest",
         [questId, this.currentUserPKP.ethAddress],
-        ChainIds[this.chain],
       );
+
+      if (txError) {
+        this.log(
+          LogCategory.ERROR,
+          `Generate Tx data error on User Join Quest.`,
+          txMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error generating Tx data on User Join Quest: ${txMessage}`,
+          );
+        }
+
+        return;
+      }
+
+      const {
+        error: generatedError,
+        message: generatedMessage,
+        litAuthSig,
+      } = await generateAuthSig(this.signer);
+
+      if (generatedError) {
+        this.log(
+          LogCategory.ERROR,
+          `Generate Auth Sig error on User Join Quest.`,
+          generatedMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error generating Auth Sig on User Join Quest: ${generatedMessage}`,
+          );
+        }
+
+        return;
+      }
+
+      const questURI = await this.kinoraQuestAddress.getQuestURIDetails(
+        questId,
+      );
+
+      const response = await axios.get(`${INFURA_GATEWAY}/ipfs/${questURI}`);
+
+      const joinCondition = (await JSON.parse(response.data)).joinCondition;
 
       const { txHash, error, message, litResponse } = await litExecute(
         this.polygonProvider,
         this.litNodeClient,
-        tx,
+        generatedTxData,
         "userJoinQuest",
-        this.authSig ? this.authSig : await generateAuthSig(this.signer),
-        this.developerPKPPublicKey as `0x04${string}`,
+        this.authSig ? this.authSig : litAuthSig,
+        joinQuestLitActionIPFSCid,
+        this.developerPKPData.publicKey,
+        this.multihashDevKey,
+        JSON.stringify(joinCondition),
       );
       if (error) {
         this.log(
@@ -677,6 +1004,7 @@ export class Sequence<
             `Error user joining Quest and broadcasting: ${message}`,
           );
         }
+        return;
       } else {
         this.log(
           LogCategory.RESPONSE,
@@ -711,11 +1039,16 @@ export class Sequence<
   userCompleteQuestMilestone = async (
     questId: number,
     milestoneId: number,
+    completeMilestoneIPFSCid: string,
   ): Promise<{ txHash: string }> => {
     if (!this.kinoraQuestAddress.address)
       throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.developerPKPPublicKey)
+    if (!this.developerPKPData.publicKey)
       throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.multihashDevKey)
+      throw new Error("Set multi hash dev key before continuing.");
     if (!this.currentUserPKP.ethAddress)
       throw new Error("Set user's PKP before continuing.");
 
@@ -739,22 +1072,74 @@ export class Sequence<
     }
 
     try {
-      const tx = await createTxData(
+      const {
+        error: txError,
+        message: txMessage,
+        generatedTxData,
+      } = await createTxData(
         this.polygonProvider,
         KinoraQuestAbi,
-        this.kinoraQuestAddress.address,
         "userCompleteMilestone",
         [questId, milestoneId, this.currentUserPKP.ethAddress],
-        ChainIds[this.chain],
       );
+
+      if (txError) {
+        this.log(
+          LogCategory.ERROR,
+          `Generate Tx data error on User Complete Milestone.`,
+          txMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error generating Tx data on User Complete Milestone: ${txMessage}`,
+          );
+        }
+
+        return;
+      }
+
+      const {
+        error: authSigError,
+        message: authSigMessage,
+        litAuthSig,
+      } = await generateAuthSig(this.signer);
+
+      if (authSigError) {
+        this.log(
+          LogCategory.ERROR,
+          `Lit Auth Sig generation failed.`,
+          authSigMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(`Error generating Lit Auth Sig: ${authSigMessage}`);
+        }
+        return;
+      }
+
+      const milestoneURI =
+        await this.kinoraQuestAddress.getQuestMilestoneURIDetails(
+          questId,
+          milestoneId,
+        );
+
+      const response = await axios.get(
+        `${INFURA_GATEWAY}/ipfs/${milestoneURI}`,
+      );
+
+      const completeCondition = (await JSON.parse(response.data)).joinCondition;
 
       const { txHash, error, message, litResponse } = await litExecute(
         this.polygonProvider,
         this.litNodeClient,
-        tx,
+        generatedTxData,
         "userCompleteMilestone",
-        this.authSig ? this.authSig : await generateAuthSig(this.signer),
-        this.developerPKPPublicKey as `0x04${string}`,
+        this.authSig ? this.authSig : litAuthSig,
+        completeMilestoneIPFSCid,
+        this.developerPKPData.publicKey,
+        this.multihashDevKey,
+        JSON.stringify(completeCondition),
       );
 
       if (error) {
@@ -771,6 +1156,7 @@ export class Sequence<
             );
           }
         }
+        return;
       } else {
         this.log(
           LogCategory.RESPONSE,
@@ -935,21 +1321,52 @@ export class Sequence<
         res = await this.mintPkp();
       }
 
-      const sessionSigs = await getSessionSig(
+      const { sessionSigs, error, message } = await getSessionSig(
         this.authMethod,
         res,
         this.litProvider,
         this.litNodeClient,
         ChainIds[this.chain],
       );
+
+      if (error) {
+        this.log(
+          LogCategory.ERROR,
+          `Mint of PKP failed.`,
+          message,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(`Error minting PKP: ${message}`);
+        }
+        return;
+      }
+
       const pkpWallet = new PKPEthersWallet({
         controllerSessionSigs: sessionSigs,
         pkpPubKey: res.publicKey,
         rpc: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
       });
-      const authSig = await generateAuthSig(pkpWallet);
+      const {
+        error: generateError,
+        message: generateMessage,
+        litAuthSig,
+      } = await generateAuthSig(pkpWallet);
 
-      this.userPKPAuthSig = authSig;
+      if (generateError) {
+        this.log(
+          LogCategory.ERROR,
+          `Lit Auth Sig generation failed.`,
+          generateMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(`Error generating Lit Auth Sig: ${generateMessage}`);
+        }
+        return;
+      }
+
+      this.userPKPAuthSig = litAuthSig;
 
       const doesExist = await this.kinoraPkpDBContract.userExists(
         BigInt(res.tokenId).toString(),
@@ -975,22 +1392,63 @@ export class Sequence<
 
   private storeAuthOnChain = async (currentPKP: IRelayPKP): Promise<void> => {
     try {
-      const tx = await createTxData(
+      const {
+        error: generatedError,
+        message: generatedMessage,
+        generatedTxData,
+      } = await createTxData(
         this.polygonProvider,
         KinoraPKPDBAbi,
-        KINORA_PKP_DB_CONTRACT,
         "addUserPKP",
         [BigInt(currentPKP?.tokenId!).toString()],
-        ChainIds[this.chain],
       );
+
+      if (generatedError) {
+        this.log(
+          LogCategory.ERROR,
+          `Store Auth on-chain failed on Create Tx data.`,
+          generatedMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error storing auth on-chain for create Tx data: ${generatedMessage}`,
+          );
+        }
+        return;
+      }
+
+      const {
+        error: authSigError,
+        message: authSigMessage,
+        litAuthSig,
+      } = await generateAuthSig(this.signer);
+
+      if (authSigError) {
+        this.log(
+          LogCategory.ERROR,
+          `Store Auth on-chain failed on generate Lit Auth Sig.`,
+          authSigMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error storing auth on-chain for generating Lit Auth Sig: ${authSigMessage}`,
+          );
+        }
+        return;
+      }
 
       const { txHash, message, error, litResponse } = await litExecute(
         this.polygonProvider,
         this.litNodeClient,
-        tx,
+        generatedTxData,
         "addUserPKP",
-        this.authSig ? this.authSig : await generateAuthSig(this.signer),
-        this.developerPKPPublicKey as `0x04${string}`,
+        this.authSig ? this.authSig : litAuthSig,
+        ADD_USER_LIT_ACTION_HASH,
+        this.developerPKPData.publicKey,
+        this.multihashDevKey,
+        "",
       );
 
       if (error) {
@@ -1005,20 +1463,20 @@ export class Sequence<
             `Error storing auth on-chain and broadcasting: ${message}`,
           );
         }
-      } else {
-        this.log(
-          LogCategory.RESPONSE,
-          `Stored Auth on-chain successfully. Lit Action Response.`,
-          litResponse,
-          new Date().toISOString(),
-        );
-        this.log(
-          LogCategory.BROADCAST,
-          `Broadcast on-chain.`,
-          txHash,
-          new Date().toISOString(),
-        );
+        return;
       }
+      this.log(
+        LogCategory.RESPONSE,
+        `Stored Auth on-chain successfully. Lit Action Response.`,
+        litResponse,
+        new Date().toISOString(),
+      );
+      this.log(
+        LogCategory.BROADCAST,
+        `Broadcast on-chain.`,
+        txHash,
+        new Date().toISOString(),
+      );
     } catch (err: any) {
       this.log(
         LogCategory.ERROR,
@@ -1033,7 +1491,6 @@ export class Sequence<
   };
 
   private mintPkp = async (): Promise<IRelayPKP> => {
-    // mint a new pkp
     try {
       if (this.litProvider && this.authMethod) {
         const txHash = await this.litProvider.mintPKPThroughRelayer(
@@ -1111,8 +1568,10 @@ export class Sequence<
   };
 
   private sendMetricsOnChain = async (): Promise<void> => {
-    if (!this.developerPKPPublicKey)
+    if (!this.developerPKPData.publicKey)
       throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
     if (!this.currentUserPKP)
       throw new Error("Set user's PKP before continuing.");
     if (!this.kinoraMetricsAddress)
@@ -1150,15 +1609,34 @@ export class Sequence<
             this.livepeerPlayer.props.playbackId,
           )
         ) {
-          oldMetrics = await decryptMetrics(
+          const {
+            error: decryptError,
+            message,
+            decryptedString,
+          } = await decryptMetrics(
             await JSON.parse(oldMetrics),
-            ethers.utils.computeAddress(
-              this.developerPKPPublicKey,
-            ) as `0x${string}`,
+            this.developerPKPData.ethAddress,
             this.currentUserPKP.ethAddress as `0x${string}`,
             this.userPKPAuthSig,
             this.litNodeClient,
           );
+
+          if (decryptError) {
+            this.log(
+              LogCategory.ERROR,
+              `Decrypt previously collected metrics failed.`,
+              message,
+              new Date().toISOString(),
+            );
+            if (this.errorHandlingModeStrict) {
+              throw new Error(
+                `Error decrypting user collected metrics: ${message}`,
+              );
+            }
+            return;
+          } else {
+            oldMetrics = decryptedString;
+          }
         }
 
         const oldMetricsValues: UserMetrics = await JSON.parse(oldMetrics);
@@ -1330,21 +1808,37 @@ export class Sequence<
       );
 
       if (this.encryptUserMetrics) {
-        payload = await encryptMetrics(
+        const { error, message, encryptedString } = await encryptMetrics(
           userMetrics,
-          ethers.utils.computeAddress(
-            this.developerPKPPublicKey,
-          ) as `0x${string}`,
+          this.developerPKPData.ethAddress,
           this.currentUserPKP.ethAddress as `0x${string}`,
           this.userPKPAuthSig,
           this.litNodeClient,
         );
+
+        if (error) {
+          this.log(
+            LogCategory.ERROR,
+            `User encrypt metrics failed.`,
+            message,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(`Error encrypting user metrics: ${message}`);
+          }
+          return;
+        } else {
+          payload = encryptedString;
+        }
       }
 
-      const tx = await createTxData(
+      const {
+        error: txError,
+        message: txMessage,
+        generatedTxData,
+      } = await createTxData(
         this.polygonProvider,
         KinoraMetricsAbi,
-        this.kinoraMetricsAddress.address,
         "addUserMetrics",
         [
           this.currentUserPKP.ethAddress,
@@ -1354,16 +1848,58 @@ export class Sequence<
             encrypted: this.encryptUserMetrics,
           },
         ],
-        ChainIds[this.chain],
+      );
+
+      if (txError) {
+        this.log(
+          LogCategory.ERROR,
+          `Generate Tx data error on Add User Metrics.`,
+          txMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error generating Tx data on Add User Metrics: ${txMessage}`,
+          );
+        }
+
+        return;
+      }
+
+      const {
+        error: authSigError,
+        message: authSigMessage,
+        litAuthSig,
+      } = await generateAuthSig(this.signer);
+
+      if (authSigError) {
+        this.log(
+          LogCategory.ERROR,
+          `Lit Auth Sig generation failed.`,
+          authSigMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(`Error generating Lit Auth Sig: ${authSigMessage}`);
+        }
+        return;
+      }
+
+      const litActionHash = getLitActionCodeForAddUserMetrics(
+        this.currentUserPKP.ethAddress,
+        this.kinoraMetricsAddress.address,
       );
 
       const { txHash, error, message, litResponse } = await litExecute(
         this.polygonProvider,
         this.litNodeClient,
-        tx,
+        generatedTxData,
         "addUserMetrics",
-        this.authSig ? this.authSig : await generateAuthSig(this.signer),
-        this.developerPKPPublicKey,
+        this.authSig ? this.authSig : litAuthSig,
+        litActionHash,
+        this.developerPKPData.publicKey,
+        this.multihashDevKey,
+        this.currentUserPKP.ethAddress,
       );
 
       if (error) {
@@ -1378,6 +1914,7 @@ export class Sequence<
             `Error adding User Metrics and broadcasting: ${message}`,
           );
         }
+        return;
       } else {
         this.log(
           LogCategory.RESPONSE,
@@ -1424,15 +1961,30 @@ export class Sequence<
           this.livepeerPlayer.props.playbackId,
         )
       ) {
-        currentMetrics = await decryptMetrics(
+        const { error, message, decryptedString } = await decryptMetrics(
           await JSON.parse(currentMetrics),
-          ethers.utils.computeAddress(
-            this.developerPKPPublicKey,
-          ) as `0x${string}`,
+          this.developerPKPData.ethAddress,
           this.currentUserPKP.ethAddress as `0x${string}`,
           this.userPKPAuthSig,
           this.litNodeClient,
         );
+
+        if (error) {
+          this.log(
+            LogCategory.ERROR,
+            `User decrypt collected metrics failed.`,
+            message,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error decrypting user collected metrics: ${message}`,
+            );
+          }
+          return;
+        } else {
+          currentMetrics = decryptedString;
+        }
       }
 
       const currentUserMetrics: UserMetrics = await JSON.parse(currentMetrics);
@@ -1440,17 +1992,8 @@ export class Sequence<
       if (!milestoneId) {
         const questUriDetails =
           await this.kinoraQuestAddress.getQuestURIDetails(questId);
-        const decryptedURI = await decryptMetrics(
-          await JSON.parse(questUriDetails),
-          ethers.utils.computeAddress(
-            this.developerPKPPublicKey,
-          ) as `0x${string}`,
-          this.currentUserPKP.ethAddress as `0x${string}`,
-          this.userPKPAuthSig,
-          this.litNodeClient,
-        );
 
-        const uriParsed: QuestURI = await JSON.parse(decryptedURI);
+        const uriParsed: QuestURI = await JSON.parse(questUriDetails);
 
         userEligible = this.metricComparison(
           currentUserMetrics,
@@ -1462,17 +2005,8 @@ export class Sequence<
             questId,
             milestoneId,
           );
-        const decryptedURI = await decryptMetrics(
-          await JSON.parse(milestoneUriDetails),
-          ethers.utils.computeAddress(
-            this.developerPKPPublicKey,
-          ) as `0x${string}`,
-          this.currentUserPKP.ethAddress as `0x${string}`,
-          this.userPKPAuthSig,
-          this.litNodeClient,
-        );
 
-        const uriParsed: MilestoneURI = await JSON.parse(decryptedURI);
+        const uriParsed: MilestoneURI = await JSON.parse(milestoneUriDetails);
 
         userEligible = this.metricComparison(
           currentUserMetrics,

@@ -37,6 +37,7 @@
     "@lit-protocol/pkp-ethers": "^2.2.50",
     "@livepeer/react": "^2.8.0",
     "@typechain/hardhat": "^6.1.4",
+    "axios": "^1.5.0",
     "bs58": "^5.0.0",
     "dotenv": "^16.3.1",
     "ethers": "^5.7.2",
