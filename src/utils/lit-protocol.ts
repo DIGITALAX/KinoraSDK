@@ -1,11 +1,12 @@
 import { ethers } from "ethers";
-import { IPFS_CID_PKP, CHRONICLE_PKP_CONTRACT } from "src/constants";
+import { CHRONICLE_PKP_CONTRACT } from "src/constants";
 import { joinSignature } from "@ethersproject/bytes";
 import { serialize } from "@ethersproject/transactions";
 import bs58 from "bs58";
 import * as LitJsSdk_authHelpers from "@lit-protocol/auth-helpers";
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import { SiweMessage } from "siwe";
+const crypto = require("crypto");
 
 import {
   ChainIds,
@@ -19,11 +20,13 @@ import { IRelayPKP, SessionSigs } from "@lit-protocol/types";
 export const createTxData = async (
   provider: ethers.providers.JsonRpcProvider,
   abi: ContractABI,
-  contractAddress: string,
   functionName: string,
   args: any[],
-  chainId: number,
-): Promise<GeneratedTxData> => {
+): Promise<{
+  error?: boolean;
+  message?: string;
+  generatedTxData?: GeneratedTxData;
+}> => {
   try {
     const contractInterface = new ethers.utils.Interface(abi);
 
@@ -37,40 +40,55 @@ export const createTxData = async (
 
     const maxPriorityFeePerGas = ethers.utils.parseUnits("40", "gwei");
     return {
-      to: contractAddress as `0x${string}`,
-      nonce: (await provider.getTransactionCount(CHRONICLE_PKP_CONTRACT)) || 0,
-      chainId: chainId,
-      gasLimit: ethers.BigNumber.from("25000000"),
-      maxFeePerGas: maxFeePerGas,
-      maxPriorityFeePerGas: maxPriorityFeePerGas,
-      from: "{{publicKey}}",
-      data: contractInterface.encodeFunctionData(functionName, args),
-      value: ethers.BigNumber.from(0),
-      type: 2,
+      generatedTxData: {
+        nonce:
+          (await provider.getTransactionCount(CHRONICLE_PKP_CONTRACT)) || 0,
+        gasLimit: ethers.BigNumber.from("25000000"),
+        maxFeePerGas: maxFeePerGas,
+        maxPriorityFeePerGas: maxPriorityFeePerGas,
+        data: contractInterface.encodeFunctionData(functionName, args),
+      },
     };
   } catch (err: any) {
-    console.error(err.message);
+    return {
+      error: true,
+      message: err.message,
+    };
   }
 };
 
 export const litExecute = async (
   provider: ethers.providers.JsonRpcProvider,
   litClient: any,
-  tx: any,
+  tx: GeneratedTxData,
   sigName: string,
-  authSig: any,
+  authSig: LitAuthSig,
+  ipfsCid: string,
   publicKey: `0x04${string}`,
+  multihashDevKey: string,
+  hashKeyItem: string,
   retryCount: number = 0,
-): Promise<{ error: boolean; txHash?: string; message?: string, litResponse?: any }> => {
+): Promise<{
+  error: boolean;
+  txHash?: string;
+  message?: string;
+  litResponse?: any;
+}> => {
   const maxRetries = 5;
   try {
     const results = await litClient.executeJs({
-      ipfsId: IPFS_CID_PKP,
+      ipfsId: ipfsCid,
       authSig,
       jsParams: {
-        publicKey: publicKey,
-        tx,
+        publicKey,
         sigName,
+        data: tx.data,
+        nonce: tx.nonce,
+        gasLimit: tx.gasLimit,
+        maxFeePerGas: tx.maxFeePerGas,
+        maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
+        multihashDevKey,
+        hashKeyItem,
       },
     });
 
@@ -104,7 +122,7 @@ export const litExecute = async (
     return {
       error: false,
       txHash: transactionHash.hash,
-      litResponse: results
+      litResponse: results,
     };
   } catch (err: any) {
     if (
@@ -119,7 +137,10 @@ export const litExecute = async (
         tx,
         sigName,
         authSig,
+        ipfsCid,
         publicKey,
+        multihashDevKey,
+        hashKeyItem,
         retryCount + 1,
       );
     } else {
@@ -136,7 +157,11 @@ export const generateAuthSig = async (
   chainId = 1,
   uri = "https://localhost/login",
   version = "1",
-): Promise<LitAuthSig> => {
+): Promise<{
+  error?: boolean;
+  message?: string;
+  litAuthSig?: LitAuthSig;
+}> => {
   try {
     const address = await signer.getAddress();
     const siweMessage = new SiweMessage({
@@ -150,10 +175,12 @@ export const generateAuthSig = async (
     const signedMessage = siweMessage.prepareMessage();
     const sig = await signer.signMessage(signedMessage);
     return {
-      sig,
-      derivedVia: "web3.eth.personal.sign",
-      signedMessage,
-      address,
+      litAuthSig: {
+        sig,
+        derivedVia: "web3.eth.personal.sign",
+        signedMessage,
+        address,
+      },
     };
   } catch (err) {
     throw new Error(`Error generating signed message ${err}`);
@@ -171,7 +198,11 @@ export const encryptMetrics = async (
   userPKPAddress: `0x${string}`,
   userPKPAuthSig: LitAuthSig,
   litNodeClient: LitJsSdk.LitNodeClient,
-): Promise<string> => {
+): Promise<{
+  encryptedString?: string;
+  error?: boolean;
+  message?: string;
+}> => {
   try {
     const { encryptedString, symmetricKey } = await LitJsSdk.encryptString(
       JSON.stringify(metrics),
@@ -209,15 +240,20 @@ export const encryptMetrics = async (
 
     const buffer = await encryptedString.arrayBuffer();
 
-    return JSON.stringify({
-      encryptedString: JSON.stringify(Array.from(new Uint8Array(buffer))),
-      symmetricKey: LitJsSdk.uint8arrayToString(
-        encryptedSymmetricKey,
-        "base16",
-      ),
-    });
+    return {
+      encryptedString: JSON.stringify({
+        encryptedString: JSON.stringify(Array.from(new Uint8Array(buffer))),
+        symmetricKey: LitJsSdk.uint8arrayToString(
+          encryptedSymmetricKey,
+          "base16",
+        ),
+      }),
+    };
   } catch (err: any) {
-    console.error(err.message);
+    return {
+      error: true,
+      message: err.message,
+    };
   }
 };
 
@@ -227,7 +263,11 @@ export const getSessionSig = async (
   provider: any,
   litNodeClient: any,
   chainId: number,
-): Promise<SessionSigs> => {
+): Promise<{
+  sessionSigs?: SessionSigs;
+  error?: boolean;
+  message?: string;
+}> => {
   try {
     const litResource = new LitJsSdk_authHelpers.LitPKPResource(
       currentPKP.tokenId,
@@ -250,9 +290,14 @@ export const getSessionSig = async (
       },
       litNodeClient,
     });
-    return sessionSigs;
-  } catch (e: any) {
-    console.error(e.message);
+    return {
+      sessionSigs,
+    };
+  } catch (err: any) {
+    return {
+      error: true,
+      message: err.message,
+    };
   }
 };
 
@@ -262,7 +307,7 @@ export const decryptMetrics = async (
   userPKPAddress: `0x${string}`,
   userPKPAuthSig: LitAuthSig,
   litNodeClient: LitJsSdk.LitNodeClient,
-): Promise<string> => {
+): Promise<{ decryptedString?: string; error?: boolean; message?: string }> => {
   try {
     const symmetricKey = await litNodeClient.getEncryptionKey({
       accessControlConditions: [
@@ -297,8 +342,276 @@ export const decryptMetrics = async (
     const blob = new Blob([uintString], { type: "text/plain" });
     const decryptedString = await LitJsSdk.decryptString(blob, symmetricKey);
 
-    return decryptedString;
+    return { decryptedString };
   } catch (err: any) {
-    console.error(err);
+    return {
+      error: true,
+      message: err.message,
+    };
   }
+};
+
+export const mintNextPKP = async (
+  pkpContract: ethers.Contract,
+): Promise<{
+  pkpTokenId?: string;
+  publicKey?: `0x04${string}`;
+  error?: boolean;
+  message?: string;
+}> => {
+  try {
+    const tx = await pkpContract.mintNext(2, { value: "1" });
+    const receipt = await tx.wait();
+    const logs = receipt.logs;
+    const pkpTokenId = BigInt(logs[0].topics[3]).toString();
+    const publicKey = await pkpContract.getPubkey(pkpTokenId);
+    return { publicKey, pkpTokenId };
+  } catch (err: any) {
+    return {
+      error: true,
+      message: err.message,
+    };
+  }
+};
+
+export const assignLitAction = async (
+  pkpPermissionsContract: ethers.Contract,
+  tokenId: string,
+  bytesHash: string,
+): Promise<{ txHash?: string; error?: boolean; message?: string }> => {
+  try {
+    const addedLitActionTx = await pkpPermissionsContract.addPermittedAction(
+      tokenId,
+      bytesHash,
+      [],
+    );
+    return { txHash: addedLitActionTx };
+  } catch (err: any) {
+    return {
+      error: true,
+      message: err.message,
+    };
+  }
+};
+
+export const removeLitAction = async (
+  pkpPermissionsContract: ethers.Contract,
+  tokenId: string,
+  bytesHash: string,
+): Promise<{ txHash?: string; error?: boolean; message?: string }> => {
+  try {
+    const addedLitActionTx = await pkpPermissionsContract.removePermittedAction(
+      tokenId,
+      bytesHash,
+    );
+    return { txHash: addedLitActionTx };
+  } catch (err: any) {
+    return {
+      error: true,
+      message: err.message,
+    };
+  }
+};
+
+export const generateSecureRandomKey = () => {
+  return crypto.randomBytes(32).toString("hex");
+};
+export const getLitActionCodeForJoinQuest = (
+  conditionalHash: string,
+  contractAddress: string,
+): string => {
+  return `
+const CONDITIONAL_HASH = "${conditionalHash}";
+
+const getBytesFromMultihash = (multihash: string): string => {
+  const decoded = bs58.decode(multihash);
+  return "0x" + Buffer.from(decoded).toString("hex");
+};      
+
+const hashTransaction = (tx) => {
+  return ethers.utils.arrayify(
+    ethers.utils.keccak256(
+      ethers.utils.arrayify(ethers.utils.serializeTransaction(tx)),
+    ),
+  );
+};
+
+const go = async () => {
+  try {
+    const txData = {
+      to: "${contractAddress}",
+      nonce,
+      chainId: 137,
+      gasLimit,
+      maxFeePerGas,
+      maxPriorityFeePerGas,
+      from: "{{publicKey}}",
+      data,
+      value: ethers.BigNumber.from(0),
+      type: 2,
+    };
+    await Lit.Actions.signEcdsa({
+      toSign: hashTransaction(txData),
+      publicKey,
+      sigName,
+    });
+    Lit.Actions.setResponse({ response: JSON.stringify(txData) });
+  } catch (err) {
+    console.log("Error thrown: ", err);
+  }
+};
+
+if (getBytesFromMultihash(hashKeyItem + multihashDevKey) === CONDITIONAL_HASH) {
+  go();
+}
+`;
+};
+
+export const getLitActionCodeForMilestoneCompletion = (
+  conditionalHash: string,
+  contractAddress: string,
+): string => {
+  return `
+  const CONDITIONAL_HASH = "${conditionalHash}";
+  
+  const getBytesFromMultihash = (multihash: string): string => {
+    const decoded = bs58.decode(multihash);
+    return "0x" + Buffer.from(decoded).toString("hex");
+  };      
+  
+  const hashTransaction = (tx) => {
+    return ethers.utils.arrayify(
+      ethers.utils.keccak256(
+        ethers.utils.arrayify(ethers.utils.serializeTransaction(tx)),
+      ),
+    );
+  };
+  
+  const go = async () => {
+    try {
+      const txData = {
+        to: "${contractAddress}",
+        nonce,
+        chainId: 137,
+        gasLimit,
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+        from: "{{publicKey}}",
+        data,
+        value: ethers.BigNumber.from(0),
+        type: 2,
+      };
+      await Lit.Actions.signEcdsa({
+        toSign: hashTransaction(txData),
+        publicKey,
+        sigName,
+      });
+      Lit.Actions.setResponse({ response: JSON.stringify(txData) });
+    } catch (err) {
+      console.log("Error thrown: ", err);
+    }
+  };
+  
+  if (getBytesFromMultihash(hashKeyItem + multihashDevKey) === CONDITIONAL_HASH) {
+    go();
+  }
+  `;
+};
+
+export const getLitActionCodeForAddNewUser = (
+  contractAddress: string,
+): string => {
+  return `
+  
+  const getBytesFromMultihash = (multihash: string): string => {
+    const decoded = bs58.decode(multihash);
+    return "0x" + Buffer.from(decoded).toString("hex");
+  };      
+  
+  const hashTransaction = (tx) => {
+    return ethers.utils.arrayify(
+      ethers.utils.keccak256(
+        ethers.utils.arrayify(ethers.utils.serializeTransaction(tx)),
+      ),
+    );
+  };
+  
+  const go = async () => {
+    try {
+      const txData = {
+        to: "${contractAddress}",
+        nonce,
+        chainId: 137,
+        gasLimit,
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+        from: "{{publicKey}}",
+        data,
+        value: ethers.BigNumber.from(0),
+        type: 2,
+      };
+      await Lit.Actions.signEcdsa({
+        toSign: hashTransaction(txData),
+        publicKey,
+        sigName,
+      });
+      Lit.Actions.setResponse({ response: JSON.stringify(txData) });
+    } catch (err) {
+      console.log("Error thrown: ", err);
+    }
+  };
+  
+  go();
+  `;
+};
+
+export const getLitActionCodeForAddUserMetrics = (
+  conditionalHash: string,
+  contractAddress: string,
+): string => {
+  return `
+    const CONDITIONAL_HASH = "${conditionalHash}";
+    
+    const getBytesFromMultihash = (multihash: string): string => {
+      const decoded = bs58.decode(multihash);
+      return "0x" + Buffer.from(decoded).toString("hex");
+    };      
+    
+    const hashTransaction = (tx) => {
+      return ethers.utils.arrayify(
+        ethers.utils.keccak256(
+          ethers.utils.arrayify(ethers.utils.serializeTransaction(tx)),
+        ),
+      );
+    };
+    
+    const go = async () => {
+      try {
+        const txData = {
+          to: "${contractAddress}",
+          nonce,
+          chainId: 137,
+          gasLimit,
+          maxFeePerGas,
+          maxPriorityFeePerGas,
+          from: "{{publicKey}}",
+          data,
+          value: ethers.BigNumber.from(0),
+          type: 2,
+        };
+        await Lit.Actions.signEcdsa({
+          toSign: hashTransaction(txData),
+          publicKey,
+          sigName,
+        });
+        Lit.Actions.setResponse({ response: JSON.stringify(txData) });
+      } catch (err) {
+        console.log("Error thrown: ", err);
+      }
+    };
+    
+    if (getBytesFromMultihash(hashKeyItem + multihashDevKey) === CONDITIONAL_HASH) {
+      go();
+    }
+    `;
 };

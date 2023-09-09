@@ -34,6 +34,7 @@ contract KinoraQuest is Initializable {
     string _uriDetails;
     Reward _reward;
     Status _status;
+    bytes32 _completionHash;
     uint256 _numberOfPoints;
     uint256 _milestoneId;
   }
@@ -42,6 +43,7 @@ contract KinoraQuest is Initializable {
     Milestone[] _milestones;
     address[] _participants;
     Status _status;
+    bytes32 _joinHash;
     uint256 _questId;
     uint256 _maxParticipantCount;
   }
@@ -88,10 +90,27 @@ contract KinoraQuest is Initializable {
     _;
   }
 
-  event QuestInstantiated(uint256 indexed questCount, string uriDetails);
-  event QuestMilestoneAdded(uint256 indexed questId, uint256 milestoneId);
-  event QuestMilestoneUpdated(uint256 indexed questId, uint256 milestoneId);
-  event QuestUpdated(uint256 indexed questId, string newUriDetails);
+  event QuestInstantiated(
+    uint256 indexed questCount,
+    string uriDetails,
+    bytes32 joinHash
+  );
+  event QuestMilestoneAdded(
+    uint256 indexed questId,
+    uint256 milestoneId,
+    bytes32 completionHash
+  );
+  event QuestMilestoneUpdated(
+    uint256 indexed questId,
+    uint256 milestoneId,
+    bytes32 joinHash,
+    bytes32 completionHash
+  );
+  event QuestUpdated(
+    uint256 indexed questId,
+    string newUriDetails,
+    bytes32 joinHash
+  );
   event UserCompleteQuestMilestone(
     uint256 indexed questId,
     uint256 milestoneId,
@@ -118,6 +137,7 @@ contract KinoraQuest is Initializable {
 
   function instantiateNewQuest(
     string memory _uriDetails,
+    bytes32 _joinHash,
     uint256 _maxParticipantCount
   ) public onlyUserPKP {
     _questCount++;
@@ -126,6 +146,7 @@ contract KinoraQuest is Initializable {
 
     _allQuests[_questCount]._questId = _questCount;
     _allQuests[_questCount]._uriDetails = _uriDetails;
+    _allQuests[_questCount]._joinHash = _joinHash;
     _allQuests[_questCount]._participants = _emptyParticipants;
     _allQuests[_questCount]._status = Status.Open;
     _allQuests[_questCount]._maxParticipantCount = _maxParticipantCount;
@@ -134,19 +155,21 @@ contract KinoraQuest is Initializable {
       _allQuests[_questCount]._milestones.push(_emptyMilestones[i]);
     }
 
-    emit QuestInstantiated(_questCount, _uriDetails);
+    emit QuestInstantiated(_questCount, _uriDetails, _joinHash);
   }
 
   function updateQuestDetails(
     string memory _newURIDetails,
     Milestone[] memory _newMilestones,
     Status _newStatus,
+    bytes32 _joinHash,
     uint256 _newMaxParticipantCount,
     uint256 _questId
   ) public onlyUserPKPOrAdmin {
     _allQuests[_questId]._uriDetails = _newURIDetails;
     _allQuests[_questId]._status = _newStatus;
     _allQuests[_questId]._maxParticipantCount = _newMaxParticipantCount;
+    _allQuests[_questId]._joinHash = _joinHash;
 
     delete _allQuests[_questId]._milestones;
 
@@ -154,18 +177,20 @@ contract KinoraQuest is Initializable {
       _allQuests[_questId]._milestones.push(_newMilestones[i]);
     }
 
-    emit QuestUpdated(_questId, _newURIDetails);
+    emit QuestUpdated(_questId, _newURIDetails, _joinHash);
   }
 
   function addQuestMilestone(
     Reward memory _questReward,
     string memory _uriDetails,
+    bytes32 _completionHash,
     uint256 _questId,
     uint256 _pointCount
   ) public onlyUserPKPOrAdmin questOpen(_questId) {
     _allQuests[_questId]._milestones.push(
       Milestone({
         _uriDetails: _uriDetails,
+        _completionHash: _completionHash,
         _reward: _questReward,
         _numberOfPoints: _pointCount,
         _milestoneId: _allQuests[_questId]._milestones.length + 1,
@@ -175,7 +200,8 @@ contract KinoraQuest is Initializable {
 
     emit QuestMilestoneAdded(
       _questId,
-      _allQuests[_questId]._milestones.length + 1
+      _allQuests[_questId]._milestones.length + 1,
+      _completionHash
     );
   }
 
@@ -184,6 +210,8 @@ contract KinoraQuest is Initializable {
     string memory _newURIDetails,
     RewardType _newType,
     address _newTokenAddress,
+    bytes32 _joinHash,
+    bytes32 _completionHash,
     uint256 _questId,
     uint256 _milestoneId,
     uint256 _newPoints,
@@ -191,7 +219,12 @@ contract KinoraQuest is Initializable {
   ) public onlyUserPKPOrAdmin {
     _allQuests[_questId]._milestones[_milestoneId]._uriDetails = _newURIDetails;
     _allQuests[_questId]._milestones[_milestoneId]._numberOfPoints = _newPoints;
+    _allQuests[_questId]._joinHash = _joinHash;
+    _allQuests[_questId]
+      ._milestones[_milestoneId]
+      ._completionHash = _completionHash;
     _allQuests[_questId]._milestones[_milestoneId]._reward._type = _newType;
+
     _allQuests[_questId]
       ._milestones[_milestoneId]
       ._reward
@@ -202,7 +235,12 @@ contract KinoraQuest is Initializable {
       ._reward
       ._tokenIds = _newTokenIds;
 
-    emit QuestMilestoneUpdated(_questId, _milestoneId);
+    emit QuestMilestoneUpdated(
+      _questId,
+      _milestoneId,
+      _joinHash,
+      _completionHash
+    );
   }
 
   function removeQuestMilestone(
@@ -250,7 +288,11 @@ contract KinoraQuest is Initializable {
       "KinoraQuest: Max Quest Participant Count reached."
     );
 
-    bool _canJoinQuest = false;
+    bool _canJoinQuest = true;
+
+    if (_allQuests[_questId]._joinHash ) {
+
+    }
 
     if (_allUsers[_userAddress]._userAddress == _userAddress) {
       for (
@@ -258,12 +300,8 @@ contract KinoraQuest is Initializable {
         i < _allUsers[_userAddress]._questsJoined.length;
         i++
       ) {
-        require(
-          _allUsers[_userAddress]._questsJoined[i] != _questId,
-          "KinoraQuest: User has already joined the Quest."
-        );
+        _canJoinQuest = false;
       }
-      _canJoinQuest = true;
     } else {
       _userCount++;
       uint256[][] memory _emptyMilestonesCompleted;
@@ -274,13 +312,15 @@ contract KinoraQuest is Initializable {
         _questsJoined: _emptyQuestsJoined,
         _milestonesCompletedPerQuest: _emptyMilestonesCompleted
       });
-      _canJoinQuest = true;
+
       _allUsers[_userAddress] = _newUser;
     }
 
     if (_canJoinQuest) {
       _allUsers[_userAddress]._questsJoined.push(_questId);
       _allQuests[_questId]._participants.push(_userAddress);
+    } else {
+      revert("KinoraQuest: User is not eligible to join Quest.");
     }
 
     emit UserJoinQuest(_questId, _userAddress);
@@ -394,6 +434,10 @@ contract KinoraQuest is Initializable {
     return _allQuests[_questId]._uriDetails;
   }
 
+  function getQuestJoinHash(uint256 _questId) public view returns (bytes32) {
+    return _allQuests[_questId]._joinHash;
+  }
+
   function getQuestParticipants(
     uint256 _questId
   ) public view returns (address[] memory) {
@@ -415,6 +459,13 @@ contract KinoraQuest is Initializable {
     uint256 _milestoneId
   ) public view returns (string memory) {
     return _allQuests[_questId]._milestones[_milestoneId]._uriDetails;
+  }
+
+  function getQuestMilestoneCompletionHash(
+    uint256 _questId,
+    uint256 _milestoneId
+  ) public view returns (bytes32) {
+    return _allQuests[_questId]._milestones[_milestoneId]._completionHash;
   }
 
   function getQuestMilestoneNumberOfPoints(
