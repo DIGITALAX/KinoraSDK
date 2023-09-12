@@ -112,7 +112,7 @@ export interface MilestoneURI {
 
 export interface Milestone {
   uriDetails: MilestoneURI;
-  completionHash: Bytes,
+  completionHash: Bytes;
   reward: Reward;
   numberOfPoints: number;
 }
@@ -276,5 +276,10 @@ export interface ILogEntry {
   category: LogCategory;
   message: string;
   responseObject: string;
-  isoDate: string
+  isoDate: string;
 }
+
+export type LivepeerHTMLElement<
+  TPlaybackPolicyObject extends object,
+  TSlice,
+> = HTMLElement & LivepeerPlayer<TPlaybackPolicyObject, TSlice>;
