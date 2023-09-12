@@ -6,7 +6,9 @@ import bs58 from "bs58";
 import * as LitJsSdk_authHelpers from "@lit-protocol/auth-helpers";
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import { SiweMessage } from "siwe";
-const crypto = require("crypto");
+import CryptoJS from "crypto-js";
+import crypto from "crypto";
+import esbuild from "esbuild";
 
 import {
   ChainIds,
@@ -63,7 +65,7 @@ export const litExecute = async (
   tx: GeneratedTxData,
   sigName: string,
   authSig: LitAuthSig,
-  ipfsCid: string,
+  ipfsHash: string,
   publicKey: `0x04${string}`,
   multihashDevKey: string,
   hashKeyItem: string,
@@ -77,7 +79,7 @@ export const litExecute = async (
   const maxRetries = 5;
   try {
     const results = await litClient.executeJs({
-      ipfsId: ipfsCid,
+      ipfsHash,
       authSig,
       jsParams: {
         publicKey,
@@ -137,7 +139,7 @@ export const litExecute = async (
         tx,
         sigName,
         authSig,
-        ipfsCid,
+        ipfsHash,
         publicKey,
         multihashDevKey,
         hashKeyItem,
@@ -190,6 +192,11 @@ export const generateAuthSig = async (
 export const getBytesFromMultihash = (multihash: string): string => {
   const decoded = bs58.decode(multihash);
   return `0x${Buffer.from(decoded).toString("hex")}`;
+};
+
+export const hashHex = (input: string): string => {
+  const hash = CryptoJS.SHA256(input);
+  return hash.toString(CryptoJS.enc.Hex);
 };
 
 export const encryptMetrics = async (
@@ -421,12 +428,14 @@ export const getLitActionCodeForJoinQuest = (
   contractAddress: string,
 ): string => {
   return `
-const CONDITIONAL_HASH = "${conditionalHash}";
+  import CryptoJS from "crypto-js";
 
-const getBytesFromMultihash = (multihash: string): string => {
-  const decoded = bs58.decode(multihash);
-  return "0x" + Buffer.from(decoded).toString("hex");
-};      
+  const CONDITIONAL_HASH = "${conditionalHash}";
+  
+  const hashHex = (input) => {
+    const hash = CryptoJS.SHA256(input);
+    return hash.toString(CryptoJS.enc.Hex);
+  }; 
 
 const hashTransaction = (tx) => {
   return ethers.utils.arrayify(
@@ -461,7 +470,7 @@ const go = async () => {
   }
 };
 
-if (getBytesFromMultihash(hashKeyItem + multihashDevKey) === CONDITIONAL_HASH) {
+if (hashHex(hashKeyItem + multihashDevKey) === CONDITIONAL_HASH) {
   go();
 }
 `;
@@ -472,13 +481,15 @@ export const getLitActionCodeForMilestoneCompletion = (
   contractAddress: string,
 ): string => {
   return `
+  import CryptoJS from "crypto-js";
+
   const CONDITIONAL_HASH = "${conditionalHash}";
   
-  const getBytesFromMultihash = (multihash: string): string => {
-    const decoded = bs58.decode(multihash);
-    return "0x" + Buffer.from(decoded).toString("hex");
-  };      
-  
+  const hashHex = (input) => {
+    const hash = CryptoJS.SHA256(input);
+    return hash.toString(CryptoJS.enc.Hex);
+  };
+
   const hashTransaction = (tx) => {
     return ethers.utils.arrayify(
       ethers.utils.keccak256(
@@ -512,56 +523,9 @@ export const getLitActionCodeForMilestoneCompletion = (
     }
   };
   
-  if (getBytesFromMultihash(hashKeyItem + multihashDevKey) === CONDITIONAL_HASH) {
+  if (hashHex(hashKeyItem + multihashDevKey) === CONDITIONAL_HASH) {
     go();
   }
-  `;
-};
-
-export const getLitActionCodeForAddNewUser = (
-  contractAddress: string,
-): string => {
-  return `
-  
-  const getBytesFromMultihash = (multihash: string): string => {
-    const decoded = bs58.decode(multihash);
-    return "0x" + Buffer.from(decoded).toString("hex");
-  };      
-  
-  const hashTransaction = (tx) => {
-    return ethers.utils.arrayify(
-      ethers.utils.keccak256(
-        ethers.utils.arrayify(ethers.utils.serializeTransaction(tx)),
-      ),
-    );
-  };
-  
-  const go = async () => {
-    try {
-      const txData = {
-        to: "${contractAddress}",
-        nonce,
-        chainId: 137,
-        gasLimit,
-        maxFeePerGas,
-        maxPriorityFeePerGas,
-        from: "{{publicKey}}",
-        data,
-        value: ethers.BigNumber.from(0),
-        type: 2,
-      };
-      await Lit.Actions.signEcdsa({
-        toSign: hashTransaction(txData),
-        publicKey,
-        sigName,
-      });
-      Lit.Actions.setResponse({ response: JSON.stringify(txData) });
-    } catch (err) {
-      console.log("Error thrown: ", err);
-    }
-  };
-  
-  go();
   `;
 };
 
@@ -570,12 +534,14 @@ export const getLitActionCodeForAddUserMetrics = (
   contractAddress: string,
 ): string => {
   return `
+    import CryptoJS from "crypto-js";
+
     const CONDITIONAL_HASH = "${conditionalHash}";
     
-    const getBytesFromMultihash = (multihash: string): string => {
-      const decoded = bs58.decode(multihash);
-      return "0x" + Buffer.from(decoded).toString("hex");
-    };      
+    const hashHex = (input) => {
+      const hash = CryptoJS.SHA256(input);
+      return hash.toString(CryptoJS.enc.Hex);
+    };    
     
     const hashTransaction = (tx) => {
       return ethers.utils.arrayify(
@@ -610,8 +576,42 @@ export const getLitActionCodeForAddUserMetrics = (
       }
     };
     
-    if (getBytesFromMultihash(hashKeyItem + multihashDevKey) === CONDITIONAL_HASH) {
+    if (hashHex(hashKeyItem + multihashDevKey) === CONDITIONAL_HASH) {
       go();
     }
     `;
+};
+
+export const bundleCode = async (
+  dynamicCode: string,
+): Promise<{ error?: boolean; message?: string; outputBuffer?: string }> => {
+  let outputBuffer = ``;
+  const stdout = new (require("stream").Writable)({
+    write: function (chunk, encoding, next) {
+      outputBuffer += chunk.toString();
+      next();
+    },
+  });
+
+  try {
+    await esbuild.build({
+      stdin: {
+        contents: dynamicCode,
+        resolveDir: process.cwd(),
+        sourcefile: "in-memory-code.js",
+      },
+      bundle: true,
+      platform: "neutral",
+      write: false,
+      target: "es6",
+      outfile: stdout,
+    });
+
+    return { outputBuffer };
+  } catch (err: any) {
+    return {
+      error: true,
+      message: err.message,
+    };
+  }
 };

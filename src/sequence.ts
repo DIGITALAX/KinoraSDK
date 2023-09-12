@@ -12,6 +12,7 @@ import {
   QuestEligibility,
   ILogEntry,
   LogCategory,
+  LivepeerHTMLElement,
 } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import "@lit-protocol/lit-auth-client";
@@ -28,7 +29,7 @@ import {
   CHRONICLE_PKP_CONTRACT,
   CHRONICLE_PKP_PERMISSIONS_CONTRACT,
   INFURA_GATEWAY,
-  ADD_USER_LIT_ACTION_HASH,
+  IPFS_HASH_NEW_USER,
 } from "./constants";
 import KinoraPKPDBAbi from "./abis/KinoraPKPDB.json";
 import KinoraFactoryAbi from "./abis/KinoraFactory.json";
@@ -53,6 +54,8 @@ import {
   getLitActionCodeForMilestoneCompletion,
   getLitActionCodeForAddUserMetrics,
   removeLitAction,
+  hashHex,
+  bundleCode,
 } from "./utils/lit-protocol";
 import { EventEmitter } from "events";
 import { JsonRpcProvider } from "@ethersproject/providers";
@@ -88,6 +91,7 @@ export class Sequence<
   private kinoraReward721Address: `0x${string}`;
   private encryptUserMetrics: boolean;
   private errorHandlingModeStrict: boolean = false;
+  private metricsOnChainInterval: number = 60000;
   private kinoraPkpDBContract: ethers.Contract;
   private pkpContract: ethers.Contract;
   private pkpPermissionsContract: ethers.Contract;
@@ -108,44 +112,47 @@ export class Sequence<
     alertWhenUnauthorized: true,
   });
 
-  constructor(
-    livepeerPlayer: LivepeerPlayer<TPlaybackPolicyObject, TSlice>,
-    redirectURL: string,
-    rpcURL: string,
-    metricsOnChainInterval: number, // in minutes,
-    encryptUserMetrics: boolean,
-    errorHandlingModeStrict: boolean = false,
-    developerPKPPublicKey?: `0x04${string}`,
-    developerPKPTokenId?: string,
-    lensPubId?: string,
-    userProfileId?: string,
-    multihashDevKey?: string,
-    signer?: ethers.Signer,
-    kinoraMetricsAddress?: `0x${string}`,
-    kinoraQuestAddress?: `0x${string}`,
-    kinoraReward721Address?: `0x${string}`,
+  constructor(args: {
+    livepeerPlayerComponentId: string;
+    redirectURL: string;
+    rpcURL: string;
+    metricsOnChainInterval: number; // in minutes,
+    encryptUserMetrics: boolean;
+    errorHandlingModeStrict?: boolean;
+    developerPKPPublicKey?: `0x04${string}`;
+    developerPKPTokenId?: string;
+    lensPubId?: string;
+    userProfileId?: string;
+    multihashDevKey?: string;
+    signer?: ethers.Signer;
+    kinoraMetricsAddress?: `0x${string}`;
+    kinoraQuestAddress?: `0x${string}`;
+    kinoraReward721Address?: `0x${string}`;
     auth?: {
       projectId: string;
       projectSecret: string;
-    },
-  ) {
+    };
+  }) {
     super();
-    this.errorHandlingModeStrict = errorHandlingModeStrict;
-    this.livepeerPlayer = livepeerPlayer;
-    this.redirectURL = redirectURL;
-    this.rpcURL = rpcURL;
+    this.errorHandlingModeStrict = args.errorHandlingModeStrict || false;
+    this.metricsOnChainInterval = args.metricsOnChainInterval;
+    this.livepeerPlayer = document.getElementById(
+      args.livepeerPlayerComponentId,
+    ) as unknown as LivepeerHTMLElement<TPlaybackPolicyObject, TSlice>;
+    this.redirectURL = args.redirectURL;
+    this.rpcURL = args.rpcURL;
     this.developerPKPData = {
-      publicKey: developerPKPPublicKey,
-      tokenId: developerPKPTokenId,
+      publicKey: args.developerPKPPublicKey,
+      tokenId: args.developerPKPTokenId,
       ethAddress: ethers.utils.computeAddress(
-        developerPKPPublicKey,
+        args.developerPKPPublicKey,
       ) as `0x${string}`,
     };
-    this.multihashDevKey = multihashDevKey;
-    this.encryptUserMetrics = encryptUserMetrics;
-    if (userProfileId) this.userProfileId = userProfileId;
-    if (lensPubId) this.lensPubId = lensPubId;
-    this.signer = signer ? signer : ethers.Wallet.createRandom();
+    this.multihashDevKey = args.multihashDevKey;
+    this.encryptUserMetrics = args.encryptUserMetrics;
+    if (args.userProfileId) this.userProfileId = args.userProfileId;
+    if (args.lensPubId) this.lensPubId = args.lensPubId;
+    this.signer = args.signer ? args.signer : ethers.Wallet.createRandom();
     this.metrics = new Metrics();
     this.polygonProvider = new ethers.providers.JsonRpcProvider(
       this.rpcURL,
@@ -160,29 +167,29 @@ export class Sequence<
       KinoraPKPDBAbi,
       this.polygonProvider,
     );
-    if (kinoraMetricsAddress)
+    if (args.kinoraMetricsAddress)
       this.kinoraMetricsAddress = new ethers.Contract(
-        kinoraMetricsAddress,
+        args.kinoraMetricsAddress,
         KinoraMetricsAbi,
       );
-    if (kinoraQuestAddress) {
+    if (args.kinoraQuestAddress) {
       this.kinoraQuestAddress = new ethers.Contract(
-        kinoraQuestAddress,
+        args.kinoraQuestAddress,
         KinoraQuestAbi,
       );
     }
-    if (kinoraReward721Address) {
-      this.kinoraReward721Address = kinoraReward721Address;
+    if (args.kinoraReward721Address) {
+      this.kinoraReward721Address = args.kinoraReward721Address;
     }
-    if (auth)
+    if (args.auth)
       this.ipfsClient = create({
         url: "https://ipfs.infura.io:5001/api/v0",
         headers: {
           authorization:
             "Basic " +
-            Buffer.from(auth.projectId + ":" + auth.projectSecret).toString(
-              "base64",
-            ),
+            Buffer.from(
+              args.auth.projectId + ":" + args.auth.projectSecret,
+            ).toString("base64"),
         },
       });
     this.pkpContract = new ethers.Contract(
@@ -198,10 +205,16 @@ export class Sequence<
     this.litNodeClient.connect();
 
     if (typeof window !== "undefined") {
-      setInterval(this.sendMetricsOnChain, metricsOnChainInterval * 60 * 1000);
+      setInterval(
+        this.sendMetricsOnChain,
+        this.metricsOnChainInterval * 60 * 1000,
+      );
       window.addEventListener("beforeunload", this.sendMetricsOnChain);
     } else {
-      setInterval(this.sendMetricsOnChain, metricsOnChainInterval * 60 * 1000);
+      setInterval(
+        this.sendMetricsOnChain,
+        this.metricsOnChainInterval * 60 * 1000,
+      );
       process.on("exit", this.sendMetricsOnChain);
       process.on("SIGINT", this.sendMetricsOnChain);
     }
@@ -320,9 +333,7 @@ export class Sequence<
 
         const joinCondition = (await JSON.parse(response.data)).joinCondition;
 
-        const newJoinHash = getBytesFromMultihash(
-          joinCondition + this.multihashDevKey,
-        );
+        const newJoinHash = hashHex(joinCondition + this.multihashDevKey);
 
         newJoinHashes.push(newJoinHash);
 
@@ -451,7 +462,7 @@ export class Sequence<
       this.authMethod = await this.litProvider.authenticate();
       this.currentUserPKP = await this.handlePKPs();
 
-      const uriHash = getBytesFromMultihash(
+      const uriHash = hashHex(
         this.currentUserPKP.ethAddress + this.multihashDevKey,
       );
 
@@ -459,8 +470,11 @@ export class Sequence<
         uriHash,
         this.kinoraQuestAddress.address,
       );
-
-      const litActionHash = (await this.ipfsClient.add(litAction)).path;
+      const { error, message, outputBuffer } = await bundleCode(litAction);
+      if (error) {
+        return;
+      }
+      const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
 
       await assignLitAction(
         this.pkpPermissionsContract,
@@ -563,7 +577,7 @@ export class Sequence<
       );
       const uri = added.path;
 
-      const uriHash = getBytesFromMultihash(
+      const uriHash = hashHex(
         JSON.stringify(questInputs.uriDetails.joinCondition) +
           this.multihashDevKey,
       );
@@ -572,8 +586,15 @@ export class Sequence<
         uriHash,
         this.kinoraQuestAddress.address,
       );
-
-      const litActionHash = (await this.ipfsClient.add(litAction)).path;
+      const {
+        error: outputBufferError,
+        message: outputBufferMessage,
+        outputBuffer,
+      } = await bundleCode(litAction);
+      if (outputBufferError) {
+        return;
+      }
+      const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
 
       const { error, message, txHash } = await assignLitAction(
         this.pkpPermissionsContract,
@@ -609,7 +630,7 @@ export class Sequence<
         );
         const uri = added.path;
 
-        const uriHash = getBytesFromMultihash(
+        const uriHash = hashHex(
           JSON.stringify(
             questInputs.milestones[i].uriDetails.completionCondition,
           ) + this.multihashDevKey,
@@ -619,8 +640,15 @@ export class Sequence<
           uriHash,
           this.kinoraQuestAddress.address,
         );
-
-        const litActionHash = (await this.ipfsClient.add(litAction)).path;
+        const {
+          error: outputBufferError,
+          message: outputBufferMessage,
+          outputBuffer,
+        } = await bundleCode(litAction);
+        if (outputBufferError) {
+          return;
+        }
+        const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
         milestoneLitActionHashes.push(litActionHash);
 
         const { error, message, txHash } = await assignLitAction(
@@ -704,7 +732,7 @@ export class Sequence<
         );
         const uri = added.path;
 
-        const uriHash = getBytesFromMultihash(
+        const uriHash = hashHex(
           JSON.stringify(questMilestones[i].uriDetails.completionCondition) +
             this.multihashDevKey,
         );
@@ -714,7 +742,15 @@ export class Sequence<
           this.kinoraQuestAddress.address,
         );
 
-        const litActionHash = (await this.ipfsClient.add(litAction)).path;
+        const {
+          error: outputBufferError,
+          message: outputBufferMessage,
+          outputBuffer,
+        } = await bundleCode(litAction);
+        if (outputBufferError) {
+          return;
+        }
+        const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
         litActionHashes.push(litActionHash);
 
         const {
@@ -794,7 +830,7 @@ export class Sequence<
       );
       const uri = added.path;
 
-      const uriHash = getBytesFromMultihash(
+      const uriHash = hashHex(
         JSON.stringify(questDetails.newURIDetails.joinCondition) +
           this.multihashDevKey,
       );
@@ -804,7 +840,15 @@ export class Sequence<
         this.kinoraQuestAddress.address,
       );
 
-      const litActionHash = (await this.ipfsClient.add(litAction)).path;
+      const {
+        error: outputBufferError,
+        message: outputBufferMessage,
+        outputBuffer,
+      } = await bundleCode(litAction);
+      if (outputBufferError) {
+        return;
+      }
+      const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
 
       const oldJoinHashBytes = await this.kinoraQuestAddress.getQuestJoinHash(
         questDetails.questId,
@@ -851,7 +895,7 @@ export class Sequence<
         );
         const uri = added.path;
 
-        const uriHash = getBytesFromMultihash(
+        const uriHash = hashHex(
           JSON.stringify(
             questDetails.newMilestones[i].uriDetails.completionCondition,
           ) + this.multihashDevKey,
@@ -862,7 +906,15 @@ export class Sequence<
           this.kinoraQuestAddress.address,
         );
 
-        const litActionHash = (await this.ipfsClient.add(litAction)).path;
+        const {
+          error: outputBufferError,
+          message: outputBufferMessage,
+          outputBuffer,
+        } = await bundleCode(litAction);
+        if (outputBufferError) {
+          return;
+        }
+        const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
 
         const {
           error,
@@ -990,7 +1042,7 @@ export class Sequence<
       );
       const uri = added.path;
 
-      const uriHash = getBytesFromMultihash(
+      const uriHash = hashHex(
         JSON.stringify(
           milestoneDetails.newMilestoneURIDetails.completionCondition,
         ) + this.multihashDevKey,
@@ -1001,8 +1053,15 @@ export class Sequence<
         this.kinoraQuestAddress.address,
       );
 
-      const litActionHash = (await this.ipfsClient.add(litAction)).path;
-
+      const {
+        error: outputBufferError,
+        message: outputBufferMessage,
+        outputBuffer,
+      } = await bundleCode(litAction);
+      if (outputBufferError) {
+        return;
+      }
+      const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
       const oldLitActionBytes =
         await this.kinoraQuestAddress.getQuestMilestoneCompletionHash(
           milestoneDetails.questId,
@@ -1716,7 +1775,7 @@ export class Sequence<
         generatedTxData,
         "addUserPKP",
         this.authSig ? this.authSig : litAuthSig,
-        ADD_USER_LIT_ACTION_HASH,
+        IPFS_HASH_NEW_USER,
         this.developerPKPData.publicKey,
         this.multihashDevKey,
         "",
@@ -2156,10 +2215,20 @@ export class Sequence<
         return;
       }
 
-      const litActionHash = getLitActionCodeForAddUserMetrics(
+      const litAction = getLitActionCodeForAddUserMetrics(
         this.currentUserPKP.ethAddress,
         this.kinoraMetricsAddress.address,
       );
+
+      const {
+        error: outputBufferError,
+        message: outputBufferMessage,
+        outputBuffer,
+      } = await bundleCode(litAction);
+      if (outputBufferError) {
+        return;
+      }
+      const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
 
       const { txHash, error, message, litResponse } = await litExecute(
         this.polygonProvider,
