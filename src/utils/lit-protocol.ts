@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { CHRONICLE_PKP_CONTRACT } from "src/constants";
+import { CHRONICLE_PKP_CONTRACT } from "./../../src/constants";
 import { joinSignature } from "@ethersproject/bytes";
 import { serialize } from "@ethersproject/transactions";
 import bs58 from "bs58";
@@ -16,7 +16,7 @@ import {
   GeneratedTxData,
   LitAuthSig,
   UserMetrics,
-} from "src/@types/kinora-sdk";
+} from "./../../src/@types/kinora-sdk";
 import { IRelayPKP, SessionSigs } from "@lit-protocol/types";
 
 export const createTxData = async (

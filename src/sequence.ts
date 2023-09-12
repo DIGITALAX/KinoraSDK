@@ -13,13 +13,13 @@ import {
   ILogEntry,
   LogCategory,
   LivepeerHTMLElement,
-} from "./@types/kinora-sdk";
+} from "./../src/@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import "@lit-protocol/lit-auth-client";
 import axios from "axios";
 import { ProviderType } from "@lit-protocol/constants";
 import { ethers } from "ethers";
-import { IPFSHTTPClient, create } from "ipfs-http-client";
+import { create } from "ipfs-http-client";
 import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
 import { AuthMethod, IRelayPKP } from "@lit-protocol/types";
 import {
@@ -30,7 +30,7 @@ import {
   CHRONICLE_PKP_PERMISSIONS_CONTRACT,
   INFURA_GATEWAY,
   IPFS_HASH_NEW_USER,
-} from "./constants";
+} from "./../src/constants";
 import KinoraPKPDBAbi from "./abis/KinoraPKPDB.json";
 import KinoraFactoryAbi from "./abis/KinoraFactory.json";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
@@ -56,7 +56,7 @@ import {
   removeLitAction,
   hashHex,
   bundleCode,
-} from "./utils/lit-protocol";
+} from "./../src/utils/lit-protocol";
 import { EventEmitter } from "events";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import getLensValues from "./apollo/queries/getLensValues";
@@ -97,7 +97,7 @@ export class Sequence<
   private pkpPermissionsContract: ethers.Contract;
   private kinoraQuestAddress: ethers.Contract;
   private kinoraMetricsAddress: ethers.Contract;
-  private ipfsClient: IPFSHTTPClient;
+  private ipfsClient: any;
   private signer: ethers.Signer;
   private authSig: LitAuthSig;
   private userPKPAuthSig: LitAuthSig;
@@ -138,7 +138,10 @@ export class Sequence<
     this.metricsOnChainInterval = args.metricsOnChainInterval;
     this.livepeerPlayer = document.getElementById(
       args.livepeerPlayerComponentId,
-    ) as unknown as LivepeerHTMLElement<TPlaybackPolicyObject, TSlice>;
+    ).firstChild as unknown as LivepeerHTMLElement<
+      TPlaybackPolicyObject,
+      TSlice
+    >;
     this.redirectURL = args.redirectURL;
     this.rpcURL = args.rpcURL;
     this.developerPKPData = {
@@ -507,6 +510,10 @@ export class Sequence<
       throw new Error("Set user's PKP before continuing.");
     if (!this.kinoraMetricsAddress)
       throw new Error("Set Kinora Metrics Address before continuing.");
+
+    this.livepeerPlayer.on("all", () => {
+      console.log("catching all events");
+    });
 
     this.livepeerPlayer.on("stream.started", () => {
       this.metrics.updateImpressions();
