@@ -52,24 +52,11 @@ contract KinoraFactory {
     _;
   }
 
-  constructor(
-    address _accessControlsAddress,
-    address _pkpDBAddress,
-    address _logicAddressAC,
-    address _logicAddressQ,
-    address _logicAddressE,
-    address _logicAddressM,
-    address _logicAddressQR
-  ) {
+  constructor(address _accessControlsAddress, address _pkpDBAddress) {
     name = "KinoraFactory";
     symbol = "KFAC";
     _globalAccessControl = _accessControlsAddress;
     _globalPKPDB = _pkpDBAddress;
-    _kinoraAccessControl = _logicAddressAC;
-    _kinoraQuest = _logicAddressQ;
-    _kinoraEscrow = _logicAddressE;
-    _kinoraMetrics = _logicAddressM;
-    _kinoraQuestReward = _logicAddressQR;
   }
 
   function deployFromKinoraFactory(address _pkpAddress) public {
@@ -81,7 +68,6 @@ contract KinoraFactory {
       address _newKQR
     ) = _deploySuite(msg.sender, _pkpAddress);
 
-    KinoraAccessControl(_newKAC).addAdmin(msg.sender);
     KinoraEscrow(_newKE).setKinoraQuest(_newKQ);
     KinoraEscrow(_newKE).setKinora721QuestReward(_newKQR);
 
@@ -133,7 +119,7 @@ contract KinoraFactory {
     KinoraMetrics(_newKM).initialize(_newKAC);
 
     // Deploy KinoraEscrowAddress
-    KinoraEscrow(_newKE).initialize(_newKAC);
+    KinoraEscrow(_newKE).initialize(_newKAC, address(this));
 
     // Deploy KinoraQuestAddress
     KinoraQuest(_newKQ).initialize(_newKAC, _newKE, _globalPKPDB);
@@ -208,6 +194,26 @@ contract KinoraFactory {
     return _kinoraIDCount;
   }
 
+  function getKinoraMetricLogicAddress() public view returns (address) {
+    return _kinoraMetrics;
+  }
+
+  function getKinoraEscrowLogicAddress() public view returns (address) {
+    return _kinoraEscrow;
+  }
+
+  function getKinoraQuestRewardLogicAddress() public view returns (address) {
+    return _kinoraQuestReward;
+  }
+
+  function getKinoraQuestLogicAddress() public view returns (address) {
+    return _kinoraQuest;
+  }
+
+  function getKinoraAccessControlLogicAddress() public view returns (address) {
+    return _kinoraAccessControl;
+  }
+
   function setGlobalAccessControl(
     address _newAccessControlAddress
   ) external onlyAdmin {
@@ -216,5 +222,19 @@ contract KinoraFactory {
 
   function setGlobalPKPDBControl(address _newPKPDBAddress) external onlyAdmin {
     _globalPKPDB = _newPKPDBAddress;
+  }
+
+  function setLogicAddresses(
+    address _logicAddressAC,
+    address _logicAddressQ,
+    address _logicAddressE,
+    address _logicAddressM,
+    address _logicAddressQR
+  ) external onlyAdmin {
+    _kinoraAccessControl = _logicAddressAC;
+    _kinoraQuest = _logicAddressQ;
+    _kinoraEscrow = _logicAddressE;
+    _kinoraMetrics = _logicAddressM;
+    _kinoraQuestReward = _logicAddressQR;
   }
 }

@@ -25,11 +25,12 @@ contract KinoraGlobalPKPDB {
     address newAccessControlAddress,
     address deployerAddress
   );
+  event KinoraFactoryUpdate(address newFactoryAddress, address deployerAddress);
 
   modifier onlyAdmin() {
     require(
       _globalAccessControl.isAdmin(msg.sender),
-      "GlobalKinoraAccessControl: Only admin can perform this action"
+      "GlobalKinoraAccessControl: Only admin can perform this action."
     );
     _;
   }
@@ -40,14 +41,13 @@ contract KinoraGlobalPKPDB {
     );
     require(
       msg.sender == KinoraAccessControl(_accessControl).getAssignedPKPAddress(),
-      "KinoraFactory: Only a ."
+      "KinoraFactory: Only the Assigned PKP can perform this action."
     );
     _;
   }
 
-  constructor(address _accessControlAddress, address _kinoraFactoryAddress) {
+  constructor(address _accessControlAddress) {
     _globalAccessControl = KinoraGlobalAccessControl(_accessControlAddress);
-    _kinoraFactory = KinoraFactory(_kinoraFactoryAddress);
   }
 
   function addUserPKP(address _userPkpAddress) public onlyFactoryPKP {
@@ -86,6 +86,11 @@ contract KinoraGlobalPKPDB {
     emit KinoraGlobalAccessControlUpdate(_newAccessControlAddress, msg.sender);
   }
 
+  function setKinoraFactoyAddress(address _factoryAddress) public onlyAdmin {
+    _kinoraFactory = KinoraFactory(_factoryAddress);
+    emit KinoraFactoryUpdate(_factoryAddress, msg.sender);
+  }
+
   function userExits(address _userPKPAddress) public view returns (bool) {
     return _userActiveAccount[_userPKPAddress];
   }
@@ -108,5 +113,9 @@ contract KinoraGlobalPKPDB {
 
   function getGlobalKinoraAccessControl() public view returns (address) {
     return address(_globalAccessControl);
+  }
+
+  function getKinoraFactory() public view returns (address) {
+    return address(_kinoraFactory);
   }
 }

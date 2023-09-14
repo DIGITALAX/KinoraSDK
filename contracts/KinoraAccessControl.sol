@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 contract KinoraAccessControl is Initializable {
   string public symbol;
   string public name;
-  address private _factory;
   address private _assignedPKPAddress;
 
   mapping(address => bool) private _admins;
@@ -23,32 +22,18 @@ contract KinoraAccessControl is Initializable {
     _;
   }
 
-  modifier onlyFactory() {
-    require(
-      msg.sender == _factory,
-      "KinoraAccessControl: Only Assigned PKP can perform this action."
-    );
-    _;
-  }
-
-  constructor(address _factoryAddress) {
-    _factory = _factoryAddress;
-  }
-
-  function initialize(
-    address _pkpAddress,
-    address _deployerAdmin
-  ) public onlyFactory {
+  function initialize(address _pkpAddress, address _deployerAdmin) public {
     symbol = "KAC";
     name = "KinoraAccessControl";
     _assignedPKPAddress = _pkpAddress;
+    _admins[msg.sender] = true;
     _admins[_deployerAdmin] = true;
   }
 
   function addAdmin(address _admin) external onlyAdmin {
     require(
-      !_admins[_admin] && _admin != msg.sender,
-      "KinoraAccessControl: Cannot add existing admin or yourself."
+      !_admins[_admin],
+      "KinoraAccessControl: Cannot add existing admin."
     );
     _admins[_admin] = true;
     emit AdminAdded(_admin);
@@ -77,9 +62,5 @@ contract KinoraAccessControl is Initializable {
 
   function getAssignedPKPAddress() public view returns (address) {
     return _assignedPKPAddress;
-  }
-
-  function getKinoraFactory() public view returns (address) {
-    return _factory;
   }
 }

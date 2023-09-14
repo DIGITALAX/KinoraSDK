@@ -110,12 +110,6 @@
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "joinHash",
-        "type": "bytes32"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes32",
         "name": "completionHash",
         "type": "bytes32"
       }
@@ -781,6 +775,32 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32[]",
+        "name": "_newCompletionHashes",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "updateAllCompletionHashes",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "_newJoinHashes",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "updateAllJoinHashes",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256[]",
         "name": "_newTokenIds",
         "type": "uint256[]"
@@ -799,11 +819,6 @@
         "internalType": "address",
         "name": "_newTokenAddress",
         "type": "address"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "_joinHash",
-        "type": "bytes32"
       },
       {
         "internalType": "bytes32",

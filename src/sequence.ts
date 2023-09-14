@@ -28,6 +28,7 @@ import {
   CHRONICLE_PKP_PERMISSIONS_CONTRACT,
   INFURA_GATEWAY,
   IPFS_HASH_NEW_USER,
+  CHAIN,
 } from "./../src/constants";
 import KinoraPKPDBAbi from "./abis/KinoraPKPDB.json";
 import KinoraFactoryAbi from "./abis/KinoraFactory.json";
@@ -60,7 +61,6 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import getLensValues from "./apollo/queries/getLensValues";
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
 
-
 export class Sequence extends EventEmitter {
   private metrics: Metrics;
   private videoElement: HTMLVideoElement;
@@ -75,7 +75,7 @@ export class Sequence extends EventEmitter {
   private logIndex = 0;
   private logs: ILogEntry[] = new Array(this.logSize);
   private rpcURL: string;
-  private chain: string = "polygon";
+  private chain: string = CHAIN;
   private multihashDevKey: string;
   private redirectURL: string;
   private ipfsClient: IPFSHTTPClient;
@@ -112,19 +112,19 @@ export class Sequence extends EventEmitter {
   });
 
   constructor(args: {
-    playbackId: string;
-    parentId: string;
-    redirectURL: string;
-    rpcURL: string;
-    metricsOnChainInterval: number; // in minutes,
-    encryptUserMetrics: boolean;
+    playbackId?: string;
+    parentId?: string;
+    redirectURL?: string;
+    rpcURL?: string;
+    metricsOnChainInterval?: number; // in minutes,
+    encryptUserMetrics?: boolean;
     errorHandlingModeStrict?: boolean;
     developerPKPPublicKey?: `0x04${string}`;
     developerPKPTokenId?: string;
     lensPubId?: string;
     userProfileId?: string;
     multihashDevKey?: string;
-    signer?: ethers.Signer;
+    signer?: ethers.Signer; // chronicle signer
     kinoraMetricsAddress?: `0x${string}`;
     kinoraQuestAddress?: `0x${string}`;
     kinoraReward721Address?: `0x${string}`;
@@ -139,18 +139,18 @@ export class Sequence extends EventEmitter {
     this.playbackId = args.playbackId;
     this.redirectURL = args.redirectURL;
     this.rpcURL = args.rpcURL;
-    this.developerPKPData = {
-      publicKey: args.developerPKPPublicKey,
-      tokenId: args.developerPKPTokenId,
-      ethAddress: ethers.utils.computeAddress(
-        args.developerPKPPublicKey,
-      ) as `0x${string}`,
-    };
+    if (args.developerPKPPublicKey)
+      this.developerPKPData = {
+        publicKey: args.developerPKPPublicKey,
+        tokenId: args.developerPKPTokenId,
+        ethAddress: ethers.utils.computeAddress(
+          args.developerPKPPublicKey,
+        ) as `0x${string}`,
+      };
     this.multihashDevKey = args.multihashDevKey;
     this.encryptUserMetrics = args.encryptUserMetrics;
     if (args.userProfileId) this.userProfileId = args.userProfileId;
     if (args.lensPubId) this.lensPubId = args.lensPubId;
-    this.signer = args.signer ? args.signer : ethers.Wallet.createRandom();
     this.metrics = new Metrics();
     this.polygonProvider = new ethers.providers.JsonRpcProvider(
       this.rpcURL,
@@ -160,6 +160,10 @@ export class Sequence extends EventEmitter {
       LIT_RPC,
       ChainIds["chronicle"],
     );
+    this.signer = args.signer
+      ? args.signer
+      : ethers.Wallet.createRandom().connect(this.chronicleProvider);
+
     this.kinoraPkpDBContract = new ethers.Contract(
       KINORA_PKP_DB_CONTRACT,
       KinoraPKPDBAbi,
@@ -235,6 +239,11 @@ export class Sequence extends EventEmitter {
     pkpPublicKey: string;
     pkpTokenId: string;
   }> => {
+    if (!this.signer) throw new Error("Set Signer before continuing.");
+    if (!this.rpcURL)
+      throw new Error("Set Polygon Provider before continuing.");
+    if (!this.chronicleProvider)
+      throw new Error("Set Chronicle Provider before continuing.");
     this.multihashDevKey = generateSecureRandomKey();
     const { pkpTokenId, publicKey, error, message } = await mintNextPKP(
       this.pkpContract,
@@ -259,15 +268,34 @@ export class Sequence extends EventEmitter {
     const factoryContract = new ethers.Contract(
       KINORA_FACTORY_CONTRACT,
       KinoraFactoryAbi,
-      this.polygonProvider,
+      this.signer.connect(this.polygonProvider),
     );
+
+    const latestBlock = await this.polygonProvider.getBlock("latest");
+    const baseFeePerGas = latestBlock.baseFeePerGas;
+    const maxPriorityFeePerGas = ethers.utils.parseUnits("2", "gwei");
+    const maxFeePerGas = baseFeePerGas.add(maxPriorityFeePerGas);
+
+    const estimateGasLimit =
+      await factoryContract.estimateGas.deployFromKinoraFactory(
+        this.developerPKPData.ethAddress,
+      );
 
     const txHash = await factoryContract.deployFromKinoraFactory(
       this.developerPKPData.ethAddress,
+      {
+        maxPriorityFeePerGas,
+        maxFeePerGas,
+        gasLimit: estimateGasLimit.add(
+          ethers.BigNumber.from(Math.floor(estimateGasLimit.toNumber() * 0.1)),
+        ),
+      },
     );
 
-    const receiptFactory = await this.chronicleProvider.getTransactionReceipt(
-      txHash,
+    await txHash.wait();
+
+    const receiptFactory = await this.polygonProvider.getTransactionReceipt(
+      txHash.hash,
     );
 
     if (receiptFactory && receiptFactory.logs) {

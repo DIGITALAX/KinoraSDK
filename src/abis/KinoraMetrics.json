@@ -96,7 +96,7 @@
           },
           {
             "internalType": "string",
-            "name": "metricJSON",
+            "name": "metricJSONHash",
             "type": "string"
           },
           {
@@ -178,7 +178,7 @@
         "type": "string"
       }
     ],
-    "name": "getUserMetricsJSONByPlaybackId",
+    "name": "getUserMetricsJSONHashByPlaybackId",
     "outputs": [
       {
         "internalType": "string",

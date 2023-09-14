@@ -10,31 +10,6 @@
         "internalType": "address",
         "name": "_pkpDBAddress",
         "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_logicAddressAC",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_logicAddressQ",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_logicAddressE",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_logicAddressM",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_logicAddressQR",
-        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -218,6 +193,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getKinoraAccessControlLogicAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -226,6 +214,19 @@
       }
     ],
     "name": "getKinoraDeployerToPKP",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getKinoraEscrowLogicAddress",
     "outputs": [
       {
         "internalType": "address",
@@ -269,6 +270,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getKinoraMetricLogicAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -282,6 +296,32 @@
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getKinoraQuestLogicAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getKinoraQuestRewardLogicAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -322,6 +362,39 @@
       }
     ],
     "name": "setGlobalPKPDBControl",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_logicAddressAC",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_logicAddressQ",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_logicAddressE",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_logicAddressM",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_logicAddressQR",
+        "type": "address"
+      }
+    ],
+    "name": "setLogicAddresses",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
