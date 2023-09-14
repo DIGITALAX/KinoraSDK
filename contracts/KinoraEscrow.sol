@@ -26,12 +26,12 @@ contract KinoraEscrow is Initializable {
     bool _tokenExists;
   }
 
-  constructor(address _factoryAddress) {
-    _factory = _factoryAddress;
-  }
-
-  function initialize(address _accessControlAddress) public onlyFactory {
+  function initialize(
+    address _accessControlAddress,
+    address _factoryAddress
+  ) public {
     _accessControl = KinoraAccessControl(_accessControlAddress);
+    _factory = _factoryAddress;
   }
 
   mapping(uint256 => mapping(uint256 => mapping(address => ERC20Token)))
@@ -59,7 +59,7 @@ contract KinoraEscrow is Initializable {
   modifier onlyFactory() {
     require(
       msg.sender == _factory,
-      "KinoraEscrow: Only Assigned PKP can perform this action."
+      "KinoraEscrow: Only the Kinora Factory can perform this action."
     );
     _;
   }

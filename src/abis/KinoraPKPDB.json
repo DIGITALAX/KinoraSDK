@@ -5,11 +5,6 @@
         "internalType": "address",
         "name": "_accessControlAddress",
         "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_kinoraFactoryAddress",
-        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -26,6 +21,25 @@
       }
     ],
     "name": "AddUserPKP",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newFactoryAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "deployerAddress",
+        "type": "address"
+      }
+    ],
+    "name": "KinoraFactoryUpdate",
     "type": "event"
   },
   {
@@ -75,7 +89,33 @@
   },
   {
     "inputs": [],
+    "name": "getActiveUserCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getGlobalKinoraAccessControl",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getKinoraFactory",
     "outputs": [
       {
         "internalType": "address",
@@ -90,11 +130,62 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "_userPKPAddress",
+        "type": "address"
+      }
+    ],
+    "name": "getUserIdByPKP",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_userPKPAddress",
+        "type": "address"
+      }
+    ],
+    "name": "getUserRegisteredTimestampByPKP",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "_userPkpAddress",
         "type": "address"
       }
     ],
     "name": "removeUserPKP",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_factoryAddress",
+        "type": "address"
+      }
+    ],
+    "name": "setKinoraFactoyAddress",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

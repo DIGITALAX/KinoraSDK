@@ -11,7 +11,6 @@ contract KinoraQuest is Initializable {
   KinoraAccessControl private _accessControl;
   KinoraGlobalPKPDB private _pkpDB;
   KinoraEscrow private _escrow;
-  address private _factory;
   uint256 private _questCount;
   uint256 private _userCount;
 
@@ -60,7 +59,7 @@ contract KinoraQuest is Initializable {
   modifier onlyUserPKP() {
     require(
       msg.sender == _accessControl.getAssignedPKPAddress(),
-      "KinoraAccessControl: Only Assigned PKP can perform this action."
+      "KinoraQuest: Only Assigned PKP can perform this action."
     );
     _;
   }
@@ -78,14 +77,6 @@ contract KinoraQuest is Initializable {
     require(
       _allQuests[_questId]._status != Status.Closed,
       "KinoraQuest: Quest must have an open status."
-    );
-    _;
-  }
-
-  modifier onlyFactory() {
-    require(
-      msg.sender == address(_factory),
-      "KinoraQuest: Only Assigned PKP can perform this action."
     );
     _;
   }
@@ -120,15 +111,11 @@ contract KinoraQuest is Initializable {
   event QuestTerminated(uint256 indexed questId);
   event UserJoinQuest(uint256 indexed questId, address userAddress);
 
-  constructor(address _factoryAddress) {
-    _factory = _factoryAddress;
-  }
-
   function initialize(
     address _accessControlAddress,
     address _escrowAddress,
     address _pkpDBAddress
-  ) public onlyFactory {
+  ) public {
     _accessControl = KinoraAccessControl(_accessControlAddress);
     _escrow = KinoraEscrow(_escrowAddress);
     _pkpDB = KinoraGlobalPKPDB(_pkpDBAddress);
@@ -523,9 +510,5 @@ contract KinoraQuest is Initializable {
     uint256 _milestoneId
   ) public view returns (uint256[] memory) {
     return _allQuests[_questId]._milestones[_milestoneId]._reward._tokenIds;
-  }
-
-  function getKinoraFactory() public view returns (address) {
-    return _factory;
   }
 }

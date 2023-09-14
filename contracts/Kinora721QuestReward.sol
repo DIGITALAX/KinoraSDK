@@ -10,7 +10,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 contract Kinora721QuestReward is ERC721URIStorage, Initializable {
   KinoraQuest private _quest;
   KinoraEscrow private _escrow;
-  address private _factory;
   uint256 private _tokenCount;
 
   modifier onlyUserQuestCompleted(
@@ -57,22 +56,9 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
     _;
   }
 
-  modifier onlyFactory() {
-    require(
-      msg.sender == _factory,
-      "Kinora721QuestReward: Only Assigned PKP can perform this action."
-    );
-    _;
-  }
+  constructor() ERC721("Kinora721QuestReward", "KQRE") {}
 
-  constructor(address _factoryAddress) ERC721("Kinora721QuestReward", "KQRE") {
-    _factory = _factoryAddress;
-  }
-
-  function initialize(
-    address _questAddress,
-    address _escrowAddress
-  ) public onlyFactory {
+  function initialize(address _questAddress, address _escrowAddress) public {
     _quest = KinoraQuest(_questAddress);
     _escrow = KinoraEscrow(_escrowAddress);
   }
@@ -104,9 +90,5 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
 
   function getTokenCount() public view returns (uint256) {
     return _tokenCount;
-  }
-
-  function getKinoraFactory() public view returns (address) {
-    return _factory;
   }
 }

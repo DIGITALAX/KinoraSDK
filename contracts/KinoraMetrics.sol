@@ -14,7 +14,6 @@ library MetricsParamsLibrary {
 
 contract KinoraMetrics is Initializable {
   KinoraAccessControl private _accessControl;
-  address private _factory;
 
   struct UserLivePeerMetrics {
     string _playbackId;
@@ -34,14 +33,6 @@ contract KinoraMetrics is Initializable {
     bool encrypted
   );
 
-  modifier onlyFactory() {
-    require(
-      msg.sender == _factory,
-      "KinoraMetrics: Only Assigned PKP can perform this action."
-    );
-    _;
-  }
-
   modifier onlyUserPKP() {
     require(
       msg.sender == _accessControl.getAssignedPKPAddress(),
@@ -50,11 +41,7 @@ contract KinoraMetrics is Initializable {
     _;
   }
 
-  constructor(address _factoryAddress) {
-    _factory = _factoryAddress;
-  }
-
-  function initialize(address _accessControlAddress) public onlyFactory {
+  function initialize(address _accessControlAddress) public {
     _accessControl = KinoraAccessControl(_accessControlAddress);
   }
 
@@ -110,9 +97,5 @@ contract KinoraMetrics is Initializable {
 
   function getKinoraAccessControl() public view returns (address) {
     return address(_accessControl);
-  }
-
-  function getKinoraFactory() public view returns (address) {
-    return _factory;
   }
 }
