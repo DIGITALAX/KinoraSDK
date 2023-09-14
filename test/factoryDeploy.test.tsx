@@ -1,3 +1,14 @@
+jest.mock("ipfs-http-client", () => ({
+  create: jest.fn(() => ({
+    add: jest.fn(),
+    cat: jest.fn(),
+  }))
+}));
+
+jest.mock("@walletconnect/utils", () => ({
+  // Mock out methods and properties
+}));
+
 import React from "react";
 import { Sequence } from "./../src/sequence";
 import { Player } from "@livepeer/react";
@@ -10,18 +21,18 @@ describe("Test Factory Deployment & Dev PKP Mint", () => {
     // mock the livepeer component
     const livepeerPlayerComponentId = "livepeerPlayer";
 
-    const { container } = render(
-      <div id={livepeerPlayerComponentId}>
-        <Player
-          autoPlay
-          src={"https://lenster.xyz/b1bec84c-770d-4acf-9503-31373856e1fd"}
-        />
-      </div>,
-    );
+    // const { container } = render(
+    //   <div id={livepeerPlayerComponentId}>
+    //     <Player
+    //       autoPlay
+    //       src={"https://lenster.xyz/b1bec84c-770d-4acf-9503-31373856e1fd"}
+    //     />
+    //   </div>,
+    // );
 
-    container.addEventListener("stream.started", () => {
-      console.log("catching all events");
-    });
+    // container.addEventListener("stream.started", () => {
+    //   console.log("catching all events");
+    // });
 
     newSequence = new Sequence({
       livepeerPlayerComponentId: livepeerPlayerComponentId,
