@@ -17,12 +17,9 @@ export const LENS_VALUES = `query($pubId: PubId, $profileId: ProfileId) Publicat
     }
   }`;
 
-const getLensValues = (
-  pubId: string,
-  profileId: string,
-) => {
-  return authClient.mutate({
-    mutation: gql(LENS_VALUES),
+const getLensValues = (pubId: string, profileId: string) => {
+  return authClient.query({
+    query: gql(LENS_VALUES),
     variables: {
       request: {
         pubId,

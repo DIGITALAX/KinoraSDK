@@ -1,7 +1,3 @@
-import { PlayerProps } from "@livepeer/react";
-import { HlsVideoConfig } from "livepeer/media/browser/hls";
-import { WebRTCVideoConfig } from "livepeer/media/browser/webrtc";
-import { ControlsOptions } from "livepeer/media/browser";
 import { Bytes, ethers } from "ethers";
 import {
   DiscordProvider,
@@ -18,18 +14,6 @@ export enum Status {
   Open,
   Closed,
 }
-
-export type LivepeerPlayer<TPlaybackPolicyObject extends object, TSlice> = {
-  on: (eventName: string, callback: Function) => void;
-  props: PlayerProps<TPlaybackPolicyObject, TSlice>;
-  showPipButton?: boolean;
-  controls?: ControlsOptions;
-  hlsConfig?: HlsVideoConfig;
-  lowLatency?: boolean | "force";
-  webrtcConfig?: WebRTCVideoConfig;
-  allowCrossOriginCredentials?: boolean;
-  tabIndex?: number;
-};
 
 export const ChainIds: { [key: string]: number } = {
   polygon: 137,
@@ -67,22 +51,29 @@ export type LitAuthSig = {
 };
 
 export interface UserMetrics {
-  avd: number;
-  ctr: number;
-  assetEngagement: number;
-  userEngagementRatio: number;
-  multiPlaybackUsageRate: number;
-  taskFailureRate: number;
-  recordingPerSession: number;
-  totalDuration: number;
-  numberOfImpressions: number;
-  numberOfClicks: number;
-  totalIdleTime: number;
-  numberOfRecordings: number;
-  numberOfFailedTasks: number;
-  numberOfMultistreams: number;
-  numberOfAssets: number;
-  numberOfUpdates: number;
+  rawTotalDuration: number;
+  rawPlayCount: number;
+  rawPauseCount: number;
+  rawSkipCount: number;
+  rawClickCount: number;
+  rawImpressionCount: number;
+  rawBounceCount: number;
+  rawBounceRate: number;
+  rawVolumeChangeCount: number;
+  rawFullScreenCount: number;
+  rawBufferCount: number;
+  rawBufferDuration: number;
+  rawEngagementRate: number;
+  rawMostReplayedArea: string;
+  rawPlayPauseRatio: number;
+  rawCtr: number;
+  rawAvd: number;
+  averageBounceRate?: number;
+  averageBufferDuration?: number;
+  averageEngagementRate?: number;
+  averagePlayPauseRatio?: number;
+  averageCtr?: number;
+  averageAvd?: number;
   mirrorLens: boolean;
   likeLens: boolean;
   bookmarkLens: boolean;
@@ -279,7 +270,3 @@ export interface ILogEntry {
   isoDate: string;
 }
 
-export type LivepeerHTMLElement<
-  TPlaybackPolicyObject extends object,
-  TSlice,
-> = HTMLElement & LivepeerPlayer<TPlaybackPolicyObject, TSlice>;

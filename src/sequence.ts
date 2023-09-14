@@ -2,7 +2,6 @@ import {
   ChainIds,
   LitAuthSig,
   LitProvider,
-  LivepeerPlayer,
   Milestone,
   MilestoneURI,
   QuestURI,
@@ -12,14 +11,13 @@ import {
   QuestEligibility,
   ILogEntry,
   LogCategory,
-  LivepeerHTMLElement,
 } from "./../src/@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import "@lit-protocol/lit-auth-client";
 import axios from "axios";
 import { ProviderType } from "@lit-protocol/constants";
 import { ethers } from "ethers";
-import { create } from "ipfs-http-client";
+import { IPFSHTTPClient, create } from "ipfs-http-client";
 import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
 import { AuthMethod, IRelayPKP } from "@lit-protocol/types";
 import {
@@ -61,12 +59,9 @@ import { EventEmitter } from "events";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import getLensValues from "./apollo/queries/getLensValues";
 
-export class Sequence<
-  TPlaybackPolicyObject extends object,
-  TSlice,
-> extends EventEmitter {
-  private livepeerPlayer: LivepeerPlayer<TPlaybackPolicyObject, TSlice>;
+export class Sequence extends EventEmitter {
   private metrics: Metrics;
+  private videoElement: HTMLVideoElement;
   private currentUserPKP: IRelayPKP;
   private currentUserPKPWallet: PKPEthersWallet;
   private providerType: ProviderType;
@@ -81,8 +76,10 @@ export class Sequence<
   private chain: string = "polygon";
   private multihashDevKey: string;
   private redirectURL: string;
+  private ipfsClient: IPFSHTTPClient;
   private lensPubId: string;
   private userProfileId: string;
+  private playbackId: string;
   private developerPKPData: {
     publicKey: `0x04${string}`;
     tokenId: string;
@@ -92,12 +89,12 @@ export class Sequence<
   private encryptUserMetrics: boolean;
   private errorHandlingModeStrict: boolean = false;
   private metricsOnChainInterval: number = 60000;
+  private intervalId: NodeJS.Timeout;
   private kinoraPkpDBContract: ethers.Contract;
   private pkpContract: ethers.Contract;
   private pkpPermissionsContract: ethers.Contract;
   private kinoraQuestAddress: ethers.Contract;
   private kinoraMetricsAddress: ethers.Contract;
-  private ipfsClient: any;
   private signer: ethers.Signer;
   private authSig: LitAuthSig;
   private userPKPAuthSig: LitAuthSig;
@@ -113,7 +110,8 @@ export class Sequence<
   });
 
   constructor(args: {
-    livepeerPlayerComponentId: string;
+    playbackId: string;
+    parentId: string;
     redirectURL: string;
     rpcURL: string;
     metricsOnChainInterval: number; // in minutes,
@@ -136,12 +134,7 @@ export class Sequence<
     super();
     this.errorHandlingModeStrict = args.errorHandlingModeStrict || false;
     this.metricsOnChainInterval = args.metricsOnChainInterval;
-    this.livepeerPlayer = document.getElementById(
-      args.livepeerPlayerComponentId,
-    ).firstChild as unknown as LivepeerHTMLElement<
-      TPlaybackPolicyObject,
-      TSlice
-    >;
+    this.playbackId = args.playbackId;
     this.redirectURL = args.redirectURL;
     this.rpcURL = args.rpcURL;
     this.developerPKPData = {
@@ -195,6 +188,7 @@ export class Sequence<
             ).toString("base64"),
         },
       });
+
     this.pkpContract = new ethers.Contract(
       CHRONICLE_PKP_CONTRACT,
       PKPNFTAbi,
@@ -208,18 +202,23 @@ export class Sequence<
     this.litNodeClient.connect();
 
     if (typeof window !== "undefined") {
-      setInterval(
-        this.sendMetricsOnChain,
+      this.videoElement = document
+        .getElementById(args.parentId)
+        .querySelector('[class*="livepeer-contents-container"]')
+        .querySelector("video");
+
+      if (!this.videoElement)
+        throw new Error("LivePeer Player element not found.");
+
+      this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
+      this.fullScreenChangeHandler = this.fullScreenChangeHandler.bind(this);
+
+      this.intervalId = setInterval(
+        this.collectAndSendMetrics,
         this.metricsOnChainInterval * 60 * 1000,
       );
-      window.addEventListener("beforeunload", this.sendMetricsOnChain);
-    } else {
-      setInterval(
-        this.sendMetricsOnChain,
-        this.metricsOnChainInterval * 60 * 1000,
-      );
-      process.on("exit", this.sendMetricsOnChain);
-      process.on("SIGINT", this.sendMetricsOnChain);
+
+      window.addEventListener("beforeunload", this.beforeUnloadHandler);
     }
   }
 
@@ -310,8 +309,6 @@ export class Sequence<
   generateNewMultiHashDevKey = async (): Promise<{
     multihashDevKey: string;
   }> => {
-    if (!this.ipfsClient)
-      throw new Error("Provide IPFS Auth before continuing.");
     if (!this.developerPKPData.publicKey)
       throw new Error("Set developer PKP Public Key before continuing.");
     if (!this.developerPKPData.tokenId)
@@ -454,11 +451,13 @@ export class Sequence<
     }
   };
 
-  authenticateUserRedirect = async (): Promise<void> => {
+  authenticateUserRedirect = async (): Promise<{
+    error: boolean;
+    errorMessage: string;
+    outputBuffer: string;
+  }> => {
     if (!this.developerPKPData.publicKey)
       throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.ipfsClient)
-      throw new Error("Provide IPFS Auth before continuing.");
     if (!this.developerPKPData.tokenId)
       throw new Error("Set developer PKP Token Id before continuing.");
     try {
@@ -474,16 +473,12 @@ export class Sequence<
         this.kinoraQuestAddress.address,
       );
       const { error, message, outputBuffer } = await bundleCode(litAction);
-      if (error) {
-        return;
-      }
-      const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
 
-      await assignLitAction(
-        this.pkpPermissionsContract,
-        this.developerPKPData.tokenId,
-        getBytesFromMultihash(litActionHash),
-      );
+      return {
+        error,
+        errorMessage: message,
+        outputBuffer,
+      };
     } catch (err: any) {
       this.log(
         LogCategory.ERROR,
@@ -499,7 +494,48 @@ export class Sequence<
     }
   };
 
+  assignIPFSLitAction = async (
+    litActionHash: string,
+  ): Promise<{
+    error: boolean;
+    errorMessage: string;
+    txHash: string;
+  }> => {
+    const { error, message, txHash } = await assignLitAction(
+      this.pkpPermissionsContract,
+      this.developerPKPData.tokenId,
+      getBytesFromMultihash(litActionHash),
+    );
+
+    if (error) {
+      this.log(
+        LogCategory.ERROR,
+        `Assign Lit Action with IPFS Hash failed.`,
+        message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error signing Lit Action: ${message}`);
+      }
+    }
+
+    return {
+      error,
+      errorMessage: message,
+      txHash,
+    };
+  };
+
   bindEvents = (): void => {
+    if (typeof window === "undefined") {
+      throw new Error(
+        "This function can only be used in a browser environment.",
+      );
+    }
+    if (!this.videoElement)
+      throw new Error(
+        "Video element not detected. Make sure to set your LivePeer Player component in your app.",
+      );
     if (!this.developerPKPData.publicKey)
       throw new Error("Set developer PKP Public Key before continuing.");
     if (!this.developerPKPData.tokenId)
@@ -511,49 +547,21 @@ export class Sequence<
     if (!this.kinoraMetricsAddress)
       throw new Error("Set Kinora Metrics Address before continuing.");
 
-    this.livepeerPlayer.on("all", () => {
-      console.log("catching all events");
-    });
+    this.videoElement.addEventListener("play", this.metrics.onPlay);
+    this.videoElement.addEventListener("pause", this.metrics.onPause);
+    this.videoElement.addEventListener("timeupdate", this.timeUpdateHandler);
+    this.videoElement.addEventListener("click", this.metrics.onClick);
+    this.videoElement.addEventListener("seeking", this.metrics.onSkip);
 
-    this.livepeerPlayer.on("stream.started", () => {
-      this.metrics.updateImpressions();
-      this.metrics.updateAVD(0);
-      this.metrics.updateStartTime();
-    });
+    this.videoElement.addEventListener(
+      "volumechange",
+      this.metrics.onVolumeChange,
+    );
+    document.addEventListener("fullscreenchange", this.fullScreenChangeHandler);
 
-    this.livepeerPlayer.on("stream.idle", () => {
-      this.metrics.updateIdleTime();
-      this.metrics.updateStartTime();
-    });
+    this.videoElement.addEventListener("waiting", this.metrics.onBufferStart);
 
-    this.livepeerPlayer.on("recording.ready", () => {
-      this.metrics.updateNumberOfRecordings();
-    });
-
-    this.livepeerPlayer.on("recording.started", () => {
-      this.metrics.updateAVD(0);
-    });
-
-    this.livepeerPlayer.on("multistream.connected", () => {
-      this.metrics.updateNumberOfClicks();
-      this.metrics.updateNumberofMultistreams();
-    });
-
-    this.livepeerPlayer.on("asset.ready", () => {
-      this.metrics.updateNumberOfAssets();
-    });
-
-    this.livepeerPlayer.on("task.spawned", () => {
-      this.metrics.updateAVD(0);
-    });
-
-    this.livepeerPlayer.on("task.updated", () => {
-      this.metrics.updateNumberOfUpdates();
-    });
-
-    this.livepeerPlayer.on("task.failed", () => {
-      this.metrics.updateNumberOfFailedTasks();
-    });
+    this.videoElement.addEventListener("playing", this.metrics.onBufferEnd);
   };
 
   instantiateNewQuest = async (questInputs: {
@@ -570,8 +578,6 @@ export class Sequence<
   }> => {
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.ipfsClient)
-      throw new Error("Provide IPFS Auth before continuing.");
     if (!this.multihashDevKey)
       throw new Error("Set multi hash dev key before continuing.");
     if (!this.developerPKPData.publicKey)
@@ -720,8 +726,6 @@ export class Sequence<
   }> => {
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.ipfsClient)
-      throw new Error("Provide IPFS Auth before continuing.");
     if (!this.multihashDevKey)
       throw new Error("Set multi hash dev key before continuing.");
     if (!this.developerPKPData.publicKey)
@@ -823,8 +827,6 @@ export class Sequence<
   }): Promise<{ txHash: string }> => {
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.ipfsClient)
-      throw new Error("Provide IPFS Auth before continuing.");
     if (!this.developerPKPData.publicKey)
       throw new Error("Set developer PKP Public Key before continuing.");
     if (!this.developerPKPData.tokenId)
@@ -1035,8 +1037,6 @@ export class Sequence<
   }): Promise<{ txHash: string }> => {
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.ipfsClient)
-      throw new Error("Provide IPFS Auth before continuing.");
     if (!this.developerPKPData.publicKey)
       throw new Error("Set developer PKP Public Key before continuing.");
     if (!this.developerPKPData.tokenId)
@@ -1904,46 +1904,70 @@ export class Sequence<
     }
   };
 
-  private sendMetricsOnChain = async (): Promise<void> => {
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
-    if (!this.currentUserPKP)
-      throw new Error("Set user's PKP before continuing.");
-    if (!this.kinoraMetricsAddress)
-      throw new Error("Set Kinora Metrics Address before continuing.");
+  private collectAndSendMetrics = async (): Promise<void> => {
+    if (typeof window === "undefined") {
+      throw new Error(
+        "This function can only be used in a browser environment.",
+      );
+    }
+    if (!this.videoElement)
+      throw new Error(
+        "Video element not detected. Make sure to set your LivePeer Player component in your app.",
+      );
+
     try {
-      let userMetrics: UserMetrics;
+      const userMetrics = await this.collectMetrics();
+      await this.sendMetricsOnChain(userMetrics);
+    } catch (err: any) {
+      this.log(
+        LogCategory.ERROR,
+        `Send metrics on-chain failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error sending metrics on-chain: ${err.message}`);
+      }
+    }
+  };
 
-      let lensValues: {
-        mirrorLens: boolean;
-        likeLens: boolean;
-        bookmarkLens: boolean;
-        notInterestedLens: boolean;
-      } = {
-        mirrorLens: false,
-        likeLens: false,
-        bookmarkLens: false,
-        notInterestedLens: false,
-      };
+  private collectMetrics = async (): Promise<UserMetrics> => {
+    let userMetrics: UserMetrics;
 
+    let lensValues: {
+      mirrorLens: boolean;
+      likeLens: boolean;
+      bookmarkLens: boolean;
+      notInterestedLens: boolean;
+    } = {
+      mirrorLens: false,
+      likeLens: false,
+      bookmarkLens: false,
+      notInterestedLens: false,
+    };
+    try {
       if (
         await this.kinoraMetricsAddress.getUserPlaybackIdByPlaybackId(
           this.currentUserPKP.ethAddress,
-          this.livepeerPlayer.props.playbackId,
+          this.playbackId,
         )
       ) {
-        let oldMetrics: string =
-          await this.kinoraMetricsAddress.getUserMetricsJSONByPlaybackId(
+        let oldMetricsHash: string =
+          await this.kinoraMetricsAddress.getUserMetricsJSONHashByPlaybackId(
             this.currentUserPKP.ethAddress,
-            this.livepeerPlayer.props.playbackId,
+            this.playbackId,
           );
+
+        const oldMetricsToParse = await axios.get(
+          `${INFURA_GATEWAY}/ipfs/${oldMetricsHash}`,
+        );
+
+        let oldMetrics = await JSON.parse(oldMetricsToParse.data);
 
         if (
           await this.kinoraMetricsAddress.getUserEncryptedByPlaybackId(
             this.currentUserPKP.ethAddress,
-            this.livepeerPlayer.props.playbackId,
+            this.playbackId,
           )
         ) {
           const {
@@ -1994,102 +2018,73 @@ export class Sequence<
         }
 
         userMetrics = {
-          totalDuration:
-            this.metrics.getTotalDuration() + oldMetricsValues.totalDuration,
-          numberOfImpressions:
-            this.metrics.getNumberOfImpressions() +
-            oldMetricsValues.numberOfImpressions,
-          numberOfClicks:
-            this.metrics.getNumberOfClicks() + oldMetricsValues.numberOfClicks,
-          totalIdleTime:
-            this.metrics.getTotalIdleTime() + oldMetricsValues.totalIdleTime,
-          numberOfRecordings:
-            this.metrics.getNumberOfRecordings() +
-            oldMetricsValues.numberOfRecordings,
-          numberOfFailedTasks:
-            this.metrics.getNumberofFailedTasks() +
-            oldMetricsValues.numberOfFailedTasks,
-          numberOfMultistreams:
-            this.metrics.getNumberOfMultistreams() +
-            oldMetricsValues.numberOfMultistreams,
-          numberOfAssets:
-            this.metrics.getNumberOfAssets() + oldMetricsValues.numberOfAssets,
-          numberOfUpdates:
-            this.metrics.getNumberOfUpdates() +
-            oldMetricsValues.numberOfUpdates,
-          avd:
-            oldMetricsValues.numberOfImpressions +
-              this.metrics.getNumberOfImpressions() !==
+          rawTotalDuration: this.metrics.getTotalDuration(),
+          rawPlayCount: this.metrics.getPlayCount(),
+          rawPauseCount: this.metrics.getPauseCount(),
+          rawSkipCount: this.metrics.getSkipCount(),
+          rawClickCount: this.metrics.getClickCount(),
+          rawImpressionCount: this.metrics.getImpressionCount(),
+          rawBounceCount: this.metrics.getBounceCount(),
+          rawBounceRate: this.metrics.getBounceRate(),
+          rawVolumeChangeCount: this.metrics.getVolumeChangeCount(),
+          rawFullScreenCount: this.metrics.getFullScreenCount(),
+          rawBufferCount: this.metrics.getBufferCount(),
+          rawBufferDuration: this.metrics.getBufferDuration(),
+          rawEngagementRate: this.metrics.getEngagementRate(),
+          rawMostReplayedArea: this.metrics.getMostReplayedArea(),
+          rawPlayPauseRatio: this.metrics.getPlayPauseRatio(),
+          rawCtr: this.metrics.getCTR(),
+          rawAvd: this.metrics.getAVD(),
+          averageBounceRate:
+            oldMetricsValues.rawImpressionCount +
+              this.metrics.getImpressionCount() ===
             0
-              ? (oldMetricsValues.avd * oldMetricsValues.numberOfImpressions +
+              ? oldMetricsValues.averageBounceRate
+              : ((oldMetricsValues.rawBounceCount +
+                  this.metrics.getBounceCount()) /
+                  (oldMetricsValues.rawImpressionCount +
+                    this.metrics.getImpressionCount())) *
+                100,
+          averageBufferDuration:
+            oldMetricsValues.rawBufferCount + this.metrics.getBufferCount() ===
+            0
+              ? oldMetricsValues.averageBufferDuration
+              : (oldMetricsValues.rawBufferDuration +
+                  this.metrics.getBufferDuration()) /
+                (oldMetricsValues.rawBufferCount +
+                  this.metrics.getBufferCount()),
+          averageEngagementRate:
+            (oldMetricsValues.rawPlayCount + this.metrics.getPlayCount()) *
+              this.videoElement.duration ===
+            0
+              ? oldMetricsValues.averageEngagementRate
+              : ((oldMetricsValues.rawTotalDuration +
                   this.metrics.getTotalDuration()) /
-                (oldMetricsValues.numberOfImpressions +
-                  this.metrics.getNumberOfImpressions())
-              : 0,
-          ctr:
-            oldMetricsValues.numberOfImpressions +
-              this.metrics.getNumberOfImpressions() !==
+                  ((oldMetricsValues.rawPlayCount +
+                    this.metrics.getPlayCount()) *
+                    this.videoElement.duration)) *
+                100,
+          averagePlayPauseRatio:
+            oldMetricsValues.rawPauseCount + this.metrics.getPauseCount() === 0
+              ? oldMetricsValues.averagePlayPauseRatio
+              : (oldMetricsValues.rawPlayCount + this.metrics.getPlayCount()) /
+                (oldMetricsValues.rawPauseCount + this.metrics.getPauseCount()),
+          averageCtr:
+            oldMetricsValues.rawImpressionCount +
+              this.metrics.getImpressionCount() ===
             0
-              ? (oldMetricsValues.ctr * oldMetricsValues.numberOfImpressions +
-                  this.metrics.getNumberOfClicks() * 100) /
-                (oldMetricsValues.numberOfImpressions +
-                  this.metrics.getNumberOfImpressions())
-              : 0,
-          assetEngagement:
-            oldMetricsValues.numberOfUpdates +
-              this.metrics.getNumberOfUpdates() !==
-            0
-              ? (oldMetricsValues.assetEngagement *
-                  oldMetricsValues.numberOfUpdates +
-                  this.metrics.getNumberOfAssets()) /
-                (oldMetricsValues.numberOfUpdates +
-                  this.metrics.getNumberOfUpdates())
-              : 0,
-          userEngagementRatio:
-            oldMetricsValues.totalDuration +
-              oldMetricsValues.totalIdleTime +
-              this.metrics.getTotalDuration() +
-              this.metrics.getTotalIdleTime() !==
-            0
-              ? (oldMetricsValues.totalDuration +
+              ? oldMetricsValues.averageCtr
+              : ((oldMetricsValues.rawClickCount +
+                  this.metrics.getClickCount()) /
+                  (oldMetricsValues.rawImpressionCount +
+                    this.metrics.getImpressionCount())) *
+                100,
+          averageAvd:
+            oldMetricsValues.rawPlayCount + this.metrics.getPlayCount() === 0
+              ? oldMetricsValues.averageAvd
+              : (oldMetricsValues.rawTotalDuration +
                   this.metrics.getTotalDuration()) /
-                (oldMetricsValues.totalDuration +
-                  oldMetricsValues.totalIdleTime +
-                  this.metrics.getTotalDuration() +
-                  this.metrics.getTotalIdleTime())
-              : 0,
-          multiPlaybackUsageRate:
-            oldMetricsValues.numberOfImpressions +
-              this.metrics.getNumberOfImpressions() !==
-            0
-              ? (oldMetricsValues.numberOfMultistreams *
-                  oldMetricsValues.numberOfImpressions +
-                  this.metrics.getMultistreamUsageRate()) /
-                (oldMetricsValues.numberOfImpressions +
-                  this.metrics.getNumberOfImpressions())
-              : 0,
-          taskFailureRate:
-            oldMetricsValues.numberOfFailedTasks +
-              oldMetricsValues.numberOfUpdates +
-              this.metrics.getNumberofFailedTasks() +
-              this.metrics.getNumberOfUpdates() !==
-            0
-              ? (oldMetricsValues.numberOfFailedTasks +
-                  this.metrics.getNumberofFailedTasks()) /
-                (oldMetricsValues.numberOfFailedTasks +
-                  oldMetricsValues.numberOfUpdates +
-                  this.metrics.getNumberofFailedTasks() +
-                  this.metrics.getNumberOfUpdates())
-              : 0,
-          recordingPerSession:
-            oldMetricsValues.numberOfImpressions +
-              this.metrics.getNumberOfImpressions() !==
-            0
-              ? (oldMetricsValues.numberOfRecordings +
-                  this.metrics.getNumberOfRecordings()) /
-                (oldMetricsValues.numberOfImpressions +
-                  this.metrics.getNumberOfImpressions())
-              : 0,
+                (oldMetricsValues.rawPlayCount + this.metrics.getPlayCount()),
           mirrorLens: lensValues.mirrorLens,
           likeLens: lensValues.likeLens,
           bookmarkLens: lensValues.bookmarkLens,
@@ -2112,22 +2107,23 @@ export class Sequence<
         }
 
         userMetrics = {
-          totalDuration: this.metrics.getTotalDuration(),
-          numberOfImpressions: this.metrics.getNumberOfImpressions(),
-          numberOfClicks: this.metrics.getNumberOfClicks(),
-          totalIdleTime: this.metrics.getTotalIdleTime(),
-          numberOfRecordings: this.metrics.getNumberOfRecordings(),
-          numberOfFailedTasks: this.metrics.getNumberofFailedTasks(),
-          numberOfMultistreams: this.metrics.getNumberOfMultistreams(),
-          numberOfAssets: this.metrics.getNumberOfAssets(),
-          numberOfUpdates: this.metrics.getNumberOfUpdates(),
-          avd: this.metrics.getAVD(),
-          ctr: this.metrics.getCTR(),
-          assetEngagement: this.metrics.getAssetEngagement(),
-          userEngagementRatio: this.metrics.getUserEngagementRatio(),
-          multiPlaybackUsageRate: this.metrics.getMultistreamUsageRate(),
-          taskFailureRate: this.metrics.getTaskFailureRate(),
-          recordingPerSession: this.metrics.getRecordingPerSession(),
+          rawTotalDuration: this.metrics.getTotalDuration(),
+          rawPlayCount: this.metrics.getPlayCount(),
+          rawPauseCount: this.metrics.getPauseCount(),
+          rawSkipCount: this.metrics.getSkipCount(),
+          rawClickCount: this.metrics.getClickCount(),
+          rawImpressionCount: this.metrics.getImpressionCount(),
+          rawBounceCount: this.metrics.getBounceCount(),
+          rawBounceRate: this.metrics.getBounceRate(),
+          rawVolumeChangeCount: this.metrics.getVolumeChangeCount(),
+          rawFullScreenCount: this.metrics.getFullScreenCount(),
+          rawBufferCount: this.metrics.getBufferCount(),
+          rawBufferDuration: this.metrics.getBufferDuration(),
+          rawEngagementRate: this.metrics.getEngagementRate(),
+          rawMostReplayedArea: this.metrics.getMostReplayedArea(),
+          rawPlayPauseRatio: this.metrics.getPlayPauseRatio(),
+          rawCtr: this.metrics.getCTR(),
+          rawAvd: this.metrics.getAVD(),
           mirrorLens: lensValues.mirrorLens,
           likeLens: lensValues.likeLens,
           bookmarkLens: lensValues.bookmarkLens,
@@ -2135,15 +2131,30 @@ export class Sequence<
         };
       }
 
-      let payload: string = JSON.stringify(userMetrics);
-
       this.log(
         LogCategory.METRICS,
         `User metrics updated.`,
-        payload,
+        JSON.stringify(userMetrics),
         new Date().toISOString(),
       );
 
+      return userMetrics;
+    } catch (err: any) {}
+  };
+
+  private sendMetricsOnChain = async (
+    userMetrics: UserMetrics,
+  ): Promise<void> => {
+    if (!this.developerPKPData.publicKey)
+      throw new Error("Set developer PKP Public Key before continuing.");
+    if (!this.developerPKPData.tokenId)
+      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.currentUserPKP)
+      throw new Error("Set user's PKP before continuing.");
+    if (!this.kinoraMetricsAddress)
+      throw new Error("Set Kinora Metrics Address before continuing.");
+    try {
+      let payload = JSON.stringify(userMetrics);
       if (this.encryptUserMetrics) {
         const { error, message, encryptedString } = await encryptMetrics(
           userMetrics,
@@ -2169,6 +2180,8 @@ export class Sequence<
         }
       }
 
+      const ipfsHash = (await this.ipfsClient.add(payload)).path;
+
       const {
         error: txError,
         message: txMessage,
@@ -2180,8 +2193,8 @@ export class Sequence<
         [
           this.currentUserPKP.ethAddress,
           {
-            playbackId: this.livepeerPlayer.props.playbackId,
-            metricJSON: payload,
+            playbackId: this.playbackId,
+            metricJSON: ipfsHash,
             encrypted: this.encryptUserMetrics,
           },
         ],
@@ -2263,6 +2276,8 @@ export class Sequence<
         }
         return;
       } else {
+        this.metrics.reset();
+
         this.log(
           LogCategory.RESPONSE,
           `User Metrics added successfully. Lit Action Response.`,
@@ -2296,16 +2311,22 @@ export class Sequence<
     try {
       let userEligible = false;
 
-      let currentMetrics: string =
-        await this.kinoraMetricsAddress.getUserMetricsJSONByPlaybackId(
+      let currentMetricsHash: string =
+        await this.kinoraMetricsAddress.getUserMetricsJSONHashByPlaybackId(
           this.currentUserPKP.ethAddress,
-          this.livepeerPlayer.props.playbackId,
+          this.playbackId,
         );
+
+      const currentMetricsToParse = await axios.get(
+        `${INFURA_GATEWAY}/ipfs/${currentMetricsHash}`,
+      );
+
+      let currentMetrics = await JSON.parse(currentMetricsToParse.data);
 
       if (
         await this.kinoraMetricsAddress.getUserEncryptedByPlaybackId(
           this.currentUserPKP.ethAddress,
-          this.livepeerPlayer.props.playbackId,
+          this.playbackId,
         )
       ) {
         const { error, message, decryptedString } = await decryptMetrics(
@@ -2435,4 +2456,67 @@ export class Sequence<
       }),
     );
   };
+
+  private cleanUpListeners = () => {
+    if (typeof window === "undefined") {
+      throw new Error(
+        "This function can only be used in a browser environment.",
+      );
+    }
+    if (!this.videoElement)
+      throw new Error(
+        "Video element not detected. Make sure to set your LivePeer Player component in your app.",
+      );
+    clearInterval(this.intervalId);
+
+    this.videoElement.removeEventListener("play", this.metrics.onPlay);
+    this.videoElement.removeEventListener("pause", this.metrics.onPause);
+    this.videoElement.removeEventListener("timeupdate", this.timeUpdateHandler);
+    this.videoElement.removeEventListener("click", this.metrics.onClick);
+    this.videoElement.removeEventListener("seeking", this.metrics.onSkip);
+
+    this.videoElement.removeEventListener(
+      "volumechange",
+      this.metrics.onVolumeChange,
+    );
+    document.removeEventListener(
+      "fullscreenchange",
+      this.fullScreenChangeHandler,
+    );
+
+    this.videoElement.removeEventListener(
+      "waiting",
+      this.metrics.onBufferStart,
+    );
+
+    this.videoElement.removeEventListener("playing", this.metrics.onBufferEnd);
+
+    if (typeof window !== "undefined") {
+      window.removeEventListener("beforeunload", this.beforeUnloadHandler);
+    }
+  };
+
+  private timeUpdateHandler(e: Event) {
+    const currentTime = (e.currentTarget as HTMLVideoElement).currentTime;
+    this.metrics.onTimeUpdate(currentTime);
+    if (currentTime < 10) {
+      this.metrics.onBounce();
+    }
+  }
+
+  private fullScreenChangeHandler() {
+    if (document.fullscreenElement === this.videoElement) {
+      this.metrics.onFullScreen();
+    }
+  }
+
+  private beforeUnloadHandler() {
+    this.cleanUpListeners();
+    if (typeof window === "undefined") {
+      throw new Error(
+        "This function can only be used in a browser environment.",
+      );
+    }
+    this.collectAndSendMetrics();
+  }
 }

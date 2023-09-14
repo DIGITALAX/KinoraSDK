@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 library MetricsParamsLibrary {
   struct MetricParams {
     string playbackId;
-    string metricJSON;
+    string metricJSONHash;
     bool encrypted;
   }
 }
@@ -18,7 +18,7 @@ contract KinoraMetrics is Initializable {
 
   struct UserLivePeerMetrics {
     string _playbackId;
-    string _metricJSON;
+    string _metricJSONHash;
     bool _encrypted;
   }
 
@@ -65,7 +65,7 @@ contract KinoraMetrics is Initializable {
     UserLivePeerMetrics memory _newUserLivePeerMetrics;
     _newUserLivePeerMetrics = UserLivePeerMetrics({
       _playbackId: _args.playbackId,
-      _metricJSON: _args.metricJSON,
+      _metricJSONHash: _args.metricJSONHash,
       _encrypted: _args.encrypted
     });
 
@@ -75,7 +75,7 @@ contract KinoraMetrics is Initializable {
 
     emit AddUserMetrics(
       _args.playbackId,
-      _args.metricJSON,
+      _args.metricJSONHash,
       _userPKPAddress,
       _args.encrypted
     );
@@ -90,13 +90,13 @@ contract KinoraMetrics is Initializable {
         ._encrypted;
   }
 
-  function getUserMetricsJSONByPlaybackId(
+  function getUserMetricsJSONHashByPlaybackId(
     address _userPKPAddress,
     string memory _playbackId
   ) public view returns (string memory) {
     return
       _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
-        ._metricJSON;
+        ._metricJSONHash;
   }
 
   function getUserPlaybackIdByPlaybackId(
