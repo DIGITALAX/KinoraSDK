@@ -17,7 +17,7 @@ import "@lit-protocol/lit-auth-client";
 import axios from "axios";
 import { ProviderType } from "@lit-protocol/constants";
 import { ethers } from "ethers";
-import { IPFSHTTPClient, create } from "ipfs-http-client";
+import { create, IPFSHTTPClient } from "ipfs-http-client";
 import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
 import { AuthMethod, IRelayPKP } from "@lit-protocol/types";
 import {
@@ -58,6 +58,8 @@ import {
 import { EventEmitter } from "events";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import getLensValues from "./apollo/queries/getLensValues";
+import * as LitJsSdk from "@lit-protocol/lit-node-client";
+
 
 export class Sequence extends EventEmitter {
   private metrics: Metrics;
@@ -103,7 +105,7 @@ export class Sequence extends EventEmitter {
       relayApiKey: `${process.env.LIT_RELAY_KEY}`,
     },
   });
-  private litNodeClient = new LitNodeClient({
+  private litNodeClient = new LitJsSdk.LitNodeClient({
     litNetwork: "serrano",
     debug: false,
     alertWhenUnauthorized: true,
