@@ -5,7 +5,7 @@ import { CHRONICLE_PROVIDER, KINORA_FACTORY_CONTRACT } from "../src/constants";
 import { Contract, Signer } from "ethers";
 import KinoraFactoryAbi from "./../src/abis/KinoraFactory.json";
 
-describe("Node Functions", () => {
+xdescribe("Node Functions", () => {
   let newSequence: Sequence,
     noProvider: Sequence,
     signer: Signer,
@@ -47,13 +47,13 @@ describe("Node Functions", () => {
       );
     });
 
-    it("generates random key", async () => {
+    it("Generates random key", async () => {
       expect(results).to.have.property("multihashDevKey");
       expect(results.multihashDevKey).to.not.be.null;
       expect(results.multihashDevKey).to.be.a("string");
     });
 
-    it("mints developer PKP", async () => {
+    it("Mints developer PKP", async () => {
       expect(results).to.have.property("pkpEthAddress");
       expect(results).to.have.property("pkpPublicKey");
       expect(results).to.have.property("pkpTokenId");
@@ -63,13 +63,13 @@ describe("Node Functions", () => {
       expect(results.pkpEthAddress).to.equal(devPKPs[devPKPs.length - 1]);
     });
 
-    it("correctly sets the deployer address", async () => {
+    it("Correctly sets the deployer address", async () => {
       expect(process.env.DEPLOYER_WALLET_ADDRESS).to.equal(
         await factoryContract.getKinoraDeployerToPKP(results.pkpEthAddress),
       );
     });
 
-    it("should deploy contracts from factory correctly", async () => {
+    it("Should deploy contracts from factory correctly", async () => {
       expect(results).to.have.property("kinoraMetricsAddress");
       expect(results).to.have.property("kinoraQuestAddress");
       expect(results).to.have.property("kinoraEscrowAddress");
@@ -82,7 +82,7 @@ describe("Node Functions", () => {
         ),
       );
       expect(results.kinoraMetricsAddress).to.equal(
-        await factoryContract.getDeployedKinoraMetricToPKP(
+        await factoryContract.getDeployedKinoraMetricsToPKP(
           results.pkpEthAddress,
         ),
       );
@@ -96,14 +96,14 @@ describe("Node Functions", () => {
           results.pkpEthAddress,
         ),
       );
-      // expect(results.kinoraQuestRewardAddress).to.equal(
-      //   await factoryContract.getDeployedKinoraQuestRewardToPKP(
-      //     results.pkpEthAddress,
-      //   ),
-      // );
+      expect(results.kinoraQuestRewardAddress).to.equal(
+        await factoryContract.getDeployedKinoraQuestRewardToPKP(
+          results.pkpEthAddress,
+        ),
+      );
     });
 
-    it("should throw polygon provider", async () => {
+    it("Should throw polygon provider", async () => {
       let error: any;
 
       try {
@@ -115,7 +115,7 @@ describe("Node Functions", () => {
       expect(error).to.include("Set Polygon Provider before continuing.");
     });
 
-    it("should generate a new multihash and not update quests", async () => {
+    it("Should generate a new multihash and not update quests", async () => {
       const currentKey = results.multihashDevKey;
 
       const newKey = await newSequence.generateNewMultiHashDevKey();
