@@ -166,6 +166,13 @@ contract KinoraFactory {
     return _deployerPKPToKinora[_pkpAddress].contracts[3];
   }
 
+
+  function getDeployedKinoraQuestRewardToPKP(
+    address _pkpAddress
+  ) public view returns (address) {
+    return _deployerPKPToKinora[_pkpAddress].contracts[4];
+  }
+
   function getKinoraIDToPKP(address _pkpAddress) public view returns (uint256) {
     return _deployerPKPToKinora[_pkpAddress].kinoraID;
   }

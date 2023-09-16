@@ -455,6 +455,11 @@ export class Sequence extends EventEmitter {
   authenticateUser = async (
     type: "wallet" | "google" | "discord",
   ): Promise<void> => {
+    if (typeof window === "undefined") {
+      throw new Error(
+        "This function can only be used in a browser environment.",
+      );
+    }
     try {
       this.providerType =
         type === "wallet"
@@ -462,13 +467,13 @@ export class Sequence extends EventEmitter {
           : type === "discord"
           ? ProviderType.Discord
           : ProviderType.Google;
-
       this.litProvider = this.litAuthClient.initProvider(this.providerType, {
         redirectUri: `${this.redirectURL}`,
       });
       this.providerType !== ProviderType.EthWallet &&
         (await (this.litProvider as GoogleProvider | DiscordProvider).signIn());
     } catch (err: any) {
+      console.log(err.message);
       this.log(
         LogCategory.ERROR,
         `User Authentication failed.`,
@@ -486,6 +491,11 @@ export class Sequence extends EventEmitter {
     errorMessage: string;
     outputBuffer: string;
   }> => {
+    if (typeof window === "undefined") {
+      throw new Error(
+        "This function can only be used in a browser environment.",
+      );
+    }
     if (!this.developerPKPData.publicKey)
       throw new Error("Set developer PKP Public Key before continuing.");
     if (!this.developerPKPData.tokenId)
