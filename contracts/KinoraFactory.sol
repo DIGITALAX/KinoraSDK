@@ -38,7 +38,7 @@ contract KinoraFactory {
     address metricsAddress,
     address questAddress,
     address escrowAddress,
-    address questReward
+    address questRewardAddress
   );
 
   mapping(address => address[]) private _deployerToPKPs;
@@ -60,6 +60,11 @@ contract KinoraFactory {
   }
 
   function deployFromKinoraFactory(address _pkpAddress) public {
+    require(
+      _deployerPKPToKinora[_pkpAddress].kinoraID == 0,
+      "KinoraFactory: PKP already mapped to contract factory."
+    );
+
     (
       address _newKAC,
       address _newKM,
@@ -148,7 +153,7 @@ contract KinoraFactory {
     return _deployerPKPToKinora[_pkpAddress].contracts[0];
   }
 
-  function getDeployedKinoraMetricToPKP(
+  function getDeployedKinoraMetricsToPKP(
     address _pkpAddress
   ) public view returns (address) {
     return _deployerPKPToKinora[_pkpAddress].contracts[1];
@@ -165,7 +170,6 @@ contract KinoraFactory {
   ) public view returns (address) {
     return _deployerPKPToKinora[_pkpAddress].contracts[3];
   }
-
 
   function getDeployedKinoraQuestRewardToPKP(
     address _pkpAddress
@@ -201,7 +205,7 @@ contract KinoraFactory {
     return _kinoraIDCount;
   }
 
-  function getKinoraMetricLogicAddress() public view returns (address) {
+  function getKinoraMetricsLogicAddress() public view returns (address) {
     return _kinoraMetrics;
   }
 
