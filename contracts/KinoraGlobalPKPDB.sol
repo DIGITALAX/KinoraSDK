@@ -71,7 +71,7 @@ contract KinoraGlobalPKPDB {
 
   function removeUserPKP(address _userPkpAddress) public onlyAdmin {
     require(
-      !_userActiveAccount[_userPkpAddress],
+      _userActiveAccount[_userPkpAddress],
       "KinoraGlobalPKPDB: Cannot Remove a Non-Existent User."
     );
     _activeUserCount--;
