@@ -96,14 +96,11 @@ const main = async () => {
 main();
 
 /*
-
-// set logic addresses in factory
-
-
+1. set logic addresses in factory
+2. set contract factory pkpdb
 */
 
 /*
-
 kinoraGlobalAccessControl deployed at
 0x12e5aA90906C29844181d3B29438030fBc109Fc5
 kinoraGlobalPKPDB deployed at

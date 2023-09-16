@@ -126,7 +126,7 @@ contract KinoraFactory {
     );
 
     // Deploy KinoraMetricsAddress
-    KinoraMetrics(_newKM).initialize(_newKAC);
+    KinoraMetrics(_newKM).initialize(_newKAC, _globalPKPDB);
 
     // Deploy KinoraEscrowAddress
     KinoraEscrow(_newKE).initialize(_newKAC, address(this));
