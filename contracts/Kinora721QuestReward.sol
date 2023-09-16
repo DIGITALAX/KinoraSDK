@@ -37,11 +37,12 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
       uint256 i = 0;
       i <
       _quest
-      .getUserMilestonesCompletedPerQuest(_userPKPAddress)[_questId].length;
+        .getUserMilestonesCompletedPerQuest(_userPKPAddress, _questId)
+        .length;
       i++
     ) {
       if (
-        _quest.getUserMilestonesCompletedPerQuest(_userPKPAddress)[_questId][
+        _quest.getUserMilestonesCompletedPerQuest(_userPKPAddress, _questId)[
           i
         ] == _milestoneId
       ) {

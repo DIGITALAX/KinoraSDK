@@ -196,7 +196,7 @@ export const getBytesFromMultihash = (multihash: string): string => {
 
 export const hashHex = (input: string): string => {
   const hash = CryptoJS.SHA256(input);
-  return hash.toString(CryptoJS.enc.Hex);
+  return "0x" + hash.toString(CryptoJS.enc.Hex);
 };
 
 export const encryptMetrics = async (
@@ -434,7 +434,7 @@ export const getLitActionCodeForJoinQuest = (
   
   const hashHex = (input) => {
     const hash = CryptoJS.SHA256(input);
-    return hash.toString(CryptoJS.enc.Hex);
+    return "0x" + hash.toString(CryptoJS.enc.Hex);
   }; 
 
 const hashTransaction = (tx) => {
@@ -487,7 +487,7 @@ export const getLitActionCodeForMilestoneCompletion = (
   
   const hashHex = (input) => {
     const hash = CryptoJS.SHA256(input);
-    return hash.toString(CryptoJS.enc.Hex);
+    return "0x" + hash.toString(CryptoJS.enc.Hex);
   };
 
   const hashTransaction = (tx) => {
@@ -540,7 +540,7 @@ export const getLitActionCodeForAddUserMetrics = (
     
     const hashHex = (input) => {
       const hash = CryptoJS.SHA256(input);
-      return hash.toString(CryptoJS.enc.Hex);
+      return "0x" + hash.toString(CryptoJS.enc.Hex);
     };    
     
     const hashTransaction = (tx) => {

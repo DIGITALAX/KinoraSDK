@@ -103,6 +103,10 @@ contract KinoraEscrow is Initializable {
     uint256 _milestoneId
   ) public onlyPKPOrAdmin {
     require(
+      _quest.getQuestId(_questId) != 0,
+      "KinoraEscrow: Quest doesn't exist."
+    );
+    require(
       !_questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
         ._tokenExists,
       "KinoraEscrow: Token already exists, update deposit instead."

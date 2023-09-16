@@ -1641,11 +1641,6 @@ export class Sequence extends EventEmitter {
         milestonesCompleted: number[];
       }[] = [];
 
-      const completedMilestonesPerQuest =
-        await this.kinoraQuestAddress.getUserMilestonesCompletedPerQuest(
-          this.currentUserPKP.ethAddress,
-        );
-
       for (let i = 0; i < questsJoined.length; i++) {
         const questURI = await this.kinoraQuestAddress.getQuestURIDetails(
           questsJoined[i],
@@ -1660,7 +1655,11 @@ export class Sequence extends EventEmitter {
           questId: questsJoined[i],
           questURIDetails: await JSON.parse(response.data),
           questMilestoneDetails: await JSON.parse(getQuestMilestoneURIDetails),
-          milestonesCompleted: completedMilestonesPerQuest[i],
+          milestonesCompleted:
+            await this.kinoraQuestAddress.getUserMilestonesCompletedPerQuest(
+              this.currentUserPKP.ethAddress,
+              i,
+            ),
         });
       }
 

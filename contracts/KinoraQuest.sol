@@ -6,6 +6,7 @@ import "./KinoraAccessControl.sol";
 import "./KinoraEscrow.sol";
 import "./KinoraGlobalPKPDB.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
 
 contract KinoraQuest is Initializable {
   KinoraAccessControl private _accessControl;
@@ -48,15 +49,15 @@ contract KinoraQuest is Initializable {
   }
   struct User {
     uint256[] _questsJoined;
-    uint256[][] _milestonesCompletedPerQuest;
-    address _userAddress;
+    mapping(uint256 => uint256[]) _milestonesCompletedPerQuest;
+    address _userPKPAddress;
     uint256 _userId;
   }
 
   mapping(uint256 => Quest) private _allQuests;
   mapping(address => User) private _allUsers;
 
-  modifier onlyUserPKP() {
+  modifier onlyDeveloperPKP() {
     require(
       msg.sender == _accessControl.getAssignedPKPAddress(),
       "KinoraQuest: Only Assigned PKP can perform this action."
@@ -64,7 +65,7 @@ contract KinoraQuest is Initializable {
     _;
   }
 
-  modifier onlyUserPKPOrAdmin() {
+  modifier onlyDeveloperPKPOrAdmin() {
     require(
       msg.sender == _accessControl.getAssignedPKPAddress() ||
         _accessControl.isAdmin(msg.sender),
@@ -110,6 +111,8 @@ contract KinoraQuest is Initializable {
   event QuestMilestoneRemoved(uint256 indexed questId, uint256 milestoneId);
   event QuestTerminated(uint256 indexed questId);
   event UserJoinQuest(uint256 indexed questId, address userAddress);
+  event JoinHashesUpdated(bytes32[] newJoinHashes);
+  event CompletionHashesUpdated(bytes32[] newCompletionHashes);
 
   function initialize(
     address _accessControlAddress,
@@ -127,7 +130,7 @@ contract KinoraQuest is Initializable {
     string memory _uriDetails,
     bytes32 _joinHash,
     uint256 _maxParticipantCount
-  ) public onlyUserPKP {
+  ) public onlyDeveloperPKP {
     _questCount++;
     address[] memory _emptyParticipants;
     Milestone[] memory _emptyMilestones;
@@ -153,7 +156,7 @@ contract KinoraQuest is Initializable {
     bytes32 _joinHash,
     uint256 _newMaxParticipantCount,
     uint256 _questId
-  ) public onlyUserPKPOrAdmin {
+  ) public onlyDeveloperPKPOrAdmin {
     _allQuests[_questId]._uriDetails = _newURIDetails;
     _allQuests[_questId]._status = _newStatus;
     _allQuests[_questId]._maxParticipantCount = _newMaxParticipantCount;
@@ -174,7 +177,12 @@ contract KinoraQuest is Initializable {
     bytes32 _completionHash,
     uint256 _questId,
     uint256 _pointCount
-  ) public onlyUserPKPOrAdmin questOpen(_questId) {
+  ) public onlyDeveloperPKPOrAdmin questOpen(_questId) {
+    require(
+      _allQuests[_questId]._questId != 0,
+      "KinoraQuest: Quest doesn't exist."
+    );
+
     _allQuests[_questId]._milestones.push(
       Milestone({
         _uriDetails: _uriDetails,
@@ -188,7 +196,9 @@ contract KinoraQuest is Initializable {
 
     emit QuestMilestoneAdded(
       _questId,
-      _allQuests[_questId]._milestones.length + 1,
+      _allQuests[_questId]
+        ._milestones[_allQuests[_questId]._milestones.length - 1]
+        ._milestoneId,
       _completionHash
     );
   }
@@ -203,21 +213,40 @@ contract KinoraQuest is Initializable {
     uint256 _milestoneId,
     uint256 _newPoints,
     uint256 _newAmount
-  ) public onlyUserPKPOrAdmin {
-    _allQuests[_questId]._milestones[_milestoneId]._uriDetails = _newURIDetails;
-    _allQuests[_questId]._milestones[_milestoneId]._numberOfPoints = _newPoints;
-    _allQuests[_questId]
-      ._milestones[_milestoneId]
-      ._completionHash = _completionHash;
-    _allQuests[_questId]._milestones[_milestoneId]._reward._type = _newType;
+  ) public onlyDeveloperPKPOrAdmin {
+    require(
+      _milestoneId > 0,
+      "KinoraQuest: Milestone ID should be greater than zero."
+    );
+    require(
+      _milestoneId <= _allQuests[_questId]._milestones.length,
+      "KinoraQuest: Invalid milestone ID."
+    );
+    require(
+      _allQuests[_questId]._milestones[_milestoneId - 1]._milestoneId != 0,
+      "KinoraQuest: Milestone doesn't exist for Quest."
+    );
 
     _allQuests[_questId]
-      ._milestones[_milestoneId]
+      ._milestones[_milestoneId - 1]
+      ._uriDetails = _newURIDetails;
+    _allQuests[_questId]
+      ._milestones[_milestoneId - 1]
+      ._numberOfPoints = _newPoints;
+    _allQuests[_questId]
+      ._milestones[_milestoneId - 1]
+      ._completionHash = _completionHash;
+    _allQuests[_questId]._milestones[_milestoneId - 1]._reward._type = _newType;
+    _allQuests[_questId]
+      ._milestones[_milestoneId - 1]
       ._reward
       ._tokenAddress = _newTokenAddress;
-    _allQuests[_questId]._milestones[_milestoneId]._reward._amount = _newAmount;
     _allQuests[_questId]
-      ._milestones[_milestoneId]
+      ._milestones[_milestoneId - 1]
+      ._reward
+      ._amount = _newAmount;
+    _allQuests[_questId]
+      ._milestones[_milestoneId - 1]
       ._reward
       ._tokenIds = _newTokenIds;
 
@@ -227,20 +256,20 @@ contract KinoraQuest is Initializable {
   function removeQuestMilestone(
     uint256 _questId,
     uint256 _milestoneId
-  ) public onlyUserPKPOrAdmin questOpen(_questId) {
+  ) public onlyDeveloperPKPOrAdmin questOpen(_questId) {
     require(
       _allQuests[_questId]._milestones[_milestoneId - 1]._status == Status.Open,
       "KinoraQuest: Milestone already Closed."
     );
 
-    _allQuests[_questId]._milestones[_milestoneId - 1]._status = Status.Closed;
+    delete _allQuests[_questId]._milestones[_milestoneId - 1];
 
     emit QuestMilestoneRemoved(_questId, _milestoneId);
   }
 
   function terminateQuest(
     uint256 _questId
-  ) public onlyUserPKPOrAdmin questOpen(_questId) {
+  ) public onlyDeveloperPKPOrAdmin questOpen(_questId) {
     _allQuests[_questId]._status = Status.Closed;
 
     emit QuestTerminated(_questId);
@@ -249,7 +278,7 @@ contract KinoraQuest is Initializable {
   function updateQuestStatus(
     uint256 _questId,
     Status _newStatus
-  ) public onlyUserPKPOrAdmin {
+  ) public onlyDeveloperPKPOrAdmin {
     _allQuests[_questId]._status = _newStatus;
 
     emit QuestStatusUpdated(_questId, _newStatus);
@@ -257,10 +286,10 @@ contract KinoraQuest is Initializable {
 
   function userJoinQuest(
     uint256 _questId,
-    address _userAddress
-  ) public onlyUserPKP questOpen(_questId) {
+    address _userPKPAddress
+  ) public onlyDeveloperPKP questOpen(_questId) {
     require(
-      _pkpDB.userExists(_userAddress),
+      _pkpDB.userExists(_userPKPAddress),
       "KinoraQuest: User must have an active PKP account."
     );
     require(
@@ -271,52 +300,59 @@ contract KinoraQuest is Initializable {
 
     bool _canJoinQuest = true;
 
-    if (_allUsers[_userAddress]._userAddress == _userAddress) {
+    if (_allUsers[_userPKPAddress]._userPKPAddress == _userPKPAddress) {
       for (
         uint256 i = 0;
-        i < _allUsers[_userAddress]._questsJoined.length;
+        i < _allUsers[_userPKPAddress]._questsJoined.length;
         i++
       ) {
         _canJoinQuest = false;
       }
     } else {
       _userCount++;
-      uint256[][] memory _emptyMilestonesCompleted;
       uint256[] memory _emptyQuestsJoined;
-      User memory _newUser = User({
-        _userId: _userCount,
-        _userAddress: _userAddress,
-        _questsJoined: _emptyQuestsJoined,
-        _milestonesCompletedPerQuest: _emptyMilestonesCompleted
-      });
 
-      _allUsers[_userAddress] = _newUser;
+      _allUsers[_userPKPAddress]._userId = _userCount;
+      _allUsers[_userPKPAddress]._userPKPAddress = _userPKPAddress;
+      _allUsers[_userPKPAddress]._questsJoined = _emptyQuestsJoined;
     }
 
     if (_canJoinQuest) {
-      _allUsers[_userAddress]._questsJoined.push(_questId);
-      _allQuests[_questId]._participants.push(_userAddress);
+      _allUsers[_userPKPAddress]._questsJoined.push(_questId);
+      _allQuests[_questId]._participants.push(_userPKPAddress);
     } else {
       revert("KinoraQuest: User is not eligible to join Quest.");
     }
 
-    emit UserJoinQuest(_questId, _userAddress);
+    emit UserJoinQuest(_questId, _userPKPAddress);
   }
 
   function userCompleteMilestone(
     uint256 _questId,
     uint256 _milestoneId,
-    address _userAddress
-  ) public onlyUserPKP questOpen(_questId) {
+    address _userPKPAddress
+  ) public onlyDeveloperPKP questOpen(_questId) {
     require(
-      _allQuests[_questId]._milestones[_milestoneId - 1]._status == Status.Open,
-      "KinoraQuest: Milestone is Closed."
+      _milestoneId > 0,
+      "KinoraQuest: Milestone ID should be greater than zero."
+    );
+    require(
+      _milestoneId <= _allQuests[_questId]._milestones.length,
+      "KinoraQuest: Invalid milestone ID."
+    );
+    require(
+      _allQuests[_questId]._milestones[_milestoneId - 1]._milestoneId != 0,
+      "KinoraQuest: Milestone doesn't exist."
     );
 
     bool _questParticipant = false;
 
-    for (uint256 i = 0; i < _allUsers[_userAddress]._questsJoined.length; i++) {
-      if (_allUsers[_userAddress]._questsJoined[i] == _questId) {
+    for (
+      uint256 i = 0;
+      i < _allUsers[_userPKPAddress]._questsJoined.length;
+      i++
+    ) {
+      if (_allUsers[_userPKPAddress]._questsJoined[i] == _questId) {
         _questParticipant = true;
         break;
       }
@@ -327,8 +363,8 @@ contract KinoraQuest is Initializable {
     );
 
     if (
-      _allUsers[_userAddress]._milestonesCompletedPerQuest[_questId].length ==
-      _milestoneId - 1
+      _allUsers[_userPKPAddress]._milestonesCompletedPerQuest[_questId].length <
+      _milestoneId
     ) {
       if (
         _allQuests[_questId]._milestones[_milestoneId - 1]._reward._type ==
@@ -348,7 +384,7 @@ contract KinoraQuest is Initializable {
         );
 
         _escrow.withdrawERC20(
-          _userAddress,
+          _userPKPAddress,
           _allQuests[_questId]
             ._milestones[_milestoneId - 1]
             ._reward
@@ -359,19 +395,19 @@ contract KinoraQuest is Initializable {
         );
       }
 
-      _allUsers[_userAddress]._milestonesCompletedPerQuest[_questId].push(
+      _allUsers[_userPKPAddress]._milestonesCompletedPerQuest[_questId].push(
         _milestoneId
       );
     } else {
       revert("KinoraQuest: User not eligible to complete milestone.");
     }
 
-    emit UserCompleteQuestMilestone(_questId, _milestoneId, _userAddress);
+    emit UserCompleteQuestMilestone(_questId, _milestoneId, _userPKPAddress);
   }
 
   function updateAllJoinHashes(
     bytes32[] memory _newJoinHashes
-  ) public onlyUserPKPOrAdmin {
+  ) public onlyDeveloperPKPOrAdmin {
     require(
       _newJoinHashes.length == _questCount,
       "KinoraQuest: Join Hash array length must match the total quest count."
@@ -379,11 +415,13 @@ contract KinoraQuest is Initializable {
     for (uint256 i = 0; i < _questCount; i++) {
       _allQuests[_questCount + 1]._joinHash = _newJoinHashes[i];
     }
+
+    emit JoinHashesUpdated(_newJoinHashes);
   }
 
   function updateAllCompletionHashes(
     bytes32[] memory _newCompletionHashes
-  ) public onlyUserPKPOrAdmin {
+  ) public onlyDeveloperPKPOrAdmin {
     for (uint256 i = 0; i < _questCount; i++) {
       for (
         uint256 j = 0;
@@ -394,6 +432,8 @@ contract KinoraQuest is Initializable {
           ._milestones[j]
           ._completionHash = _newCompletionHashes[j];
     }
+
+    emit CompletionHashesUpdated(_newCompletionHashes);
   }
 
   function getKinoraAccessControl() public view returns (address) {
@@ -427,9 +467,10 @@ contract KinoraQuest is Initializable {
   }
 
   function getUserMilestonesCompletedPerQuest(
-    address _userPKPAddress
-  ) public view returns (uint256[][] memory) {
-    return _allUsers[_userPKPAddress]._milestonesCompletedPerQuest;
+    address _userPKPAddress,
+    uint256 _questId
+  ) public view returns (uint256[] memory) {
+    return _allUsers[_userPKPAddress]._milestonesCompletedPerQuest[_questId];
   }
 
   function getQuestURIDetails(
@@ -458,59 +499,70 @@ contract KinoraQuest is Initializable {
     return _allQuests[_questId]._status;
   }
 
+  function getQuestId(uint256 _questId) public view returns (uint256) {
+    return _allQuests[_questId]._questId;
+  }
+
+  function getQuestMilestoneCount(
+    uint256 _questId
+  ) public view returns (uint256) {
+    return _allQuests[_questId]._milestones.length;
+  }
+
   function getQuestMilestoneURIDetails(
     uint256 _questId,
     uint256 _milestoneId
   ) public view returns (string memory) {
-    return _allQuests[_questId]._milestones[_milestoneId]._uriDetails;
+    return _allQuests[_questId]._milestones[_milestoneId - 1]._uriDetails;
   }
 
   function getQuestMilestoneCompletionHash(
     uint256 _questId,
     uint256 _milestoneId
   ) public view returns (bytes32) {
-    return _allQuests[_questId]._milestones[_milestoneId]._completionHash;
+    return _allQuests[_questId]._milestones[_milestoneId - 1]._completionHash;
   }
 
   function getQuestMilestoneNumberOfPoints(
     uint256 _questId,
     uint256 _milestoneId
   ) public view returns (uint256) {
-    return _allQuests[_questId]._milestones[_milestoneId]._numberOfPoints;
+    return _allQuests[_questId]._milestones[_milestoneId - 1]._numberOfPoints;
   }
 
   function getQuestMilestoneStatus(
     uint256 _questId,
     uint256 _milestoneId
   ) public view returns (Status) {
-    return _allQuests[_questId]._milestones[_milestoneId]._status;
+    return _allQuests[_questId]._milestones[_milestoneId - 1]._status;
   }
 
   function getQuestMilestoneRewardType(
     uint256 _questId,
     uint256 _milestoneId
   ) public view returns (RewardType) {
-    return _allQuests[_questId]._milestones[_milestoneId]._reward._type;
+    return _allQuests[_questId]._milestones[_milestoneId - 1]._reward._type;
   }
 
   function getQuestMilestoneRewardTokenAddress(
     uint256 _questId,
     uint256 _milestoneId
   ) public view returns (address) {
-    return _allQuests[_questId]._milestones[_milestoneId]._reward._tokenAddress;
+    return
+      _allQuests[_questId]._milestones[_milestoneId - 1]._reward._tokenAddress;
   }
 
   function getQuestMilestoneRewardTokenAmount(
     uint256 _questId,
     uint256 _milestoneId
   ) public view returns (uint256) {
-    return _allQuests[_questId]._milestones[_milestoneId]._reward._amount;
+    return _allQuests[_questId]._milestones[_milestoneId - 1]._reward._amount;
   }
 
   function getQuestMilestoneRewardTokenIds(
     uint256 _questId,
     uint256 _milestoneId
   ) public view returns (uint256[] memory) {
-    return _allQuests[_questId]._milestones[_milestoneId]._reward._tokenIds;
+    return _allQuests[_questId]._milestones[_milestoneId - 1]._reward._tokenIds;
   }
 }
