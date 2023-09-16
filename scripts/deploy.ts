@@ -98,6 +98,7 @@ main();
 /*
 1. set logic addresses in factory
 2. set contract factory pkpdb
+3. approve tokens for escrow
 */
 
 /*

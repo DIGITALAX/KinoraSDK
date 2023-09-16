@@ -15,6 +15,7 @@ describe("Kinora Factory Contract", () => {
     userPkp: SignerWithAddress,
     userPKPTwo: SignerWithAddress,
     userPkpThree: SignerWithAddress,
+    testERC20: Contract,
     kinoraGlobalAccessControl: Contract,
     kinoraGlobalPKPDB: Contract,
     kinoraFactory: Contract,
@@ -45,6 +46,8 @@ describe("Kinora Factory Contract", () => {
       userPkpThree,
     ] = await ethers.getSigners();
 
+    const TestERC20 = await ethers.getContractFactory("TestERC20");
+
     const KinoraGlobalAccessControl = await ethers.getContractFactory(
       "KinoraGlobalAccessControl",
     );
@@ -61,6 +64,8 @@ describe("Kinora Factory Contract", () => {
       "KinoraAccessControl",
     );
     const KinoraFactory = await ethers.getContractFactory("KinoraFactory");
+
+    testERC20 = await TestERC20.deploy();
 
     kinoraGlobalAccessControl = await KinoraGlobalAccessControl.deploy();
     kinoraGlobalPKPDB = await KinoraGlobalPKPDB.deploy(
@@ -105,6 +110,12 @@ describe("Kinora Factory Contract", () => {
     initiatedKinora721QuestReward = Kinora721QuestReward.attach(
       eventData.questRewardAddress,
     );
+
+    await testERC20
+      .connect(developerPkpFour)
+      .approve(initiatedKinoraEscrow.address, 2000);
+
+    await testERC20.transfer(developerPkpFour.address, 2000);
   });
 
   describe("Set and update functions", () => {
@@ -737,7 +748,7 @@ describe("Kinora Factory Contract", () => {
         );
       });
 
-      it("Should add milestone to an open quest with ERC20", async function () {
+      it("Should add milestone to an open quest with ERC20", async () => {
         const _questId = 2;
         const _uriDetails = "milestoneDetails";
         const _completionHash = ethers.utils.keccak256("0x00");
@@ -745,9 +756,8 @@ describe("Kinora Factory Contract", () => {
 
         const _questReward = {
           _type: 0,
-          _tokenAddress: admin.address,
-          _amount: 10,
-          _tokenIds: [],
+          _tokenAddress: testERC20.address,
+          _amount: 100,
         };
 
         expect(
@@ -793,10 +803,6 @@ describe("Kinora Factory Contract", () => {
         expect(
           await initiatedKinoraQuest.getQuestMilestoneRewardTokenAmount(2, 1),
         ).to.equal(_questReward._amount);
-
-        expect(
-          await initiatedKinoraQuest.getQuestMilestoneRewardTokenIds(2, 1),
-        ).to.deep.equal([]);
       });
 
       it("Updates milestone details", async () => {
@@ -807,16 +813,14 @@ describe("Kinora Factory Contract", () => {
 
         const _questReward = {
           _type: 1,
-          _tokenAddress: developerOne.address,
-          _amount: 20,
-          _tokenIds: [1, 2, 3],
+          _tokenAddress: testERC20.address,
+          _amount: 100,
         };
 
         expect(
           await initiatedKinoraQuest
             .connect(developerPkpFour)
             .updateMilestoneDetails(
-              _questReward._tokenIds,
               _uriDetails,
               _questReward._type,
               _questReward._tokenAddress,
@@ -861,10 +865,6 @@ describe("Kinora Factory Contract", () => {
         expect(
           await initiatedKinoraQuest.getQuestMilestoneRewardTokenAmount(2, 1),
         ).to.equal(_questReward._amount);
-
-        expect(
-          await initiatedKinoraQuest.getQuestMilestoneRewardTokenIds(2, 1),
-        ).to.deep.equal([1, 2, 3]);
       });
 
       it("Adds a new milestone", async () => {
@@ -875,9 +875,8 @@ describe("Kinora Factory Contract", () => {
 
         const _questReward = {
           _type: 0,
-          _tokenAddress: admin.address,
-          _amount: 10,
-          _tokenIds: [],
+          _tokenAddress: testERC20.address,
+          _amount: 100,
         };
 
         expect(
@@ -923,10 +922,6 @@ describe("Kinora Factory Contract", () => {
         expect(
           await initiatedKinoraQuest.getQuestMilestoneRewardTokenAmount(2, 2),
         ).to.equal(_questReward._amount);
-
-        expect(
-          await initiatedKinoraQuest.getQuestMilestoneRewardTokenIds(2, 2),
-        ).to.deep.equal([]);
       });
 
       it("Doesn't add milestone if Quest doesn't exist", async () => {
@@ -937,9 +932,8 @@ describe("Kinora Factory Contract", () => {
 
         const _questReward = {
           _type: 0,
-          _tokenAddress: admin.address,
-          _amount: 10,
-          _tokenIds: [],
+          _tokenAddress: testERC20.address,
+          _amount: 100,
         };
         await expect(
           initiatedKinoraQuest
@@ -962,16 +956,14 @@ describe("Kinora Factory Contract", () => {
 
         const _questReward = {
           _type: 1,
-          _tokenAddress: developerOne.address,
-          _amount: 20,
-          _tokenIds: [1, 2, 3],
+          _tokenAddress: testERC20.address,
+          _amount: 100,
         };
 
         await expect(
           initiatedKinoraQuest
             .connect(developerPkpFour)
             .updateMilestoneDetails(
-              _questReward._tokenIds,
               _uriDetails,
               _questReward._type,
               _questReward._tokenAddress,
@@ -992,9 +984,8 @@ describe("Kinora Factory Contract", () => {
 
         const _questReward = {
           _type: 0,
-          _tokenAddress: admin.address,
-          _amount: 10,
-          _tokenIds: [],
+          _tokenAddress: testERC20.address,
+          _amount: 100,
         };
         await expect(
           initiatedKinoraQuest
@@ -1052,9 +1043,8 @@ describe("Kinora Factory Contract", () => {
 
         const _questReward = {
           _type: 0,
-          _tokenAddress: admin.address,
-          _amount: 10,
-          _tokenIds: [],
+          _tokenAddress: testERC20.address,
+          _amount: 100,
         };
 
         await initiatedKinoraQuest
@@ -1065,14 +1055,14 @@ describe("Kinora Factory Contract", () => {
             _completionHash,
             _questId,
             _pointCount,
-          ),
-          expect(
-            await initiatedKinoraQuest
-              .connect(developerPkpFour)
-              .userJoinQuest(3, userPkp.address),
-          )
-            .to.emit(initiatedKinoraQuest, "UserJoinQuest")
-            .withArgs(3);
+          );
+        expect(
+          await initiatedKinoraQuest
+            .connect(developerPkpFour)
+            .userJoinQuest(3, userPkp.address),
+        )
+          .to.emit(initiatedKinoraQuest, "UserJoinQuest")
+          .withArgs(3);
       });
 
       it("Quest participation increases", async () => {
@@ -1091,7 +1081,7 @@ describe("Kinora Factory Contract", () => {
         );
       });
 
-      it("User completes milestone", async () => {
+      it("User completes milestone without reward available", async () => {
         await expect(
           initiatedKinoraQuest
             .connect(developerPkpFour)
@@ -1122,14 +1112,14 @@ describe("Kinora Factory Contract", () => {
       it("User can't join on maximum participation", async () => {
         await initiatedKinoraQuest
           .connect(developerPkpFour)
-          .userJoinQuest(3, userPkpThree.address),
-          await expect(
-            initiatedKinoraQuest
-              .connect(developerPkpFour)
-              .userJoinQuest(3, userPKPTwo.address),
-          ).to.be.revertedWith(
-            "KinoraQuest: Max Quest Participant Count reached.",
-          );
+          .userJoinQuest(3, userPkpThree.address);
+        await expect(
+          initiatedKinoraQuest
+            .connect(developerPkpFour)
+            .userJoinQuest(3, userPKPTwo.address),
+        ).to.be.revertedWith(
+          "KinoraQuest: Max Quest Participant Count reached.",
+        );
       });
 
       it("Update all join hashes", async () => {
@@ -1151,7 +1141,6 @@ describe("Kinora Factory Contract", () => {
       });
 
       it("Update all completion hashes", async () => {
-        console.log(await initiatedKinoraQuest.getTotalQuestCount());
         expect(
           await initiatedKinoraQuest
             .connect(developerPkpFour)
@@ -1170,101 +1159,339 @@ describe("Kinora Factory Contract", () => {
       });
     });
 
-    describe("Kinora Quest Reward", () => {});
+    describe("Kinora Escrow", () => {
+      it("Should set the AccessControl and Factory correctly", async () => {
+        expect(await initiatedKinoraEscrow.getKinoraAccessControl()).to.equal(
+          initiatedKinoraAccessControl.address,
+        );
+        expect(await initiatedKinoraEscrow.getKinoraFactory()).to.equal(
+          kinoraFactory.address,
+        );
+      });
 
-    // describe("Kinora Escrow", () => {
-    //   it("Should set the AccessControl and Factory correctly", async () => {
-    //     expect(await initiatedKinoraEscrow.getKinoraAccessControl()).to.equal(
-    //       initiatedKinoraAccessControl.address,
-    //     );
-    //     expect(await initiatedKinoraEscrow.getKinoraFactory()).to.equal(
-    //       kinoraFactory.address,
-    //     );
-    //   });
+      it("Should set the Quest and Quest Reward correctly", async () => {
+        expect(await initiatedKinoraEscrow.getKinoraQuest()).to.equal(
+          initiatedKinoraQuest.address,
+        );
+        expect(await initiatedKinoraEscrow.getKinora721QuestReward()).to.equal(
+          initiatedKinora721QuestReward.address,
+        );
+      });
 
-    //   it("Should set the Quest and Quest Reward correctly", async () => {
-    //     expect(await initiatedKinoraEscrow.getKinoraQuest()).to.equal(
-    //       initiatedKinoraQuest.address,
-    //     );
-    //     expect(await initiatedKinoraEscrow.getKinora721QuestReward()).to.equal(
-    //       initiatedKinora721QuestReward.address,
-    //     );
-    //   });
+      it("Only Factory can set the Quest and Quest Reward", async () => {
+        await expect(
+          initiatedKinoraEscrow.setKinoraQuest(initiatedKinoraEscrow.address),
+        ).to.be.revertedWith(
+          "KinoraEscrow: Only the Kinora Factory can perform this action.",
+        );
 
-    //   it("Only Factory can set the Quest and Quest Reward", async () => {
-    //     await expect(
-    //       initiatedKinoraEscrow.setKinoraQuest(initiatedKinoraEscrow.address),
-    //     ).to.be.revertedWith(
-    //       "KinoraEscrow: Only the Kinora Factory can perform this action.",
-    //     );
+        await expect(
+          initiatedKinoraEscrow.setKinora721QuestReward(
+            initiatedKinoraEscrow.address,
+          ),
+        ).to.be.revertedWith(
+          "KinoraEscrow: Only the Kinora Factory can perform this action.",
+        );
+      });
 
-    //     await expect(
-    //       initiatedKinoraEscrow.setKinora721QuestReward(
-    //         initiatedKinoraEscrow.address,
-    //       ),
-    //     ).to.be.revertedWith(
-    //       "KinoraEscrow: Only the Kinora Factory can perform this action.",
-    //     );
-    //   });
+      it("Should deposit ERC20 tokens", async () => {
+        await initiatedKinoraEscrow
+          .connect(developerPkpFour)
+          .depositERC20(testERC20.address, 100, 3, 1);
 
-    //   it("Should deposit ERC20 tokens", async () => {
-    //     const amount = 100;
-    //     const tokenAddress = "0x000000000";
-    //     await initiatedKinoraEscrow
-    //       .connect(pkp)
-    //       .depositERC20(tokenAddress, amount, QUEST_ID, MILESTONE_ID);
+        expect(
+          await initiatedKinoraEscrow.getQuestMilestoneIdToERC20Amount(
+            testERC20.address,
+            3,
+            1,
+          ),
+        ).to.equal(100);
+      });
 
-    //     expect(
-    //       await initiatedKinoraEscrow.getQuestMilestoneIdToERC20Amount(
-    //         TOKEN_ADDRESS,
-    //         QUEST_ID,
-    //         MILESTONE_ID,
-    //       ),
-    //     ).to.equal(amount);
-    //   });
+      it("Won't update if token exists", async () => {
+        await expect(
+          initiatedKinoraEscrow
+            .connect(developerPkpFour)
+            .depositERC20(testERC20.address, 20, 3, 1),
+        ).to.be.revertedWith(
+          "KinoraEscrow: Token already exists, update deposit instead.",
+        );
+      });
 
-    //   it("should update the ERC20 deposit", async () => {
-    //     const initialAmount = 100;
-    //     const updatedAmount = 200;
+      it("Should update the ERC20 deposit", async () => {
+        await initiatedKinoraEscrow
+          .connect(developerPkpFour)
+          .updateDepositERC20(testERC20.address, 3, 1, 1000);
 
-    //     // Initial deposit
-    //     await initiatedKinoraEscrow
-    //       .connect(pkp)
-    //       .depositERC20(TOKEN_ADDRESS, initialAmount, QUEST_ID, MILESTONE_ID);
+        expect(
+          await initiatedKinoraEscrow.getQuestMilestoneIdToERC20Amount(
+            testERC20.address,
+            3,
+            1,
+          ),
+        ).to.equal(1000);
+      });
 
-    //     // Update deposit
-    //     await initiatedKinoraEscrow
-    //       .connect(pkp)
-    //       .updateDepositERC20(
-    //         user.address,
-    //         TOKEN_ADDRESS,
-    //         QUEST_ID,
-    //         MILESTONE_ID,
-    //         updatedAmount,
-    //       );
+      it("Reverts on Quest doesn't exist", async () => {
+        await expect(
+          initiatedKinoraQuest
+            .connect(developerPkpFour)
+            .userCompleteMilestone(10, 1, userPkp.address),
+        ).to.be.revertedWith("KinoraQuest: Invalid milestone ID.");
+      });
 
-    //     expect(
-    //       await initiatedKinoraEscrow.getQuestMilestoneIdToERC20Amount(
-    //         TOKEN_ADDRESS,
-    //         QUEST_ID,
-    //         MILESTONE_ID,
-    //       ),
-    //     ).to.equal(updatedAmount);
-    //   });
+      it("Withdraws reward for user", async () => {
+        expect(
+          await initiatedKinoraQuest
+            .connect(developerPkpFour)
+            .userCompleteMilestone(3, 1, userPkp.address),
+        )
+          .to.emit(initiatedKinoraQuest, "UserCompleteQuestMilestone")
+          .withArgs(3, 1, userPkp.address);
+      });
 
-    //   it("Reverts on Quest doesn't exist", async () => {});
+      it("Reverts on invalid PKP or Admin for depositing ERC20", async () => {
+        await expect(
+          initiatedKinoraEscrow
+            .connect(admin)
+            .depositERC20(testERC20.address, 100, 3, 1),
+        ).to.be.revertedWith(
+          "KinoraEscrow: Only an Admin or the Assigned PKP can perform this action.",
+        );
+      });
 
-    // it("Withdraws reward for user", async () => {
-    // expect(
-    //   await initiatedKinoraQuest
-    //     .connect(developerPkpFour)
-    //     .userCompleteMilestone(3, 1, userPkp.address),
-    // )
-    //   .to.emit(initiatedKinoraQuest, "UserCompleteQuestMilestone")
-    //   .withArgs(3, 1, userPkp.address);
-    // });
+      it("Reverts on insufficient balance when withdrawing ERC20", async () => {
+        // it's only the admin not the PKP, for extra safety
+        await expect(
+          initiatedKinoraEscrow
+            .connect(developerOne)
+            .withdrawERC20(userPKPTwo.address, testERC20.address, 10000, 3, 1),
+        ).to.be.revertedWith("KinoraEscrow: Insufficient balance.");
+      });
 
-    // it("Let's user mint 721 reward", async () => {})
-    // });
+      it("Should deposit ERC721 tokens", async () => {
+        await initiatedKinoraEscrow
+          .connect(developerPkpFour)
+          .depositERC721("example_uri", 3, 1);
+      });
+
+      it("Reverts on trying to deposit ERC721 that already exists", async () => {
+        await expect(
+          initiatedKinoraEscrow
+            .connect(developerPkpFour)
+            .depositERC721("example_uri", 3, 1),
+        ).to.be.revertedWith(
+          "KinoraEscrow: Token already exists, update deposit instead.",
+        );
+      });
+
+      it("Should update ERC721 token deposit", async () => {
+        await initiatedKinoraEscrow
+          .connect(developerPkpFour)
+          .updateDepositERC721("new_example_uri", 3, 1);
+        expect(
+          await initiatedKinoraEscrow.getQuestMilestoneIdToERC721URI(3, 1),
+        ).to.equal("new_example_uri");
+      });
+
+      it("Won't update 721 if token doesn't exist", async () => {
+        const uri = "newUri";
+        await expect(
+          initiatedKinoraEscrow
+            .connect(developerPkpFour)
+            .updateDepositERC721(uri, 3, 2),
+        ).to.be.revertedWith("KinoraEscrow: Token doesn't exist.");
+      });
+
+      it("Reverts on invalid PKP or Admin for depositing ERC721", async () => {
+        await expect(
+          initiatedKinoraEscrow
+            .connect(admin)
+            .depositERC721("example_uri", 3, 1),
+        ).to.be.revertedWith(
+          "KinoraEscrow: Only an Admin or the Assigned PKP can perform this action.",
+        );
+      });
+
+      it("Reverts on depositing ERC721 to a non-existing Quest", async () => {
+        await expect(
+          initiatedKinoraEscrow
+            .connect(developerPkpFour)
+            .depositERC721("example_uri", 999, 1),
+        ).to.be.revertedWith("KinoraEscrow: Quest doesn't exist.");
+      });
+    });
+
+    describe("Kinora Quest Reward", () => {
+      it("Should set correct initial values", async () => {
+        expect(await initiatedKinora721QuestReward.getKinoraQuest()).to.equal(
+          initiatedKinoraQuest.address,
+        );
+        expect(await initiatedKinora721QuestReward.getKinoraEscrow()).to.equal(
+          initiatedKinoraEscrow.address,
+        );
+        expect(await initiatedKinora721QuestReward.getTokenCount()).to.equal(0);
+      });
+
+      it("Should mint a new NFT if conditions are met", async () => {
+        await initiatedKinoraQuest
+          .connect(developerPkpFour)
+          .instantiateNewQuest(
+            "uri",
+            "0x" +
+              "c7c3719c0854f10ff2b88b00a55889b7b51998a4088cfcc664d644e3d3926f72",
+            2,
+          );
+
+        const _questId = 4;
+        const _uriDetails = "milestoneDetails";
+        const _completionHash = ethers.utils.keccak256("0x00");
+        const _pointCount = 10;
+
+        const _questReward = {
+          _type: 1,
+          _tokenAddress: testERC20.address,
+          _amount: 0,
+        };
+
+        await initiatedKinoraQuest
+          .connect(developerPkpFour)
+          .addQuestMilestone(
+            _questReward,
+            _uriDetails,
+            _completionHash,
+            _questId,
+            _pointCount,
+          );
+
+        await initiatedKinoraQuest
+          .connect(developerPkpFour)
+          .userJoinQuest(4, userPkp.address);
+        await initiatedKinoraQuest
+          .connect(developerPkpFour)
+          .userCompleteMilestone(4, 1, userPkp.address);
+        expect(
+          await initiatedKinora721QuestReward
+            .connect(userPkp)
+            .mintRewardNFT(userPkp.address, 4, 1),
+        )
+          .to.emit(initiatedKinora721QuestReward, "Transfer")
+          .withArgs(ethers.constants.AddressZero, userPkp.address, 1);
+
+        expect(await initiatedKinora721QuestReward.getTokenCount()).to.equal(1);
+      });
+
+      it("Should revert if the user has not completed the quest", async () => {
+        await initiatedKinoraQuest
+          .connect(developerPkpFour)
+          .instantiateNewQuest(
+            "uri",
+            "0x" +
+              "c7c3719c0854f10ff2b88b00a55889b7b51998a4088cfcc664d644e3d3926f72",
+            2,
+          );
+
+        const _questId = 5;
+        const _uriDetails = "milestoneDetails";
+        const _completionHash = ethers.utils.keccak256("0x00");
+        const _pointCount = 10;
+
+        const _questReward = {
+          _type: 0,
+          _tokenAddress: testERC20.address,
+          _amount: 100,
+        };
+
+        await initiatedKinoraQuest
+          .connect(developerPkpFour)
+          .addQuestMilestone(
+            _questReward,
+            _uriDetails,
+            _completionHash,
+            _questId,
+            _pointCount,
+          );
+
+        await initiatedKinoraQuest
+          .connect(developerPkpFour)
+          .userJoinQuest(5, userPkpThree.address);
+
+        await expect(
+          initiatedKinora721QuestReward
+            .connect(userPkpThree)
+            .mintRewardNFT(userPkpThree.address, 5, 1),
+        ).to.be.revertedWith(
+          "Kinora721QuestReward: Only an eligible User can mint.",
+        );
+      });
+
+      it("Should not mint if user is part of quest but hasn't completed the milestone", async () => {
+        await expect(
+          initiatedKinora721QuestReward
+            .connect(userPkpThree)
+            .mintRewardNFT(userPkpThree.address, 5, 1),
+        ).to.be.revertedWith(
+          "Kinora721QuestReward: Only an eligible User can mint.",
+        );
+      });
+
+      it("Should increment count after minting", async () => {
+        await initiatedKinoraQuest
+          .connect(developerPkpFour)
+          .instantiateNewQuest(
+            "uri",
+            "0x" +
+              "c7c3719c0854f10ff2b88b00a55889b7b51998a4088cfcc664d644e3d3926f72",
+            2,
+          );
+
+        const _questId = 6;
+        const _uriDetails = "milestoneDetails";
+        const _completionHash = ethers.utils.keccak256("0x00");
+        const _pointCount = 10;
+
+        const _questReward = {
+          _type: 1,
+          _tokenAddress: testERC20.address,
+          _amount: 0,
+        };
+
+        await initiatedKinoraQuest
+          .connect(developerPkpFour)
+          .addQuestMilestone(
+            _questReward,
+            _uriDetails,
+            _completionHash,
+            _questId,
+            _pointCount,
+          );
+
+        await initiatedKinoraEscrow
+          .connect(developerPkpFour)
+          .depositERC721("uri_for_721", 6, 1);
+
+        await initiatedKinoraQuest
+          .connect(developerPkpFour)
+          .userJoinQuest(6, userPkp.address);
+
+        initiatedKinoraQuest
+          .connect(developerPkpFour)
+          .userCompleteMilestone(6, 1, userPkp.address);
+        expect(
+          await initiatedKinora721QuestReward
+            .connect(userPkp)
+            .mintRewardNFT(userPkp.address, 6, 1),
+        )
+          .to.emit(initiatedKinora721QuestReward, "MintRewardNFT")
+          .withArgs(2, userPkp.address, "uri_for_721", 6, 1);
+        expect(await initiatedKinora721QuestReward.getTokenCount()).to.equal(2);
+      });
+
+      it("Should set correct URI for minted token", async () => {
+        expect(await initiatedKinora721QuestReward.tokenURI(2)).to.equal(
+          "uri_for_721",
+        );
+      });
+    });
   });
 });

@@ -6,11 +6,14 @@ import "./KinoraQuest.sol";
 import "./KinoraEscrow.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
 
 contract Kinora721QuestReward is ERC721URIStorage, Initializable {
   KinoraQuest private _quest;
   KinoraEscrow private _escrow;
   uint256 private _tokenCount;
+
+  mapping(uint256 => string) private _tokenURIs;
 
   modifier onlyUserQuestCompleted(
     address _userPKPAddress,
@@ -44,7 +47,10 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
       if (
         _quest.getUserMilestonesCompletedPerQuest(_userPKPAddress, _questId)[
           i
-        ] == _milestoneId
+        ] ==
+        _milestoneId &&
+        _quest.getQuestMilestoneRewardType(_questId, _milestoneId) ==
+        KinoraQuest.RewardType.ERC721
       ) {
         _questCompleted = true;
         break;
@@ -56,6 +62,14 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
     );
     _;
   }
+
+  event MintRewardNFT(
+    uint256 indexed tokenCount,
+    address userPKPAddress,
+    string uri,
+    uint256 questId,
+    uint256 milestoneId
+  );
 
   constructor() ERC721("Kinora721QuestReward", "KQRE") {}
 
@@ -70,9 +84,17 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
     uint256 _questId,
     uint256 _milestoneId
   ) external onlyUserQuestCompleted(_userPKPAddress, _questId, _milestoneId) {
-    _mintNFT(
-      msg.sender,
-      _escrow.getQuestMilestoneIdToERC721URI(_questId, _milestoneId)
+    string memory _uri = _escrow.getQuestMilestoneIdToERC721URI(
+      _questId,
+      _milestoneId
+    );
+    _mintNFT(msg.sender, _uri);
+    emit MintRewardNFT(
+      _tokenCount,
+      _userPKPAddress,
+      _uri,
+      _questId,
+      _milestoneId
     );
   }
 
@@ -80,6 +102,13 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
     _tokenCount++;
     _mint(_recipient, _tokenCount);
     _setTokenURI(_tokenCount, _uri);
+    _tokenURIs[_tokenCount] = _uri;
+  }
+
+  function tokenURI(
+    uint256 _tokenId
+  ) public view virtual override returns (string memory) {
+    return _tokenURIs[_tokenId];
   }
 
   function getKinoraQuest() public view returns (address) {

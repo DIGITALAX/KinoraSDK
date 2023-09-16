@@ -28,7 +28,6 @@ contract KinoraQuest is Initializable {
     RewardType _type;
     address _tokenAddress;
     uint256 _amount;
-    uint256[] _tokenIds;
   }
   struct Milestone {
     string _uriDetails;
@@ -204,7 +203,6 @@ contract KinoraQuest is Initializable {
   }
 
   function updateMilestoneDetails(
-    uint256[] memory _newTokenIds,
     string memory _newURIDetails,
     RewardType _newType,
     address _newTokenAddress,
@@ -245,10 +243,6 @@ contract KinoraQuest is Initializable {
       ._milestones[_milestoneId - 1]
       ._reward
       ._amount = _newAmount;
-    _allQuests[_questId]
-      ._milestones[_milestoneId - 1]
-      ._reward
-      ._tokenIds = _newTokenIds;
 
     emit QuestMilestoneUpdated(_questId, _milestoneId, _completionHash);
   }
@@ -306,7 +300,9 @@ contract KinoraQuest is Initializable {
         i < _allUsers[_userPKPAddress]._questsJoined.length;
         i++
       ) {
-        _canJoinQuest = false;
+        if (_questId == _allUsers[_userPKPAddress]._questsJoined[i]) {
+          _canJoinQuest = false;
+        }
       }
     } else {
       _userCount++;
@@ -557,12 +553,5 @@ contract KinoraQuest is Initializable {
     uint256 _milestoneId
   ) public view returns (uint256) {
     return _allQuests[_questId]._milestones[_milestoneId - 1]._reward._amount;
-  }
-
-  function getQuestMilestoneRewardTokenIds(
-    uint256 _questId,
-    uint256 _milestoneId
-  ) public view returns (uint256[] memory) {
-    return _allQuests[_questId]._milestones[_milestoneId - 1]._reward._tokenIds;
   }
 }

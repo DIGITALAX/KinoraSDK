@@ -8,6 +8,7 @@ import "./Kinora721QuestReward.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
 
 contract KinoraEscrow is Initializable {
   KinoraAccessControl private _accessControl;
@@ -21,7 +22,6 @@ contract KinoraEscrow is Initializable {
   }
 
   struct ERC721Token {
-    uint256[] _tokenIds;
     string _uri;
     bool _tokenExists;
   }
@@ -70,24 +70,14 @@ contract KinoraEscrow is Initializable {
     uint256 questId,
     uint256 milestoneId
   );
-  event ERC721URISet(
-    uint256[] tokenIds,
-    string uri,
-    uint256 questId,
-    uint256 milestoneId
-  );
+  event ERC721URISet(string uri, uint256 questId, uint256 milestoneId);
   event ERC20DepositUpdated(
     address indexed tokenAddress,
     uint256 amount,
     uint256 questId,
     uint256 milestoneId
   );
-  event ERC721URISetUpdated(
-    uint256[] tokenIds,
-    string uri,
-    uint256 questId,
-    uint256 milestoneId
-  );
+  event ERC721URISetUpdated(string uri, uint256 questId, uint256 milestoneId);
   event ERC20Withdrawn(
     address indexed user,
     address indexed tokenAddress,
@@ -124,7 +114,6 @@ contract KinoraEscrow is Initializable {
   }
 
   function updateDepositERC20(
-    address _receiverAddress,
     address _tokenAddress,
     uint256 _questId,
     uint256 _milestoneId,
@@ -134,15 +123,6 @@ contract KinoraEscrow is Initializable {
       _questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
         ._tokenExists,
       "KinoraEscrow: Token doesn't exist."
-    );
-    require(
-      IERC20(_tokenAddress).transferFrom(
-        address(this),
-        _receiverAddress,
-        _questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
-          ._amount
-      ),
-      "KinoraEscrow: Transfer failed."
     );
     require(
       IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _amount),
@@ -187,11 +167,14 @@ contract KinoraEscrow is Initializable {
   }
 
   function depositERC721(
-    uint256[] memory _tokenIds,
     string memory _uri,
     uint256 _questId,
     uint256 _milestoneId
   ) public onlyPKPOrAdmin {
+    require(
+      _quest.getQuestId(_questId) != 0,
+      "KinoraEscrow: Quest doesn't exist."
+    );
     require(
       !_questMilestoneIdToERC721Deposit[_questId][_milestoneId]._tokenExists,
       "KinoraEscrow: Token already exists, update deposit instead."
@@ -199,15 +182,13 @@ contract KinoraEscrow is Initializable {
 
     _questMilestoneIdToERC721Deposit[_questId][_milestoneId] = ERC721Token({
       _tokenExists: true,
-      _tokenIds: _tokenIds,
       _uri: _uri
     });
 
-    emit ERC721URISet(_tokenIds, _uri, _questId, _milestoneId);
+    emit ERC721URISet(_uri, _questId, _milestoneId);
   }
 
   function updateDepositERC721(
-    uint256[] memory _tokenIds,
     string memory _uri,
     uint256 _questId,
     uint256 _milestoneId
@@ -217,12 +198,9 @@ contract KinoraEscrow is Initializable {
       "KinoraEscrow: Token doesn't exist."
     );
 
-    _questMilestoneIdToERC721Deposit[_questId][_milestoneId]
-      ._tokenIds = _tokenIds;
-
     _questMilestoneIdToERC721Deposit[_questId][_milestoneId]._uri = _uri;
 
-    emit ERC721URISetUpdated(_tokenIds, _uri, _questId, _milestoneId);
+    emit ERC721URISetUpdated(_uri, _questId, _milestoneId);
   }
 
   function setKinoraQuest(address _questContract) public onlyFactory {
@@ -269,13 +247,6 @@ contract KinoraEscrow is Initializable {
     return
       _questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
         ._tokenExists;
-  }
-
-  function getQuestMilestoneIdToERC721TokenIds(
-    uint256 _questId,
-    uint256 _milestoneId
-  ) public view returns (uint256[] memory) {
-    return _questMilestoneIdToERC721Deposit[_questId][_milestoneId]._tokenIds;
   }
 
   function getQuestMilestoneIdToERC721Exists(
