@@ -1,12 +1,13 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Contract, Signer } from "ethers";
+import { Contract } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 describe("Kinora Factory Contract", () => {
   const TEST_PKP_ADDRESS = "0xB44c397edA567515012717eC2cf36F779F4E33af";
   const TEST_PKP_ADDRESS_TWO = "0x938d4de17e9828be8a68688329E77E5FC7d5ABA6";
   const TEST_PKP_ADDRESS_THREE = "0x6FD98Aa1A03A8f43648609dDf5F7982D949bfA2a";
+  const TEST_PKP_ADDRESS_FOUR = "0xA6c536C8a87BAD0E588c1C1C2B2E68F0d5156Eb0";
   let admin: SignerWithAddress,
     developerOne: SignerWithAddress,
     developerTwo: SignerWithAddress,
@@ -19,6 +20,11 @@ describe("Kinora Factory Contract", () => {
     kinoraEscrow: Contract,
     kinora721QuestReward: Contract,
     kinoraAccessControl: Contract,
+    initiatedKinoraMetrics: Contract,
+    initiatedKinoraQuest: Contract,
+    initiatedKinoraEscrow: Contract,
+    initiatedKinora721QuestReward: Contract,
+    initiatedKinoraAccessControl: Contract,
     eventData: any;
 
   before(async () => {
@@ -73,6 +79,16 @@ describe("Kinora Factory Contract", () => {
       (event: any) => event.event === "KinoraFactoryDeployed",
     );
     eventData = await event.args;
+
+    initiatedKinoraAccessControl = KinoraAccessControl.attach(
+      eventData.accessControlAddress,
+    );
+    initiatedKinoraMetrics = KinoraMetrics.attach(eventData.metricsAddress);
+    initiatedKinoraQuest = KinoraQuest.attach(eventData.questAddress);
+    initiatedKinoraEscrow = KinoraEscrow.attach(eventData.escrowAddress);
+    initiatedKinora721QuestReward = Kinora721QuestReward.attach(
+      eventData.questRewardAddress,
+    );
   });
 
   describe("Set and update functions", () => {
@@ -300,5 +316,126 @@ describe("Kinora Factory Contract", () => {
     });
   });
 
-  describe("Initiated Logic Contracts", () => {});
+  describe("Initiated Logic Contracts", () => {
+    describe("Kinora AccessControl", () => {
+      it("Should initialize contract variables", async () => {
+        expect(await initiatedKinoraAccessControl.symbol()).to.equal("KAC");
+        expect(await initiatedKinoraAccessControl.name()).to.equal(
+          "KinoraAccessControl",
+        );
+        expect(
+          await initiatedKinoraAccessControl.getAssignedPKPAddress(),
+        ).to.equal(TEST_PKP_ADDRESS);
+        expect(
+          await initiatedKinoraAccessControl.isAdmin(developerOne.address),
+        ).to.equal(true);
+      });
+
+      it("Should revert if called by non-admin", async () => {
+        await expect(
+          initiatedKinoraAccessControl
+            .connect(admin)
+            .addAdmin(developerThree.address),
+        ).to.be.revertedWith(
+          "KinoraAccessControl: Only admins can perform this action.",
+        );
+      });
+
+      it("Should add a new admin", async () => {
+        await initiatedKinoraAccessControl
+          .connect(developerOne)
+          .addAdmin(developerTwo.address);
+
+        expect(
+          await initiatedKinoraAccessControl.isAdmin(developerTwo.address),
+        ).to.equal(true);
+
+        await expect(
+          initiatedKinoraAccessControl
+            .connect(developerOne)
+            .addAdmin(developerTwo.address),
+        ).to.be.revertedWith("KinoraAccessControl: Cannot add existing admin.");
+      });
+
+      it("Should emit AdminAdded event", async () => {
+        await expect(
+          initiatedKinoraAccessControl
+            .connect(developerOne)
+            .addAdmin(developerThree.address),
+        )
+          .to.emit(initiatedKinoraAccessControl, "AdminAdded")
+          .withArgs(developerThree.address);
+      });
+
+      it("Should remove an existing admin", async () => {
+        expect(
+          await initiatedKinoraAccessControl
+            .connect(developerOne)
+            .removeAdmin(developerTwo.address),
+        )
+          .to.emit(initiatedKinoraAccessControl, "AdminRemoved")
+          .withArgs(developerTwo.address);
+
+        expect(
+          await initiatedKinoraAccessControl.isAdmin(developerTwo.address),
+        ).to.equal(false);
+      });
+
+      it("Should not allow removing oneself", async () => {
+        await expect(
+          initiatedKinoraAccessControl
+            .connect(developerOne)
+            .removeAdmin(developerOne.address),
+        ).to.be.revertedWith(
+          "KinoraAccessControl: Cannot remove yourself as admin.",
+        );
+      });
+      it("Should update the assigned PKP address", async () => {
+        expect(
+          await initiatedKinoraAccessControl
+            .connect(developerOne)
+            .updateAssignedPKPAddress(TEST_PKP_ADDRESS_FOUR),
+        )
+          .to.emit(initiatedKinoraAccessControl, "AssignedPKPAddressUpdated")
+          .withArgs(TEST_PKP_ADDRESS_FOUR);
+
+        expect(
+          await initiatedKinoraAccessControl.getAssignedPKPAddress(),
+        ).to.equal(TEST_PKP_ADDRESS_FOUR);
+      });
+
+      it("Should revert for PKP already existing in Global DB", async () => {
+        await expect(
+          initiatedKinoraAccessControl
+            .connect(developerOne)
+            .updateAssignedPKPAddress(TEST_PKP_ADDRESS),
+        ).to.be.revertedWith(
+          "KinoraAccessControl: PKP already assigned in global DB.",
+        );
+      });
+
+      it("Should correctly identify admins", async () => {
+        expect(
+          await initiatedKinoraAccessControl.isAdmin(developerOne.address),
+        ).to.equal(true);
+        expect(
+          await initiatedKinoraAccessControl.isAdmin(admin.address),
+        ).to.equal(false);
+      });
+
+      it("Should return the correct assigned PKP address", async () => {
+        expect(
+          await initiatedKinoraAccessControl.getAssignedPKPAddress(),
+        ).to.equal(TEST_PKP_ADDRESS_FOUR);
+      });
+    });
+
+    describe("Kinora Metrics", () => {});
+
+    describe("Kinora Escrow", () => {});
+
+    describe("Kinora Quest Reward", () => {});
+
+    describe("Kinora Quest", () => {});
+  });
 });

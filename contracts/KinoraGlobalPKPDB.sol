@@ -48,6 +48,7 @@ contract KinoraGlobalPKPDB {
 
   constructor(address _accessControlAddress) {
     _globalAccessControl = KinoraGlobalAccessControl(_accessControlAddress);
+    _activeUserCount = 0;
   }
 
   function addUserPKP(address _userPkpAddress) public onlyFactoryPKP {
@@ -91,7 +92,7 @@ contract KinoraGlobalPKPDB {
     emit KinoraFactoryUpdate(_factoryAddress, msg.sender);
   }
 
-  function userExits(address _userPKPAddress) public view returns (bool) {
+  function userExists(address _userPKPAddress) public view returns (bool) {
     return _userActiveAccount[_userPKPAddress];
   }
 
