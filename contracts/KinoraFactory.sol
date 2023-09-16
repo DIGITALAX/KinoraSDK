@@ -57,6 +57,7 @@ contract KinoraFactory {
     symbol = "KFAC";
     _globalAccessControl = _accessControlsAddress;
     _globalPKPDB = _pkpDBAddress;
+    _kinoraIDCount = 0;
   }
 
   function deployFromKinoraFactory(address _pkpAddress) public {
@@ -118,7 +119,11 @@ contract KinoraFactory {
     address _newKQR = Clones.clone(_kinoraQuestReward);
 
     // Deploy KinoraAccessControl
-    KinoraAccessControl(_newKAC).initialize(_pkpAddress, _kinoraDeployer);
+    KinoraAccessControl(_newKAC).initialize(
+      _pkpAddress,
+      _kinoraDeployer,
+      address(this)
+    );
 
     // Deploy KinoraMetricsAddress
     KinoraMetrics(_newKM).initialize(_newKAC);

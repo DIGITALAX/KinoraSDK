@@ -119,6 +119,8 @@ contract KinoraQuest is Initializable {
     _accessControl = KinoraAccessControl(_accessControlAddress);
     _escrow = KinoraEscrow(_escrowAddress);
     _pkpDB = KinoraGlobalPKPDB(_pkpDBAddress);
+    _userCount = 0;
+    _questCount = 0;
   }
 
   function instantiateNewQuest(
@@ -258,7 +260,7 @@ contract KinoraQuest is Initializable {
     address _userAddress
   ) public onlyUserPKP questOpen(_questId) {
     require(
-      _pkpDB.userExits(_userAddress),
+      _pkpDB.userExists(_userAddress),
       "KinoraQuest: User must have an active PKP account."
     );
     require(

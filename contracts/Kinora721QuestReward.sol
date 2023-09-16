@@ -61,6 +61,7 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
   function initialize(address _questAddress, address _escrowAddress) public {
     _quest = KinoraQuest(_questAddress);
     _escrow = KinoraEscrow(_escrowAddress);
+    _tokenCount = 0;
   }
 
   function mintRewardNFT(

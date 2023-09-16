@@ -2,10 +2,12 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "./KinoraFactory.sol";
 
 contract KinoraAccessControl is Initializable {
   string public symbol;
   string public name;
+  KinoraFactory private _kinoraFactory;
   address private _assignedPKPAddress;
 
   mapping(address => bool) private _admins;
@@ -22,12 +24,17 @@ contract KinoraAccessControl is Initializable {
     _;
   }
 
-  function initialize(address _pkpAddress, address _deployerAdmin) public {
+  function initialize(
+    address _pkpAddress,
+    address _deployerAdmin,
+    address _kinoraFactoryAddress
+  ) public {
     symbol = "KAC";
     name = "KinoraAccessControl";
     _assignedPKPAddress = _pkpAddress;
     _admins[msg.sender] = true;
     _admins[_deployerAdmin] = true;
+    _kinoraFactory = KinoraFactory(_kinoraFactoryAddress);
   }
 
   function addAdmin(address _admin) external onlyAdmin {
@@ -52,6 +59,10 @@ contract KinoraAccessControl is Initializable {
   function updateAssignedPKPAddress(
     address _newAssignedPKPAddress
   ) public onlyAdmin {
+    require(
+      _kinoraFactory.getKinoraIDToPKP(_newAssignedPKPAddress) == 0,
+      "KinoraAccessControl: PKP already assigned in global DB."
+    );
     _assignedPKPAddress = _newAssignedPKPAddress;
     emit AssignedPKPAddressUpdated(_newAssignedPKPAddress);
   }
@@ -62,5 +73,9 @@ contract KinoraAccessControl is Initializable {
 
   function getAssignedPKPAddress() public view returns (address) {
     return _assignedPKPAddress;
+  }
+
+  function getGlobalPKPDBAddress() public view returns (address) {
+    return address(_kinoraFactory);
   }
 }
