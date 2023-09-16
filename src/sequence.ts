@@ -377,6 +377,19 @@ export class Sequence extends EventEmitter {
           oldJoinHashBytes,
         );
 
+        if (removeError) {
+          this.log(
+            LogCategory.ERROR,
+            `Error in removing previous Lit Action.`,
+            removeMessage,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(`Error in: ${removeMessage}`);
+          }
+          return;
+        }
+
         const {
           error,
           message,
@@ -386,6 +399,19 @@ export class Sequence extends EventEmitter {
           this.developerPKPData.tokenId,
           newJoinHash,
         );
+
+        if (error) {
+          this.log(
+            LogCategory.ERROR,
+            `Error in assigning new Lit Action.`,
+            message,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(`Error in: ${message}`);
+          }
+          return;
+        }
 
         for (let j = 0; ; j++) {
           const milestoneURI =
@@ -419,6 +445,19 @@ export class Sequence extends EventEmitter {
             oldCompletionHashBytes,
           );
 
+          if (removeError) {
+            this.log(
+              LogCategory.ERROR,
+              `Error in removing previous Lit Action for Milestones.`,
+              removeMessage,
+              new Date().toISOString(),
+            );
+            if (this.errorHandlingModeStrict) {
+              throw new Error(`Error in: ${removeMessage}`);
+            }
+            return;
+          }
+
           const {
             error,
             message,
@@ -428,6 +467,19 @@ export class Sequence extends EventEmitter {
             this.developerPKPData.tokenId,
             newMilestoneHash,
           );
+
+          if (error) {
+            this.log(
+              LogCategory.ERROR,
+              `Error in removing assigning new Lit Action for Milestones.`,
+              message,
+              new Date().toISOString(),
+            );
+            if (this.errorHandlingModeStrict) {
+              throw new Error(`Error in: ${message}`);
+            }
+            return;
+          }
         }
       }
 
@@ -643,9 +695,22 @@ export class Sequence extends EventEmitter {
         message: outputBufferMessage,
         outputBuffer,
       } = await bundleCode(litAction);
+
       if (outputBufferError) {
+        this.log(
+          LogCategory.ERROR,
+          `Bundle Lit Action code error.`,
+          outputBufferMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error in bundling Lit Action code: ${outputBufferMessage}`,
+          );
+        }
         return;
       }
+
       const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
 
       const { error, message, txHash } = await assignLitAction(
@@ -697,7 +762,19 @@ export class Sequence extends EventEmitter {
           message: outputBufferMessage,
           outputBuffer,
         } = await bundleCode(litAction);
+
         if (outputBufferError) {
+          this.log(
+            LogCategory.ERROR,
+            `Bundle Lit Action code error.`,
+            outputBufferMessage,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error in bundling Lit Action code: ${outputBufferMessage}`,
+            );
+          }
           return;
         }
         const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
@@ -797,9 +874,22 @@ export class Sequence extends EventEmitter {
           message: outputBufferMessage,
           outputBuffer,
         } = await bundleCode(litAction);
+
         if (outputBufferError) {
+          this.log(
+            LogCategory.ERROR,
+            `Bundle Lit Action code error.`,
+            outputBufferMessage,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error in bundling Lit Action code: ${outputBufferMessage}`,
+            );
+          }
           return;
         }
+
         const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
         litActionHashes.push(litActionHash);
 
@@ -893,7 +983,19 @@ export class Sequence extends EventEmitter {
         message: outputBufferMessage,
         outputBuffer,
       } = await bundleCode(litAction);
+
       if (outputBufferError) {
+        this.log(
+          LogCategory.ERROR,
+          `Bundle Lit Action code error.`,
+          outputBufferMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error in bundling Lit Action code: ${outputBufferMessage}`,
+          );
+        }
         return;
       }
       const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
@@ -912,6 +1014,21 @@ export class Sequence extends EventEmitter {
         oldJoinHashBytes,
       );
 
+      if (removeError) {
+        this.log(
+          LogCategory.ERROR,
+          `Remove Lit Action failed on Quest Details Update.`,
+          removeMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error removing Lit Action for updating Quest Details: ${removeMessage}`,
+          );
+        }
+        return;
+      }
+
       const {
         error,
         message,
@@ -925,12 +1042,12 @@ export class Sequence extends EventEmitter {
       if (error) {
         this.log(
           LogCategory.ERROR,
-          `Assign Join Quest Lit Action failed.`,
+          `Assign Quest Lit Action failed.`,
           message,
           new Date().toISOString(),
         );
         if (this.errorHandlingModeStrict) {
-          throw new Error(`Error assigning Join Quest Lit Action: ${message}`);
+          throw new Error(`Error assigning Quest Lit Action: ${message}`);
         }
         return;
       }
@@ -959,7 +1076,19 @@ export class Sequence extends EventEmitter {
           message: outputBufferMessage,
           outputBuffer,
         } = await bundleCode(litAction);
+
         if (outputBufferError) {
+          this.log(
+            LogCategory.ERROR,
+            `Bundle Lit Action code error.`,
+            outputBufferMessage,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error in bundling Lit Action code: ${outputBufferMessage}`,
+            );
+          }
           return;
         }
         const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
@@ -973,6 +1102,21 @@ export class Sequence extends EventEmitter {
           this.developerPKPData.tokenId,
           getBytesFromMultihash(litActionHash),
         );
+
+        if (error) {
+          this.log(
+            LogCategory.ERROR,
+            `Assign Quest Lit Action failed on Update.`,
+            message,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error assigning Quest Lit Action on Update: ${message}`,
+            );
+          }
+          return;
+        }
 
         const oldLitActionBytes =
           await this.kinoraQuestAddress.getQuestMilestoneCompletionHash(
@@ -990,6 +1134,21 @@ export class Sequence extends EventEmitter {
           oldLitActionBytes,
         );
 
+        if (removeError) {
+          this.log(
+            LogCategory.ERROR,
+            `Remove Quest Lit Action failed on Update.`,
+            removeMessage,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error removing Quest Lit Action on Update: ${removeMessage}`,
+            );
+          }
+          return;
+        }
+
         const {
           error: assignError,
           message: assignMessage,
@@ -999,6 +1158,21 @@ export class Sequence extends EventEmitter {
           this.developerPKPData.tokenId,
           getBytesFromMultihash(litActionHash),
         );
+
+        if (assignError) {
+          this.log(
+            LogCategory.ERROR,
+            `Assign Quest Lit Action failed on Update.`,
+            assignMessage,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error assigning new Quest Lit Action on Update: ${assignMessage}`,
+            );
+          }
+          return;
+        }
 
         newMilestones.push({
           ...questDetails.newMilestones[i],
@@ -1103,7 +1277,19 @@ export class Sequence extends EventEmitter {
         message: outputBufferMessage,
         outputBuffer,
       } = await bundleCode(litAction);
+
       if (outputBufferError) {
+        this.log(
+          LogCategory.ERROR,
+          `Bundle Lit Action code error.`,
+          outputBufferMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error in bundling Lit Action code: ${outputBufferMessage}`,
+          );
+        }
         return;
       }
       const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;
@@ -1123,6 +1309,21 @@ export class Sequence extends EventEmitter {
         oldLitActionBytes,
       );
 
+      if (removeError) {
+        this.log(
+          LogCategory.ERROR,
+          `Remove Quest Lit Action failed on Update.`,
+          removeMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error removing Quest Lit Action on Update: ${removeMessage}`,
+          );
+        }
+        return;
+      }
+
       const {
         error: assignError,
         message: assignMessage,
@@ -1132,6 +1333,21 @@ export class Sequence extends EventEmitter {
         this.developerPKPData.tokenId,
         getBytesFromMultihash(litActionHash),
       );
+
+      if (assignError) {
+        this.log(
+          LogCategory.ERROR,
+          `Assign Quest Lit Action failed on Update.`,
+          assignMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error assigning new Quest Lit Action on Update: ${assignMessage}`,
+          );
+        }
+        return;
+      }
 
       const txHash = await this.kinoraQuestAddress.updateMilestoneDetails(
         "ipfs://" + uri,
@@ -1195,6 +1411,20 @@ export class Sequence extends EventEmitter {
         oldLitActionBytes,
       );
 
+      if (removeError) {
+        this.log(
+          LogCategory.ERROR,
+          `Remove Quest Lit Action failed on Remove milestone.`,
+          removeMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error removing Quest Lit Action on Remove milestone: ${removeMessage}`,
+          );
+        }
+      }
+
       return {
         txHash,
       };
@@ -1236,6 +1466,20 @@ export class Sequence extends EventEmitter {
         this.developerPKPData.tokenId,
         oldLitActionBytes,
       );
+
+      if (removeError) {
+        this.log(
+          LogCategory.ERROR,
+          `Remove Quest Lit Action failed on Terminate.`,
+          removeMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error removing Quest Lit Action on Terminate: ${removeMessage}`,
+          );
+        }
+      }
 
       return {
         txHash,
@@ -1576,6 +1820,21 @@ export class Sequence extends EventEmitter {
         "mintRewardNFT",
         [userPKPAddress, questId, milestoneId],
       );
+
+      if (error) {
+        this.log(
+          LogCategory.ERROR,
+          `User mint reward NFT failed on creating TX data.`,
+          message,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error creating TX data for minting reward NFT: ${message}`,
+          );
+        }
+        return;
+      }
 
       const signedTx = await this.currentUserPKPWallet.signTransaction({
         from: this.kinoraReward721Address,
@@ -2281,7 +2540,19 @@ export class Sequence extends EventEmitter {
         message: outputBufferMessage,
         outputBuffer,
       } = await bundleCode(litAction);
+
       if (outputBufferError) {
+        this.log(
+          LogCategory.ERROR,
+          `Bundle Lit Action code error.`,
+          outputBufferMessage,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error in bundling Lit Action code: ${outputBufferMessage}`,
+          );
+        }
         return;
       }
       const litActionHash = (await this.ipfsClient.add(outputBuffer)).path;

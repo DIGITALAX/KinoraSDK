@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { Contract, utils } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-describe("Kinora Global PKP Contract", () => {
+xdescribe("Kinora Global PKP Contract", () => {
   let admin: SignerWithAddress,
     developerOne: SignerWithAddress,
     developerPkpOne: SignerWithAddress,

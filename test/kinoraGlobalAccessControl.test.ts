@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { Contract } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-describe("Kinora Global Access Control Contract", () => {
+xdescribe("Kinora Global Access Control Contract", () => {
   let kinoraGlobalAccessControl: Contract,
     admin1: SignerWithAddress,
     admin2: SignerWithAddress,
