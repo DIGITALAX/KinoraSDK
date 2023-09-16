@@ -473,7 +473,6 @@ export class Sequence extends EventEmitter {
       this.providerType !== ProviderType.EthWallet &&
         (await (this.litProvider as GoogleProvider | DiscordProvider).signIn());
     } catch (err: any) {
-      console.log(err.message);
       this.log(
         LogCategory.ERROR,
         `User Authentication failed.`,
@@ -1069,7 +1068,6 @@ export class Sequence extends EventEmitter {
     questId: number;
     milestoneId: number;
     newMilestoneURIDetails: MilestoneURI;
-    newERC721TokenIds: number[];
     newRewardType: RewardType;
     newTokenAddress: `0x${string}`;
     newNumberOfPoints: number;
@@ -1136,7 +1134,6 @@ export class Sequence extends EventEmitter {
       );
 
       const txHash = await this.kinoraQuestAddress.updateMilestoneDetails(
-        milestoneDetails.newERC721TokenIds,
         "ipfs://" + uri,
         milestoneDetails.newRewardType,
         milestoneDetails.newTokenAddress,

@@ -84,7 +84,6 @@ export interface Reward {
   type: RewardType;
   tokenAddress: `0x${string}`;
   amount: number;
-  tokenIds: number[];
 }
 
 export interface QuestURI {
