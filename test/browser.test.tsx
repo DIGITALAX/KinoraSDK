@@ -5,49 +5,32 @@
 //   }))
 // }));
 
-// jest.mock("@walletconnect/utils", () => ({
-//   // Mock out methods and properties
-// }));
-
 // import React from "react";
+// import puppeteer from "puppeteer";
 // import { Sequence } from "./../src/sequence";
 
-// describe("Test Factory Deployment & Dev PKP Mint", () => {
+// describe("Browser Functions", () => {
 //   let newSequence
 
 //   beforeEach(async () => {
 //     // mock the livepeer component
-//     const livepeerPlayerComponentId = "livepeerPlayer";
+//     const livepeerPlayerComponentId = "livepeerPlayer"; })
 
-//     // const { container } = render(
-//     //   <div id={livepeerPlayerComponentId}>
-//     //     <Player
-//     //       autoPlay
-//     //       src={"https://lenster.xyz/b1bec84c-770d-4acf-9503-31373856e1fd"}
-//     //     />
-//     //   </div>,
-//     // );
 
-//     // container.addEventListener("stream.started", () => {
-//     //   console.log("catching all events");
-//     // });
-
-//     newSequence = new Sequence({
-//       livepeerPlayerComponentId: livepeerPlayerComponentId,
-//       redirectURL: "myredirect.url",
-//       rpcURL: "myrpcurl",
-//       metricsOnChainInterval: 1000000000,
-//       encryptUserMetrics: false,
-//     });
-//   });
-
-//   describe("Deploy from the Factory Contracts", () => {
-//     it("Should capture someEvent", async () => {
-//       await waitFor(() => {
-//         expect("stream.started").toBeTruthy();
+//     describe("Authenticate User", () => {
+//         before(async () => {
+//           signer = new ethers.Wallet(process.env.PRIVATE_KEY, chronicleProvider);
+//           newSequence = new Sequence({
+//             signer,
+//             rpcURL: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_MUMBAI_KEY}`,
+//           });
+//         });
+    
+//         it("authenticates the user", async () => {
+//           await newSequence.authenticateUser("wallet");
+//         });
 //       });
-//     });
-//   });
-
-//   describe("Generate new multihash dev key with no Quests", () => {});
+  
 // });
+
+
