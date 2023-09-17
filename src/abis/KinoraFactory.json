@@ -51,7 +51,7 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "questReward",
+        "name": "questRewardAddress",
         "type": "address"
       }
     ],
@@ -117,7 +117,26 @@
         "type": "address"
       }
     ],
-    "name": "getDeployedKinoraMetricToPKP",
+    "name": "getDeployedKinoraMetricsToPKP",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_pkpAddress",
+        "type": "address"
+      }
+    ],
+    "name": "getDeployedKinoraQuestRewardToPKP",
     "outputs": [
       {
         "internalType": "address",
@@ -271,7 +290,7 @@
   },
   {
     "inputs": [],
-    "name": "getKinoraMetricLogicAddress",
+    "name": "getKinoraMetricsLogicAddress",
     "outputs": [
       {
         "internalType": "address",

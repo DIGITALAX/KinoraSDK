@@ -75,6 +75,7 @@ export class Sequence extends EventEmitter {
   private logIndex = 0;
   private logs: ILogEntry[] = new Array(this.logSize);
   private rpcURL: string;
+  private parentId: string;
   private chain: string = CHAIN;
   private multihashDevKey: string;
   private redirectURL: string;
@@ -149,6 +150,7 @@ export class Sequence extends EventEmitter {
       };
     this.multihashDevKey = args.multihashDevKey;
     this.encryptUserMetrics = args.encryptUserMetrics;
+    this.parentId = args.parentId;
     if (args.userProfileId) this.userProfileId = args.userProfileId;
     if (args.lensPubId) this.lensPubId = args.lensPubId;
     this.metrics = new Metrics();
@@ -206,12 +208,19 @@ export class Sequence extends EventEmitter {
       this.signer,
     );
     this.litNodeClient.connect();
+    this.beforeUnloadHandler = this.beforeUnloadHandler.bind(this);
+  }
 
+  videoInit = (): void => {
+    if (!this.parentId)
+      throw new Error(
+        "Specify ID of parent div to LivePeer Player element in the constructor.",
+      );
     if (typeof window !== "undefined") {
       this.videoElement = document
-        .getElementById(args.parentId)
-        .querySelector('[class*="livepeer-contents-container"]')
-        .querySelector("video");
+        ?.getElementById(this.parentId)
+        ?.querySelector('[class*="livepeer-contents-container"]')
+        ?.querySelector("video");
 
       if (!this.videoElement)
         throw new Error("LivePeer Player element not found.");
@@ -226,7 +235,7 @@ export class Sequence extends EventEmitter {
 
       window.addEventListener("beforeunload", this.beforeUnloadHandler);
     }
-  }
+  };
 
   developerFactoryContractDeploy = async (): Promise<{
     multihashDevKey: string;
@@ -321,6 +330,25 @@ export class Sequence extends EventEmitter {
         KinoraQuestAbi,
       );
       this.kinoraReward721Address = filteredLogs[0].args[5];
+
+      const { error, message } = await assignLitAction(
+        this.pkpPermissionsContract,
+        this.developerPKPData.tokenId,
+        getBytesFromMultihash(IPFS_HASH_NEW_USER),
+      );
+
+      if (error) {
+        this.log(
+          LogCategory.ERROR,
+          `Error in adding Lit Action for PKP database.`,
+          message,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(`Error in: ${message}`);
+        }
+        return;
+      }
 
       return {
         multihashDevKey: this.multihashDevKey,
@@ -667,6 +695,10 @@ export class Sequence extends EventEmitter {
     litActionIPFSCidJoinQuest: string;
     litActionIPFSCidMilestones: string[];
   }> => {
+    if (typeof window !== "undefined")
+      throw new Error(
+        "This function can only be run in a Node.js environment.",
+      );
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
     if (!this.multihashDevKey)
@@ -840,6 +872,10 @@ export class Sequence extends EventEmitter {
     txHashesAssignLitAction: string[];
     litActionIPFSCids: string[];
   }> => {
+    if (typeof window !== "undefined")
+      throw new Error(
+        "This function can only be run in a Node.js environment.",
+      );
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
     if (!this.multihashDevKey)
@@ -954,6 +990,10 @@ export class Sequence extends EventEmitter {
     newStatus: Status;
     newMaxParticipantCount: number;
   }): Promise<{ txHash: string }> => {
+    if (typeof window !== "undefined")
+      throw new Error(
+        "This function can only be run in a Node.js environment.",
+      );
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
     if (!this.developerPKPData.publicKey)
@@ -1247,6 +1287,10 @@ export class Sequence extends EventEmitter {
     newNumberOfPoints: number;
     newERC20Amount: number;
   }): Promise<{ txHash: string }> => {
+    if (typeof window !== "undefined")
+      throw new Error(
+        "This function can only be run in a Node.js environment.",
+      );
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
     if (!this.developerPKPData.publicKey)
@@ -2440,6 +2484,10 @@ export class Sequence extends EventEmitter {
   private sendMetricsOnChain = async (
     userMetrics: UserMetrics,
   ): Promise<void> => {
+    if (typeof window !== "undefined")
+      throw new Error(
+        "This function can only be run in a Node.js environment.",
+      );
     if (!this.developerPKPData.publicKey)
       throw new Error("Set developer PKP Public Key before continuing.");
     if (!this.developerPKPData.tokenId)
@@ -2803,21 +2851,21 @@ export class Sequence extends EventEmitter {
     }
   };
 
-  private timeUpdateHandler(e: Event) {
+  private timeUpdateHandler = (e: Event) => {
     const currentTime = (e.currentTarget as HTMLVideoElement).currentTime;
     this.metrics.onTimeUpdate(currentTime);
     if (currentTime < 10) {
       this.metrics.onBounce();
     }
-  }
+  };
 
-  private fullScreenChangeHandler() {
+  private fullScreenChangeHandler = () => {
     if (document.fullscreenElement === this.videoElement) {
       this.metrics.onFullScreen();
     }
-  }
+  };
 
-  private beforeUnloadHandler() {
+  private beforeUnloadHandler = () => {
     this.cleanUpListeners();
     if (typeof window === "undefined") {
       throw new Error(
@@ -2825,5 +2873,5 @@ export class Sequence extends EventEmitter {
       );
     }
     this.collectAndSendMetrics();
-  }
+  };
 }

@@ -1,11 +1,11 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Sequence } from "../src/sequence";
-import { CHRONICLE_PROVIDER, KINORA_FACTORY_CONTRACT } from "../src/constants";
+import { KINORA_FACTORY_CONTRACT } from "../src/constants";
 import { Contract, Signer } from "ethers";
 import KinoraFactoryAbi from "./../src/abis/KinoraFactory.json";
 
-xdescribe("Node Functions", () => {
+describe("Node Functions", () => {
   let newSequence: Sequence,
     noProvider: Sequence,
     signer: Signer,
@@ -22,13 +22,13 @@ xdescribe("Node Functions", () => {
       pkpTokenId: string;
     };
   const chronicleProvider = new ethers.providers.JsonRpcProvider(
-    CHRONICLE_PROVIDER,
+    "https://chain-rpc.litprotocol.com/http",
     175177,
   );
 
   describe("Developer Factory Contract Deploy", () => {
     before(async () => {
-      signer = new ethers.Wallet(process.env.PRIVATE_KEY, chronicleProvider);
+      signer = new ethers.Wallet(process.env.PRIVATE_KEY!, chronicleProvider);
       noProvider = new Sequence({ signer });
       newSequence = new Sequence({
         signer,

@@ -21,10 +21,8 @@ const getLensValues = (pubId: string, profileId: string) => {
   return authClient.query({
     query: gql(LENS_VALUES),
     variables: {
-      request: {
-        pubId,
-        profileId,
-      },
+      pubId,
+      profileId,
     },
   });
 };
