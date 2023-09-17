@@ -30,17 +30,12 @@ module.exports = {
         use: "ignore-loader",
       },
       {
-        test: /\.map$/,
-        use: "ignore-loader",
+        test: /\.js$/,
+        enforce: 'pre',
+        use: ['source-map-loader'],
       },
-      // {
-      //   test: /\.js$/,
-      //   enforce: "pre",
-      //   use: ["source-map-loader"],
-      // },
     ],
   },
-  devtool: false,
   resolve: {
     modules: ["node_modules"],
     extensions: [".tsx", ".ts", ".js"],
@@ -59,15 +54,6 @@ module.exports = {
       worker_threads: false,
     },
   },
-  watchOptions: {
-    followSymlinks: true,
-  },
-  stats: {
-    warningsFilter: [
-      /Failed to parse source map/,
-      /Critical dependency: require function is used/,
-    ],
-  },
   plugins: [
     new webpack.DefinePlugin({
       "process.env": JSON.stringify(env),
@@ -78,7 +64,8 @@ module.exports = {
     }),
     new webpack.IgnorePlugin({ resourceRegExp: /^esbuild$/ }),
   ],
-  mode: "production",
+  devtool: false,
+  mode: "development",
   externals: {
     esbuild: "esbuild commonjs",
   },

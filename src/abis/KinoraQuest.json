@@ -1,14 +1,16 @@
 [
   {
+    "anonymous": false,
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_factoryAddress",
-        "type": "address"
+        "indexed": false,
+        "internalType": "bytes32[]",
+        "name": "newCompletionHashes",
+        "type": "bytes32[]"
       }
     ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
+    "name": "CompletionHashesUpdated",
+    "type": "event"
   },
   {
     "anonymous": false,
@@ -21,6 +23,19 @@
       }
     ],
     "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32[]",
+        "name": "newJoinHashes",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "JoinHashesUpdated",
     "type": "event"
   },
   {
@@ -236,11 +251,6 @@
             "internalType": "uint256",
             "name": "_amount",
             "type": "uint256"
-          },
-          {
-            "internalType": "uint256[]",
-            "name": "_tokenIds",
-            "type": "uint256[]"
           }
         ],
         "internalType": "struct KinoraQuest.Reward",
@@ -301,7 +311,7 @@
   },
   {
     "inputs": [],
-    "name": "getKinoraFactory",
+    "name": "getKinoraGlobalPKPDB",
     "outputs": [
       {
         "internalType": "address",
@@ -313,13 +323,19 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getKinoraGlobalPKPDB",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestId",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "uint256",
         "name": "",
-        "type": "address"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -393,6 +409,25 @@
         "internalType": "uint256",
         "name": "_questId",
         "type": "uint256"
+      }
+    ],
+    "name": "getQuestMilestoneCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questId",
+        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -454,30 +489,6 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_milestoneId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestMilestoneRewardTokenIds",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",
@@ -663,14 +674,19 @@
         "internalType": "address",
         "name": "_userPKPAddress",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questId",
+        "type": "uint256"
       }
     ],
     "name": "getUserMilestonesCompletedPerQuest",
     "outputs": [
       {
-        "internalType": "uint256[][]",
+        "internalType": "uint256[]",
         "name": "",
-        "type": "uint256[][]"
+        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",
@@ -801,11 +817,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256[]",
-        "name": "_newTokenIds",
-        "type": "uint256[]"
-      },
-      {
         "internalType": "string",
         "name": "_newURIDetails",
         "type": "string"
@@ -881,11 +892,6 @@
                 "internalType": "uint256",
                 "name": "_amount",
                 "type": "uint256"
-              },
-              {
-                "internalType": "uint256[]",
-                "name": "_tokenIds",
-                "type": "uint256[]"
               }
             ],
             "internalType": "struct KinoraQuest.Reward",
@@ -975,7 +981,7 @@
       },
       {
         "internalType": "address",
-        "name": "_userAddress",
+        "name": "_userPKPAddress",
         "type": "address"
       }
     ],
@@ -993,7 +999,7 @@
       },
       {
         "internalType": "address",
-        "name": "_userAddress",
+        "name": "_userPKPAddress",
         "type": "address"
       }
     ],

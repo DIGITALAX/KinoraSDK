@@ -4,7 +4,6 @@ dist
 artifacts
 cache
 typechain-types
-.env
 node_modules
 .env
 coverage

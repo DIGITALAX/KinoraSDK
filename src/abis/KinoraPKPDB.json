@@ -211,7 +211,7 @@
         "type": "address"
       }
     ],
-    "name": "userExits",
+    "name": "userExists",
     "outputs": [
       {
         "internalType": "bool",

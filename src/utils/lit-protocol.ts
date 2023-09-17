@@ -6,9 +6,19 @@ import bs58 from "bs58";
 import * as LitJsSdk_authHelpers from "@lit-protocol/auth-helpers";
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import { SiweMessage } from "siwe";
-import CryptoJS from "crypto-js";
-import crypto from "crypto";
-import esbuild from "esbuild";
+let esbuild: any, Writable: any, crypto: any, CryptoJS: any;
+
+const loadNodebuild = async () => {
+  if (typeof window === "undefined") {
+    esbuild = await import("esbuild");
+    const stream = await import("stream");
+    Writable = stream.Writable;
+    crypto = await import("crypto");
+    CryptoJS = await import("crypto-js");
+  }
+};
+
+loadNodebuild();
 
 import {
   ChainIds,
@@ -195,6 +205,9 @@ export const getBytesFromMultihash = (multihash: string): string => {
 };
 
 export const hashHex = (input: string): string => {
+  if (!CryptoJS) {
+    throw new Error("This function can only be run in a Node.js environment.");
+  }
   const hash = CryptoJS.SHA256(input);
   return "0x" + hash.toString(CryptoJS.enc.Hex);
 };
@@ -387,11 +400,13 @@ export const assignLitAction = async (
   bytesHash: string,
 ): Promise<{ txHash?: string; error?: boolean; message?: string }> => {
   try {
+    console.log("before");
     const addedLitActionTx = await pkpPermissionsContract.addPermittedAction(
       tokenId,
       bytesHash,
       [],
     );
+    console.log("here");
     return { txHash: addedLitActionTx };
   } catch (err: any) {
     return {
@@ -421,6 +436,9 @@ export const removeLitAction = async (
 };
 
 export const generateSecureRandomKey = () => {
+  if (!crypto) {
+    throw new Error("This function can only be run in a Node.js environment.");
+  }
   return crypto.randomBytes(32).toString("hex");
 };
 export const getLitActionCodeForJoinQuest = (
@@ -585,14 +603,16 @@ export const getLitActionCodeForAddUserMetrics = (
 export const bundleCode = async (
   dynamicCode: string,
 ): Promise<{ error?: boolean; message?: string; outputBuffer?: string }> => {
+  if (!esbuild) {
+    throw new Error("This function can only be run in a Node.js environment.");
+  }
   let outputBuffer = ``;
-  const stdout = new (require("stream").Writable)({
+  const stdout = new Writable({
     write: function (chunk, encoding, next) {
       outputBuffer += chunk.toString();
       next();
     },
   });
-
   try {
     await esbuild.build({
       stdin: {

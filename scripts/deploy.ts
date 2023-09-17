@@ -24,8 +24,8 @@ const main = async () => {
     //   kinoraGlobalAccessControl.address,
     // );
     // const kinoraFactory = await KinoraFactory.deploy(
-    //   "0x12e5aA90906C29844181d3B29438030fBc109Fc5",
-    //   "0xeaF2072c9b6D0c42Dfb245607F8C2876AF6bC002",
+    //   kinoraGlobalAccessControl.address,
+    //   kinoraGlobalPKPDB.address,
     // );
     // const kinoraMetrics = await KinoraMetrics.deploy();
     // const kinoraQuest = await KinoraQuest.deploy();
@@ -33,7 +33,7 @@ const main = async () => {
     // const kinora721QuestReward = await Kinora721QuestReward.deploy();
     // const kinoraAccessControl = await KinoraAccessControl.deploy();
 
-    const WAIT_BLOCK_CONFIRMATIONS = 20;
+    // const WAIT_BLOCK_CONFIRMATIONS = 20;
     // kinoraGlobalAccessControl.deployTransaction.wait(WAIT_BLOCK_CONFIRMATIONS);
     // kinoraGlobalPKPDB.deployTransaction.wait(WAIT_BLOCK_CONFIRMATIONS);
     // kinoraMetrics.deployTransaction.wait(WAIT_BLOCK_CONFIRMATIONS);
@@ -58,36 +58,36 @@ const main = async () => {
     // );
     // console.log(`kinoraFactory deployed at\n${kinoraFactory.address}`);
 
-    // await run(`verify:verify`, {
-    //   address: "0x12e5aA90906C29844181d3B29438030fBc109Fc5",
-    //   constructorArguments: [],
-    // });
-    // await run(`verify:verify`, {
-    //   address: "0xeaF2072c9b6D0c42Dfb245607F8C2876AF6bC002",
-    //   constructorArguments: ["0x12e5aA90906C29844181d3B29438030fBc109Fc5"],
-    // });
     await run(`verify:verify`, {
-      address: "0x5173c677550B932Bd078509D3B77619340Cd92c5",
+      address: "0x877Ce296BB6e38C2c5eca784268aDd455AeA4eC7",
+      constructorArguments: [],
+    });
+    await run(`verify:verify`, {
+      address: "0x8Af27590B7B9527518549b84962D1E1Dd464C31D",
+      constructorArguments: ["0x877Ce296BB6e38C2c5eca784268aDd455AeA4eC7"],
+    });
+    await run(`verify:verify`, {
+      address: "0xdFf27C77d9aD5cf78960c2a2063517Ecd99FB35a",
       constructorArguments: [
-        "0x12e5aA90906C29844181d3B29438030fBc109Fc5",
-        "0xeaF2072c9b6D0c42Dfb245607F8C2876AF6bC002",
+        "0x877Ce296BB6e38C2c5eca784268aDd455AeA4eC7",
+        "0x8Af27590B7B9527518549b84962D1E1Dd464C31D",
       ],
     });
-    // await run(`verify:verify`, {
-    //   address: "0x061920dEE081E742e391fe0d10AC8037C3eDa96D",
-    // });
-    // await run(`verify:verify`, {
-    //   address: "0x833F0A9b37908d2252B6E6d04fDe4E9345469c25",
-    // });
-    // await run(`verify:verify`, {
-    //   address: "0x7305A30DBB3a6697500Eb8765987B65ce8848dB2",
-    // });
-    // await run(`verify:verify`, {
-    //   address: "0x9698bD5ECA3CE99d85abb0C7c5648415D94E827F",
-    // });
-    // await run(`verify:verify`, {
-    //   address: "0xeA6fbcB061333b05e4b47732E0162Ee1a35e7b03",
-    // });
+    await run(`verify:verify`, {
+      address: "0xa8887a12BF6d9D069031951404344bd29C53ec46",
+    });
+    await run(`verify:verify`, {
+      address: "0x377E37B37e110bf08E4064B965D2820d50d827ac",
+    });
+    await run(`verify:verify`, {
+      address: "0x9A082fdb7Fc108574E565CB7Bfc95e165e03ca23",
+    });
+    await run(`verify:verify`, {
+      address: "0x1B0Dd172cf155d8779699d1FF0bB31D79a2882D4",
+    });
+    await run(`verify:verify`, {
+      address: "0xA70F1446a4e22B28ed0009DdC80cb2CE4580E172",
+    });
   } catch (err: any) {
     console.error(err.message);
   }
@@ -103,19 +103,19 @@ main();
 
 /*
 kinoraGlobalAccessControl deployed at
-0x12e5aA90906C29844181d3B29438030fBc109Fc5
+0x877Ce296BB6e38C2c5eca784268aDd455AeA4eC7
 kinoraGlobalPKPDB deployed at
-0xeaF2072c9b6D0c42Dfb245607F8C2876AF6bC002
+0x8Af27590B7B9527518549b84962D1E1Dd464C31D
 kinoraMetrics deployed at
-0xeA6fbcB061333b05e4b47732E0162Ee1a35e7b03
+0xa8887a12BF6d9D069031951404344bd29C53ec46
 kinoraQuest deployed at
-0x9698bD5ECA3CE99d85abb0C7c5648415D94E827F
+0x377E37B37e110bf08E4064B965D2820d50d827ac
 kinoraEscrow deployed at
-0x7305A30DBB3a6697500Eb8765987B65ce8848dB2
+0x9A082fdb7Fc108574E565CB7Bfc95e165e03ca23
 kinora721QuestReward deployed at
-0x833F0A9b37908d2252B6E6d04fDe4E9345469c25
+0x1B0Dd172cf155d8779699d1FF0bB31D79a2882D4
 kinoraAccessControl deployed at
-0x061920dEE081E742e391fe0d10AC8037C3eDa96D
+0xA70F1446a4e22B28ed0009DdC80cb2CE4580E172
 kinoraFactory deployed at
-0x5173c677550B932Bd078509D3B77619340Cd92c5
+0xdFf27C77d9aD5cf78960c2a2063517Ecd99FB35a
 */
