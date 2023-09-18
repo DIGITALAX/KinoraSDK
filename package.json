@@ -1,7 +1,7 @@
 {
   "name": "kinora-sdk",
   "version": "0.0.1",
-  "description": "",
+  "description": "An open source typescript SDK, compatible with node and browser, for instantiating and automating encrypted on-chain Quests with video social LivePeer metrics.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
