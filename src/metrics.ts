@@ -11,19 +11,30 @@ export class Metrics {
   private fullScreenCount: number = 0;
   private bufferCount: number = 0;
   private bufferDuration: number = 0;
+  private totalInteractions: number = 0;
+  private preferredTimeToWatch: { [key: string]: number } = {};
+  private segmentViewCount: { [key: string]: number } = {};
   private replayArea: { [key: string]: number } = {};
 
   public onPlay = () => {
     this.playCount++;
     this.impressionCount++;
+    this.onInteraction();
+    this.onWatchTime();
   };
 
   public onPause = () => {
     this.pauseCount++;
+    this.onInteraction();
+  };
+
+  public onSegmentView = (segment: string) => {
+    this.segmentViewCount[segment] = (this.segmentViewCount[segment] || 0) + 1;
   };
 
   public onTimeUpdate = (currentTime: number) => {
     const currentTimeValue = Math.floor(currentTime);
+    const segment = Math.floor(currentTime / 10);
     const lastTime = Math.floor(this.lastTimeUpdate);
 
     this.totalDuration += currentTime;
@@ -34,26 +45,42 @@ export class Metrics {
     }
 
     this.lastTimeUpdate = currentTimeValue;
+    this.onInteraction();
+    this.onSegmentView(`Segment_${segment}`);
   };
 
   public onClick = () => {
     this.clickCount++;
+    this.onInteraction();
   };
 
   public onSkip = () => {
     this.skipCount++;
+    this.onInteraction();
   };
 
   public onBounce = () => {
     this.bounceCount++;
   };
 
+  public onInteraction = () => {
+    this.totalInteractions++;
+  };
+
   public onVolumeChange = () => {
     this.volumeChangeCount++;
+    this.onInteraction();
   };
 
   public onFullScreen = () => {
     this.fullScreenCount++;
+    this.onInteraction();
+  };
+
+  public onWatchTime = () => {
+    const time = new Date().getHours().toString();
+    this.preferredTimeToWatch[time] =
+      (this.preferredTimeToWatch[time] || 0) + 1;
   };
 
   public onBufferStart = () => {
@@ -70,13 +97,27 @@ export class Metrics {
   };
 
   public getEngagementRate = (videoLength: number): number => {
-    return (
-      (this.totalDuration / (this.playCount * videoLength)) * 100
-    );
+    return (this.totalDuration / (this.playCount * videoLength)) * 100;
+  };
+
+  public getInteractionRate = (): number => {
+    return (this.totalInteractions / this.impressionCount) * 100;
   };
 
   public getBufferDuration = (): number => {
     return this.bufferDuration / 1000;
+  };
+
+  public getMostViewedSegment = (): string => {
+    let maxViews = 0;
+    let mostViewedSegment = "";
+    for (const [segment, views] of Object.entries(this.segmentViewCount)) {
+      if (views > maxViews) {
+        maxViews = views;
+        mostViewedSegment = segment;
+      }
+    }
+    return mostViewedSegment;
   };
 
   public getCTR = (): number => {
@@ -99,6 +140,18 @@ export class Metrics {
     }
 
     return mostReplayedSegment;
+  };
+
+  public getMostPreferredTimeToWatch = (): string => {
+    let maxCount = 0;
+    let mostPreferredTime = "";
+    for (const [time, count] of Object.entries(this.preferredTimeToWatch)) {
+      if (count > maxCount) {
+        maxCount = count;
+        mostPreferredTime = time;
+      }
+    }
+    return mostPreferredTime;
   };
 
   public getPlayPauseRatio = (): number => {
@@ -158,6 +211,9 @@ export class Metrics {
     this.fullScreenCount = 0;
     this.bufferCount = 0;
     this.bufferDuration = 0;
+    this.totalInteractions = 0;
+    this.preferredTimeToWatch = {};
+    this.segmentViewCount = {};
     this.replayArea = {};
   };
 }

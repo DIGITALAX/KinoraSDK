@@ -2372,6 +2372,9 @@ export class Sequence extends EventEmitter {
           rawEngagementRate: this.metrics.getEngagementRate(
             this.videoElement.duration,
           ),
+          rawPreferredTimeToWatch: this.metrics.getMostPreferredTimeToWatch(),
+          rawMostViewedSegment: this.metrics.getMostViewedSegment(),
+          rawInteractionRate: this.metrics.getInteractionRate(),
           rawMostReplayedArea: this.metrics.getMostReplayedArea(),
           rawPlayPauseRatio: this.metrics.getPlayPauseRatio(),
           rawCtr: this.metrics.getCTR(),
@@ -2458,6 +2461,9 @@ export class Sequence extends EventEmitter {
           rawBounceRate: this.metrics.getBounceRate(),
           rawVolumeChangeCount: this.metrics.getVolumeChangeCount(),
           rawFullScreenCount: this.metrics.getFullScreenCount(),
+          rawPreferredTimeToWatch: this.metrics.getMostPreferredTimeToWatch(),
+          rawMostViewedSegment: this.metrics.getMostViewedSegment(),
+          rawInteractionRate: this.metrics.getInteractionRate(),
           rawBufferCount: this.metrics.getBufferCount(),
           rawBufferDuration: this.metrics.getBufferDuration(),
           rawEngagementRate: this.metrics.getEngagementRate(

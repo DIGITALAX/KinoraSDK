@@ -62,6 +62,9 @@ export interface UserMetrics {
   rawVolumeChangeCount: number;
   rawFullScreenCount: number;
   rawBufferCount: number;
+  rawInteractionRate: number;
+  rawPreferredTimeToWatch: string;
+  rawMostViewedSegment: string;
   rawBufferDuration: number;
   rawEngagementRate: number;
   rawMostReplayedArea: string;
