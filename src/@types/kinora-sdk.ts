@@ -130,35 +130,28 @@ export interface QuestEligibility {
         operator: "or" | "and";
       }
     | undefined;
-  assetEngagement:
+  playCount:
     | {
         minValue: number;
         maxValue: number;
         operator: "or" | "and";
       }
     | undefined;
-  userEngagementRatio:
+  pauseCount:
     | {
         minValue: number;
         maxValue: number;
         operator: "or" | "and";
       }
     | undefined;
-  multiPlaybackUsageRate:
+  clickCount:
     | {
         minValue: number;
         maxValue: number;
         operator: "or" | "and";
       }
     | undefined;
-  taskFailureRate:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  recordingPerSession:
+  skipCount:
     | {
         minValue: number;
         maxValue: number;
@@ -172,56 +165,21 @@ export interface QuestEligibility {
         operator: "or" | "and";
       }
     | undefined;
-  numberOfImpressions:
+  impressionCount:
     | {
         minValue: number;
         maxValue: number;
         operator: "or" | "and";
       }
     | undefined;
-  numberOfClicks:
+  volumeChangeCount:
     | {
         minValue: number;
         maxValue: number;
         operator: "or" | "and";
       }
     | undefined;
-  totalIdleTime:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  numberOfRecordings:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  numberOfFailedTasks:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  numberOfMultistreams:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  numberOfAssets:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  numberOfUpdates:
+  bufferCount:
     | {
         minValue: number;
         maxValue: number;
@@ -268,4 +226,3 @@ export interface ILogEntry {
   responseObject: string;
   isoDate: string;
 }
-
