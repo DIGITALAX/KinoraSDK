@@ -11,7 +11,6 @@ export class Metrics {
   private fullScreenCount: number = 0;
   private bufferCount: number = 0;
   private bufferDuration: number = 0;
-  private totalVideoLength: number = 0;
   private replayArea: { [key: string]: number } = {};
 
   public onPlay = () => {
@@ -70,9 +69,9 @@ export class Metrics {
     return (this.bounceCount / this.impressionCount) * 100;
   };
 
-  public getEngagementRate = (): number => {
+  public getEngagementRate = (videoLength: number): number => {
     return (
-      (this.totalDuration / (this.playCount * this.totalVideoLength)) * 100
+      (this.totalDuration / (this.playCount * videoLength)) * 100
     );
   };
 
@@ -159,7 +158,6 @@ export class Metrics {
     this.fullScreenCount = 0;
     this.bufferCount = 0;
     this.bufferDuration = 0;
-    this.totalVideoLength = 0;
     this.replayArea = {};
   };
 }
