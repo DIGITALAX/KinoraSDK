@@ -1,16 +1,18 @@
 import "./App.css";
 import {
   Player,
-  LivepeerConfig,
+  LivepeerConfig, 
   createReactClient,
   studioProvider,
 } from "@livepeer/react";
 import { ethers } from "ethers";
-import { Sequence } from "kinora-sdk";
+import { Sequence, KinoraPlayerWrapper } from "kinora-sdk";
 import { useEffect } from "react";
 
 const client = createReactClient({
-  provider: studioProvider({ apiKey: process.env.LIVEPEER_STUDIO_KEY! }),
+  provider: studioProvider({
+    apiKey: process.env.REACT_APP_LIVEPEER_STUDIO_KEY!,
+  }),
 });
 function App() {
   const chronicleProvider = new ethers.providers.JsonRpcProvider(
@@ -19,7 +21,10 @@ function App() {
   );
 
   const newSequence = new Sequence({
-    signer: new ethers.Wallet(process.env.REACT_APP_PRIVATE_KEY!, chronicleProvider),
+    signer: new ethers.Wallet(
+      process.env.REACT_APP_PRIVATE_KEY!,
+      chronicleProvider,
+    ),
     rpcURL: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_MUMBAI_KEY}`,
     parentId: "parent",
     playbackId: "f5eese9wwl88k4g8",
@@ -30,7 +35,7 @@ function App() {
     multihashDevKey:
       "145ec1a8433c5d9de40d6e41454ff96991c9d8b0cd9b86e663fb1908679ed501",
     encryptUserMetrics: false,
-    errorHandlingModeStrict: false, 
+    errorHandlingModeStrict: false,
     auth: {
       projectId: process.env.REACT_APP_INFURA_PROJECT_ID!,
       projectSecret: process.env.REACT_APP_INFURA_SECRET_KEY!,
@@ -44,12 +49,19 @@ function App() {
 
   useEffect(() => {
     newSequence.videoInit();
-  }, [newSequence])
+  }, [newSequence]);
 
   return (
     <LivepeerConfig client={client}>
-      <div id="parent">
-        <Player playbackId="f5eese9wwl88k4g8" />
+      <div id="parent"> 
+        <KinoraPlayerWrapper
+          customAspectRatio="16/9"
+          videoCover
+          customControls
+          
+        >
+          <Player playbackId="f5eese9wwl88k4g8" />
+        </KinoraPlayerWrapper>
       </div>
     </LivepeerConfig>
   );
