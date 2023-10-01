@@ -1,11 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 
-interface KinoraPlayerWrapperProps {
-  children: any;
-  customAspectRatio?: string;
-  videoCover?: boolean;
-  customControls?: boolean;
-  fullWidthHeight?: boolean;
+type KinoraPlayerWrapperProps = {
+  onPlay?: () => void;
+  onPause?: () => void;
   onAbort?: (event: Event) => void;
   onCanPlay?: (event: Event) => void;
   onCanPlayThrough?: (event: Event) => void;
@@ -16,8 +13,6 @@ interface KinoraPlayerWrapperProps {
   onLoadedData?: (event: Event) => void;
   onLoadedMetadata?: (event: Event) => void;
   onLoadStart?: (event: Event) => void;
-  onPause?: (event: Event) => void;
-  onPlay?: (event: Event) => void;
   onPlaying?: (event: Event) => void;
   onProgress?: (event: Event) => void;
   onRateChange?: (event: Event) => void;
@@ -29,192 +24,255 @@ interface KinoraPlayerWrapperProps {
   onVolumeChange?: (event: Event) => void;
   onWaiting?: (event: Event) => void;
   onFullScreenChange?: (event: Event) => void;
-}
+  volume?: { level: number; id: number };
+  seekTo?: { time: number; id: number };
+  play?: boolean;
+  pause?: boolean;
+  fullscreen?: boolean;
+  fillWidthHeight?: boolean;
+  customControls?: boolean;
+  children: (
+    setMediaElement: (node: HTMLVideoElement) => void,
+  ) => React.ReactNode;
+};
 
-const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = (props) => {
-  const [showBackdrop, setShowBackdrop] = useState<boolean>(false);
-  const videoEvents: string[] = [
-    "abort",
-    "canplay",
-    "canplaythrough",
-    "durationchange",
-    "emptied",
-    "ended",
-    "error",
-    "loadeddata",
-    "loadedmetadata",
-    "loadstart",
-    "pause",
-    "play",
-    "playing",
-    "progress",
-    "ratechange",
-    "seeked",
-    "seeking",
-    "stalled",
-    "suspend",
-    "timeupdate",
-    "volumechange",
-    "waiting",
-    "fullscreenchange",
+const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
+  children,
+  fullscreen = false,
+  seekTo = { time: 0, id: Math.random() },
+  volume = { level: 0.5, id: Math.random() },
+  play = false,
+  pause = true,
+  customControls = true,
+  fillWidthHeight = false,
+  ...props
+}) => {
+  const mediaElementRef = React.useRef<HTMLVideoElement>(null);
+  const [lastSeekId, setLastSeekId] = useState<number>(0);
+  const [lastVolumeId, setLastVolumeId] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const eventProps: string[] = [
+    "onAbort",
+    "onCanPlay",
+    "onCanPlayThrough",
+    "onDurationChange",
+    "onEmptied",
+    "onEnded",
+    "onError",
+    "onLoadedData",
+    "onLoadedMetadata",
+    "onLoadStart",
+    "onPause",
+    "onPlay",
+    "onPlaying",
+    "onProgress",
+    "onRateChange",
+    "onSeeked",
+    "onSeeking",
+    "onStalled",
+    "onSuspend",
+    "onTimeUpdate",
+    "onVolumeChange",
+    "onWaiting",
+    "onFullScreenChange",
   ];
 
+  const setMediaElement = useCallback(
+    (node: HTMLVideoElement | null) => {
+      if (node !== null) {
+        mediaElementRef.current = node as HTMLVideoElement;
+      }
+    },
+    [children],
+  );
+
   useEffect(() => {
-    console.log(document.documentElement.innerHTML);
-    const videoElement = document
-      ?.getElementById("kinoraPlayerWrapper")
-      ?.querySelector('[class*="livepeer-contents-container"]')
-      ?.querySelector("video");
-
-    if (!videoElement) {
-      console.error("The child element is not a Livepeer player component.");
-      return;
-    }
-
-    if (props.customControls) {
-      const specificClasses = ["c-kjUhxK", "c-lkuDVF", "c-hqBLfr", "c-hmIsCl"];
-      specificClasses.forEach((specificClass) => {
-        const elements = document
-          ?.getElementById("kinoraPlayerWrapper")
-          .querySelectorAll(`.c-PJLV.${specificClass}[class*='-display-']`);
-        console.log({ elements });
-        if (elements.length === 0) {
-          console.log(`Elements for ${specificClass} not found.`);
-          return;
-        }
-        elements.forEach((element) => {
-          (element as HTMLElement).style.setProperty(
-            "display",
-            "none",
-            "important",
+    const mediaElement = mediaElementRef.current;
+    if (mediaElement) {
+      eventProps.forEach((key) => {
+        if (
+          typeof (props as any)[key] === "function" &&
+          key !== "onPlay" &&
+          key !== "onPause"
+        ) {
+          mediaElement.addEventListener(
+            key.toLowerCase().substring(2),
+            (props as any)[key],
           );
-        });
+        }
       });
-    }
 
-    const allElements = Array.from(
-      document
-        ?.getElementById("kinoraPlayerWrapper")
-        .querySelectorAll('[class*="c-PJLV-cyQVdj-aspectRatio-"]'),
-    );
-    const aspectRatioElement = allElements.find((el) => {
-      const classList = Array.from(el.classList);
-      return classList.some((className) => {
-        const match = className.match(/c-PJLV-cyQVdj-aspectRatio-(\d+)to(\d+)/);
-        return match !== null;
-      });
-    });
+      const handlePlay = () => {
+        setIsPlaying(true);
+        if (typeof props.onPlay === "function") {
+          props.onPlay();
+        }
+      };
 
-    if (props.customAspectRatio && aspectRatioElement) {
-      console.log({ aspectRatioElement });
-      (
-        aspectRatioElement as HTMLElement
-      ).style.cssText = `aspect-ratio: ${props.customAspectRatio} !important;`;
-    }
+      const handlePause = () => {
+        setIsPlaying(false);
+        if (typeof props.onPause === "function") {
+          props.onPause();
+        }
+      };
 
-    const videoContainerElement = document
-      ?.getElementById("kinoraPlayerWrapper")
-      .querySelector(".c-lioqzt-fRKYWh-size-contain");
+      mediaElement.addEventListener("play", handlePlay);
+      mediaElement.addEventListener("pause", handlePause);
 
-    if (props.videoCover && videoContainerElement) {
-      console.log({ videoContainerElement });
-      (videoContainerElement as HTMLElement).style.cssText =
-        "object-fit: cover !important;";
-    }
-
-    const handlers: { [key: string]: (event: Event) => void } = {};
-
-    if (videoElement) {
-      videoEvents.forEach((event) => {
-        const propName = `on${event.charAt(0).toUpperCase() + event.slice(1)}`;
-        const handler = (e: Event) => {
-          console.log(`Event triggered: ${e.type}`);
-          if (props[propName]) {
-            props[propName](e);
+      // Cleanup
+      return () => {
+        eventProps.forEach((key) => {
+          if (
+            typeof (props as any)[key] === "function" &&
+            key !== "onPlay" &&
+            key !== "onPause"
+          ) {
+            mediaElement.removeEventListener(
+              key.toLowerCase().substring(2),
+              (props as any)[key],
+            );
           }
-        };
-        handlers[propName] = handler;
-        videoElement.addEventListener(event, handlers[propName]);
-      });
+        });
+        mediaElement.removeEventListener("play", handlePlay);
+        mediaElement.removeEventListener("pause", handlePause);
+      };
     }
+  }, [props, children]);
 
-    if (props.fullWidthHeight) {
-      setShowBackdrop(true);
-      const containerElement = document
-        ?.getElementById("kinoraPlayerWrapper")
-        .querySelector(".c-lioqzt-fRKYWh-size-contain");
-      const aspectRatioElement = document
-        ?.getElementById("kinoraPlayerWrapper")
-        .querySelector(".c-PJLV-cyQVdj-aspectRatio-16to9");
-
-      if (containerElement) {
-        containerElement.classList.remove("c-lioqzt-fRKYWh-size-contain");
-        containerElement.classList.add("c-lioqzt-isACez-size-fullscreen");
-
-        containerElement.className = "c-lioqzt c-lioqzt-isACez-size-fullscreen";
-        (containerElement as HTMLElement).style.cssText =
-          "width: 100% !important; height: 100% !important;";
+  useEffect(() => {
+    const mediaElement = mediaElementRef.current;
+    if (mediaElement) {
+      if (play && !isPlaying) {
+        mediaElement.play().catch((error) => {
+          console.error("Error on play from KinoraPlayerWrapper: ", error);
+        });
+        setIsPlaying(true); // Set isPlaying to true after successfully playing
+      } else if (pause && isPlaying) {
+        mediaElement.pause();
+        setIsPlaying(false); // Set isPlaying to false after successfully pausing
       }
-
-      if (aspectRatioElement) {
-        aspectRatioElement.classList.remove("c-IBjNz-ejzaPM-size-default");
-        aspectRatioElement.classList.add("c-IBjNz-jQFjpB-size-fullscreen");
-
-        aspectRatioElement.className =
-          "c-PJLV c-IBjNz c-PJLV-cyQVdj-aspectRatio-16to9 c-IBjNz-jQFjpB-size-fullscreen livepeer-aspect-ratio-container";
-        (aspectRatioElement as HTMLElement).style.cssText =
-          "width: 100% !important; height: 100% !important;";
-      }
-
-      const kinoraWrapper = document?.getElementById("kinoraPlayerWrapper");
-      const parentDiv = kinoraWrapper?.parentNode;
-
-      if (parentDiv instanceof HTMLElement) {
-        const backdropDiv = document.createElement("div");
-        backdropDiv.style.position = "absolute";
-        backdropDiv.style.top = "0";
-        backdropDiv.style.left = "0";
-        backdropDiv.style.right = "0";
-        backdropDiv.style.bottom = "0";
-        backdropDiv.style.background = "black";
-        backdropDiv.style.zIndex = "999";
-        backdropDiv.id = "backdropDiv";
-        parentDiv.appendChild(backdropDiv);
-        console.log("backdrop");
-      }
-    } else {
-      setShowBackdrop(false);
     }
+  }, [play, pause]); // Only re-run the effect if play or pause changes
 
-    return () => {
-      if (videoElement) {
-        videoEvents.forEach((event) => {
-          const handler =
-            handlers[`on${event.charAt(0).toUpperCase() + event.slice(1)}`];
-          videoElement.removeEventListener(event, handler);
+  useEffect(() => {
+    const mediaElement = mediaElementRef.current;
+    if (mediaElement && isFinite(volume.level) && volume.id !== lastVolumeId) {
+      mediaElement.volume = Math.min(Math.max(volume.level, 0), 1);
+      setLastVolumeId(volume.id);
+    }
+  }, [volume]);
+
+  useEffect(() => {
+    const mediaElement = mediaElementRef.current;
+    if (fullscreen && mediaElement) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        mediaElement.requestFullscreen();
+      }
+    }
+  }, [fullscreen]);
+
+  useEffect(() => {
+    const mediaElement = mediaElementRef.current;
+    if (
+      mediaElement &&
+      isFinite(seekTo.time) &&
+      seekTo.id !== lastSeekId &&
+      seekTo.time >= 0 &&
+      isFinite(mediaElement.duration)
+    ) {
+      mediaElement.currentTime = Math.min(seekTo.time, mediaElement.duration);
+      setLastSeekId(seekTo.id);
+    }
+  }, [seekTo]);
+
+  useEffect(() => {
+    const livepeerContainer = document.querySelector(
+      ".livepeer-contents-container",
+    );
+    const aspectRatioContainer = document.querySelector(
+      ".livepeer-aspect-ratio-container",
+    );
+    const videoElement = document.querySelector(".c-lioqzt");
+
+    const setStyles = (
+      element: HTMLElement | null,
+      styles: Record<string, string>,
+    ) => {
+      if (element) {
+        Object.keys(styles).forEach((key) => {
+          (element.style as any)[key] = styles[key];
         });
       }
     };
-  }, [props]);
 
-  return (
-    <div id="kinoraPlayerWrapper" style={{ all: "initial" }}>
-      {showBackdrop && (
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "black",
-            zIndex: 999,
-          }}
-        ></div>
-      )}
-      {React.cloneElement(props.children)}
-    </div>
-  );
+    if (fillWidthHeight) {
+      setStyles(livepeerContainer as HTMLElement, {
+        width: "100%",
+        height: "100%",
+      });
+      setStyles(aspectRatioContainer as HTMLElement, {
+        width: "100%",
+        height: "100%",
+      });
+      setStyles(videoElement as HTMLElement, {
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+      });
+    } else {
+      // Revert to original styles or remove the inline styles
+      setStyles(livepeerContainer as HTMLElement, { width: "", height: "" });
+      setStyles(aspectRatioContainer as HTMLElement, { width: "", height: "" });
+      setStyles(videoElement as HTMLElement, {
+        width: "",
+        height: "",
+        objectFit: "",
+      });
+    }
+
+    // Cleanup function
+    return () => {
+      setStyles(livepeerContainer as HTMLElement, { width: "", height: "" });
+      setStyles(aspectRatioContainer as HTMLElement, { width: "", height: "" });
+      setStyles(videoElement as HTMLElement, {
+        width: "",
+        height: "",
+        objectFit: "",
+      });
+    };
+  }, [fillWidthHeight]);
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.addedNodes.length > 0) {
+          const controlClasses = [
+            ".c-PJLV.c-hqBLfr.c-PJLV-bDGmTT-display-shown",
+            ".c-PJLV.c-hmIsCl.c-PJLV-bDGmTT-display-shown",
+            ".c-PJLV.c-lkuDVF.c-PJLV-bDGmTT-display-shown",
+            "c-PJLV.c-kjUhxK.c-PJLV-cCitdK-display-hidden",
+          ];
+
+          controlClasses.forEach((className: string) => {
+            const control = document.querySelector(className);
+            if (control) {
+              (control as HTMLElement).style.display = customControls
+                ? "none"
+                : "block";
+            }
+          });
+        }
+      });
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, [customControls]);
+
+  return <>{children(setMediaElement)}</>;
 };
 
 export default KinoraPlayerWrapper;
