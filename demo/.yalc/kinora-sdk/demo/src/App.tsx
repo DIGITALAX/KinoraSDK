@@ -6,7 +6,6 @@ import {
   studioProvider,
 } from "@livepeer/react";
 import { useState } from "react";
-// import PlayerWrapper from "./PlayerWrapper"
 import { KinoraPlayerWrapper, Sequence } from "kinora-sdk";
 
 const client = createReactClient({
