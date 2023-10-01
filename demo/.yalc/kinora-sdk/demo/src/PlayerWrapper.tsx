@@ -80,7 +80,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
   const setMediaElement = useCallback(
     (node: HTMLVideoElement | null) => {
       if (node !== null) {
-        mediaElementRef.current = node as HTMLVideoElement;
+        (mediaElementRef as any).current = node as HTMLVideoElement;
       }
     },
     [children],

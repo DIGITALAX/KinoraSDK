@@ -1,70 +1,153 @@
 import "./App.css";
 import {
   Player,
-  LivepeerConfig, 
+  LivepeerConfig,
   createReactClient,
   studioProvider,
 } from "@livepeer/react";
-import { ethers } from "ethers";
-import { Sequence, KinoraPlayerWrapper } from "kinora-sdk";
-import { useEffect } from "react";
+import { useState } from "react";
+import { KinoraPlayerWrapper, Sequence } from "kinora-sdk";
 
 const client = createReactClient({
   provider: studioProvider({
     apiKey: process.env.REACT_APP_LIVEPEER_STUDIO_KEY!,
   }),
 });
-function App() {
-  const chronicleProvider = new ethers.providers.JsonRpcProvider(
-    "https://chain-rpc.litprotocol.com/http",
-    175177,
-  );
 
-  const newSequence = new Sequence({
-    signer: new ethers.Wallet(
-      process.env.REACT_APP_PRIVATE_KEY!,
-      chronicleProvider,
-    ),
-    rpcURL: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.REACT_APP_ALCHEMY_MUMBAI_KEY}`,
-    parentId: "parent",
-    playbackId: "f5eese9wwl88k4g8",
-    developerPKPPublicKey:
-      "0x049e67a3780332f1757d020187b51a3980501ae5a85c7322aca17c9062ef365659a39ed39060a9737022554f8fcfbd568f193f10a11fc42296caf308d17437f46f",
-    developerPKPTokenId:
-      "94212806447536443845929705656136640966672667123877674654038073379435161289357",
-    multihashDevKey:
-      "145ec1a8433c5d9de40d6e41454ff96991c9d8b0cd9b86e663fb1908679ed501",
-    encryptUserMetrics: false,
-    errorHandlingModeStrict: false,
-    auth: {
-      projectId: process.env.REACT_APP_INFURA_PROJECT_ID!,
-      projectSecret: process.env.REACT_APP_INFURA_SECRET_KEY!,
-    },
-    kinoraMetricsAddress: "0xA4146356b9b0Da99f1dc44993D16E0E1290418d3",
-    kinoraQuestAddress: "0x3Ee412355be0718C935A89E9b961986173dfa3eC",
-    kinoraReward721Address: "0x91277012ed78Ad1D0513562BfEE180EDAE62b22d",
-    metricsOnChainInterval: 20,
-    redirectURL: "http://localhost:3000",
-  });
+const App = () => {
+  const handlePlay = () => {
+    console.log("Video is playing");
+  };
+  const [seekTo, setSeekTo] = useState({ time: 0, id: 0 });
+  const [volume, setVolume] = useState({ level: 0.5, id: 0 });
+  const [play, setPlay] = useState(false);
+  const [pause, setPause] = useState(true);
+  const handlePause = () => {
+    console.log("Video is paused");
+  };
 
-  useEffect(() => {
-    newSequence.videoInit();
-  }, [newSequence]);
+  const handleSeek = (event: Event) => {
+    console.log(`Video seeked to ${event.timeStamp} seconds`);
+  };
 
   return (
     <LivepeerConfig client={client}>
-      <div id="parent"> 
+      <div
+        style={{
+          height: 500,
+          width: 300,
+        }}
+      >
         <KinoraPlayerWrapper
-          customAspectRatio="16/9"
-          videoCover
-          customControls
-          
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onSeeking={handleSeek}
+          onSeeked={handleSeek}
+          onVolumeChange={() => console.log("volume")}
+          onTimeUpdate={() => console.log("time updated")}
+          volume={volume}
+          seekTo={seekTo}
+          play={play}
+          fillWidthHeight
+          customControls={true}
         >
-          <Player playbackId="f5eese9wwl88k4g8" />
+          {(setMediaElement) => (
+            <Player
+              mediaElementRef={setMediaElement}
+              playbackId="f5eese9wwl88k4g8"
+              objectFit="cover"
+            />
+          )}
         </KinoraPlayerWrapper>
+        <>
+          <SeekSlider setSeekTo={setSeekTo} maxTime={160} />
+          <VolumeSlider setVolume={setVolume} />
+          <PlayPauseButton setPlay={setPlay} setPause={setPause} />
+        </>
       </div>
     </LivepeerConfig>
   );
-}
+};
 
 export default App;
+
+const SeekSlider = ({
+  setSeekTo,
+  maxTime,
+}: {
+  setSeekTo: (e: { time: number; id: number }) => void;
+  maxTime: number;
+}) => {
+  const [value, setValue] = useState(0);
+
+  const handleChange = (e: any) => {
+    const newValue = parseInt(e.target.value, 10);
+    setValue(newValue);
+    setSeekTo({ time: newValue, id: Math.random() });
+  };
+
+  return (
+    <div>
+      <input
+        type="range"
+        min="0"
+        max={maxTime}
+        value={value}
+        onChange={handleChange}
+      />
+      <span>{value}s</span>
+    </div>
+  );
+};
+
+const VolumeSlider = ({
+  setVolume,
+}: {
+  setVolume: (e: { level: number; id: number }) => void;
+}) => {
+  const [value, setValue] = useState(50);
+
+  const handleChange = (e: any) => {
+    const newValue = parseInt(e.target.value, 10);
+    setValue(newValue);
+    setVolume({ level: newValue / 100, id: Math.random() });
+  };
+
+  return (
+    <div>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        value={value}
+        onChange={handleChange}
+      />
+      <span>{value}%</span>
+    </div>
+  );
+};
+
+const PlayPauseButton = ({
+  setPlay,
+  setPause,
+}: {
+  setPlay: (e: boolean) => void;
+  setPause: (e: boolean) => void;
+}) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const togglePlayPause = () => {
+    if (isPlaying) {
+      setPause(true);
+      setPlay(false);
+    } else {
+      setPlay(true);
+      setPause(false);
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  return (
+    <button onClick={togglePlayPause}>{isPlaying ? "Pause" : "Play"}</button>
+  );
+};
