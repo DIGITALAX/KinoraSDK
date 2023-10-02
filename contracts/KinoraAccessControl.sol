@@ -10,6 +10,12 @@ contract KinoraAccessControl is Initializable {
   KinoraFactory private _kinoraFactory;
   address private _assignedPKPAddress;
 
+  error userNotAdmin();
+  error adminAlreadyExists();
+  error pkpAlreadyAssigned();
+  error adminDoesntExist();
+  error cantRemoveSelf();
+
   mapping(address => bool) private _admins;
 
   event AdminAdded(address indexed admin);
@@ -17,10 +23,9 @@ contract KinoraAccessControl is Initializable {
   event AssignedPKPAddressUpdated(address indexed pkpAddress);
 
   modifier onlyAdmin() {
-    require(
-      _admins[msg.sender],
-      "KinoraAccessControl: Only admins can perform this action."
-    );
+    if (!_admins[msg.sender]) {
+      revert userNotAdmin();
+    }
     _;
   }
 
@@ -38,20 +43,21 @@ contract KinoraAccessControl is Initializable {
   }
 
   function addAdmin(address _admin) external onlyAdmin {
-    require(
-      !_admins[_admin],
-      "KinoraAccessControl: Cannot add existing admin."
-    );
+    if (_admins[_admin]) {
+      revert adminAlreadyExists();
+    }
+
     _admins[_admin] = true;
     emit AdminAdded(_admin);
   }
 
   function removeAdmin(address _admin) external onlyAdmin {
-    require(
-      _admin != msg.sender,
-      "KinoraAccessControl: Cannot remove yourself as admin."
-    );
-    require(_admins[_admin], "KinoraAccessControl: Admin doesn't exist.");
+    if (_admin == msg.sender) {
+      revert cantRemoveSelf();
+    }
+    if (!_admins[_admin]) {
+      revert adminDoesntExist();
+    }
     delete _admins[_admin];
     emit AdminRemoved(_admin);
   }
@@ -59,10 +65,9 @@ contract KinoraAccessControl is Initializable {
   function updateAssignedPKPAddress(
     address _newAssignedPKPAddress
   ) public onlyAdmin {
-    require(
-      _kinoraFactory.getKinoraIDToPKP(_newAssignedPKPAddress) == 0,
-      "KinoraAccessControl: PKP already assigned in global DB."
-    );
+    if (_kinoraFactory.getKinoraIDToPKP(_newAssignedPKPAddress) != 0) {
+      revert pkpAlreadyAssigned();
+    }
     _assignedPKPAddress = _newAssignedPKPAddress;
     emit AssignedPKPAddressUpdated(_newAssignedPKPAddress);
   }

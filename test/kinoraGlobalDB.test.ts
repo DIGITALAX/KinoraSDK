@@ -90,7 +90,10 @@ xdescribe("Kinora Global PKP Contract", () => {
     it("Should not add an existing user PKP", async () => {
       await expect(
         kinoraGlobalPKPDB.connect(developerPkpOne).addUserPKP(userPkp.address),
-      ).to.be.revertedWith("KinoraGlobalPKPDB: Cannot Add an Existing User.");
+      ).to.be.revertedWithCustomError(
+        { interface: kinoraGlobalPKPDB.interface },
+        "userAlreadyExists",
+      );
     });
 
     it("Only admin can remove user", async () => {
@@ -102,8 +105,9 @@ xdescribe("Kinora Global PKP Contract", () => {
         kinoraGlobalPKPDB
           .connect(developerPkpOne)
           .removeUserPKP(userPkpThree.address),
-      ).to.be.revertedWith(
-        "GlobalKinoraAccessControl: Only admin can perform this action.",
+      ).to.be.revertedWithCustomError(
+        { interface: kinoraGlobalPKPDB.interface },
+        "userNotAdmin",
       );
     });
 
@@ -120,8 +124,9 @@ xdescribe("Kinora Global PKP Contract", () => {
         .removeUserPKP(userPkpThree.address);
       await expect(
         kinoraGlobalPKPDB.connect(admin).removeUserPKP(userPkpThree.address),
-      ).to.be.revertedWith(
-        "KinoraGlobalPKPDB: Cannot Remove a Non-Existent User.",
+      ).to.be.revertedWithCustomError(
+        { interface: kinoraGlobalPKPDB.interface },
+        "userDoesntExist",
       );
     });
   });

@@ -10,6 +10,11 @@ contract KinoraGlobalPKPDB {
   KinoraFactory private _kinoraFactory;
   uint256 private _activeUserCount;
 
+  error userNotAdmin();
+  error onlyAssignedPKP();
+  error userAlreadyExists();
+  error userDoesntExist();
+
   struct UserPKP {
     address _userPKP;
     uint256 _userId;
@@ -28,10 +33,10 @@ contract KinoraGlobalPKPDB {
   event KinoraFactoryUpdate(address newFactoryAddress, address deployerAddress);
 
   modifier onlyAdmin() {
-    require(
-      _globalAccessControl.isAdmin(msg.sender),
-      "GlobalKinoraAccessControl: Only admin can perform this action."
-    );
+    if (!_globalAccessControl.isAdmin(msg.sender)) {
+      revert userNotAdmin();
+    }
+
     _;
   }
 
@@ -39,10 +44,11 @@ contract KinoraGlobalPKPDB {
     address _accessControl = _kinoraFactory.getDeployedKinoraAccessControlToPKP(
       msg.sender
     );
-    require(
-      msg.sender == KinoraAccessControl(_accessControl).getAssignedPKPAddress(),
-      "KinoraFactory: Only the Assigned PKP can perform this action."
-    );
+    if (
+      msg.sender != KinoraAccessControl(_accessControl).getAssignedPKPAddress()
+    ) {
+      revert onlyAssignedPKP();
+    }
     _;
   }
 
@@ -52,10 +58,9 @@ contract KinoraGlobalPKPDB {
   }
 
   function addUserPKP(address _userPkpAddress) public onlyFactoryPKP {
-    require(
-      !_userActiveAccount[_userPkpAddress],
-      "KinoraGlobalPKPDB: Cannot Add an Existing User."
-    );
+    if (_userActiveAccount[_userPkpAddress]) {
+      revert userAlreadyExists();
+    }
     _activeUserCount++;
     _userActiveAccount[_userPkpAddress] = true;
 
@@ -70,10 +75,9 @@ contract KinoraGlobalPKPDB {
   }
 
   function removeUserPKP(address _userPkpAddress) public onlyAdmin {
-    require(
-      _userActiveAccount[_userPkpAddress],
-      "KinoraGlobalPKPDB: Cannot Remove a Non-Existent User."
-    );
+    if (!_userActiveAccount[_userPkpAddress]) {
+      revert userDoesntExist();
+    }
     _activeUserCount--;
     delete _userActiveAccount[_userPkpAddress];
     delete _userPKPAccount[_userPkpAddress];
