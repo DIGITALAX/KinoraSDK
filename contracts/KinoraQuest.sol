@@ -14,6 +14,19 @@ contract KinoraQuest is Initializable {
   uint256 private _questCount;
   uint256 private _userCount;
 
+  error onlyAssignedPKP();
+  error questClosed();
+  error questDoesntExist();
+  error userNotEligible();
+  error maxParticipantCountReached();
+  error userDoesntExist();
+  error rewardNotAvailable();
+  error milestoneClosed();
+  error joinHashCountInvalid();
+  error milestoneDoesntExist();
+  error invalidMilestoneId();
+  error onlyAdminOrPKP();
+
   enum Status {
     Open,
     Closed
@@ -56,27 +69,26 @@ contract KinoraQuest is Initializable {
   mapping(address => User) private _allUsers;
 
   modifier onlyDeveloperPKP() {
-    require(
-      msg.sender == _accessControl.getAssignedPKPAddress(),
-      "KinoraQuest: Only Assigned PKP can perform this action."
-    );
+    if (msg.sender != _accessControl.getAssignedPKPAddress()) {
+      revert onlyAssignedPKP();
+    }
     _;
   }
 
   modifier onlyDeveloperPKPOrAdmin() {
-    require(
-      msg.sender == _accessControl.getAssignedPKPAddress() ||
-        _accessControl.isAdmin(msg.sender),
-      "KinoraAccessControl: Only an Admin or the Assigned PKP can perform this action."
-    );
+    if (
+      msg.sender != _accessControl.getAssignedPKPAddress() &&
+      !_accessControl.isAdmin(msg.sender)
+    ) {
+      revert onlyAdminOrPKP();
+    }
     _;
   }
 
   modifier questOpen(uint256 _questId) {
-    require(
-      _allQuests[_questId]._status != Status.Closed,
-      "KinoraQuest: Quest must have an open status."
-    );
+    if (_allQuests[_questId]._status == Status.Closed) {
+      revert questClosed();
+    }
     _;
   }
 
@@ -176,10 +188,9 @@ contract KinoraQuest is Initializable {
     uint256 _questId,
     uint256 _pointCount
   ) public onlyDeveloperPKPOrAdmin questOpen(_questId) {
-    require(
-      _allQuests[_questId]._questId != 0,
-      "KinoraQuest: Quest doesn't exist."
-    );
+    if (_allQuests[_questId]._questId == 0) {
+      revert questDoesntExist();
+    }
 
     _allQuests[_questId]._milestones.push(
       Milestone({
@@ -211,18 +222,15 @@ contract KinoraQuest is Initializable {
     uint256 _newPoints,
     uint256 _newAmount
   ) public onlyDeveloperPKPOrAdmin {
-    require(
-      _milestoneId > 0,
-      "KinoraQuest: Milestone ID should be greater than zero."
-    );
-    require(
-      _milestoneId <= _allQuests[_questId]._milestones.length,
-      "KinoraQuest: Invalid milestone ID."
-    );
-    require(
-      _allQuests[_questId]._milestones[_milestoneId - 1]._milestoneId != 0,
-      "KinoraQuest: Milestone doesn't exist for Quest."
-    );
+    if (_milestoneId <= 0) {
+      revert invalidMilestoneId();
+    }
+    if ( _milestoneId > _allQuests[_questId]._milestones.length) {
+        revert invalidMilestoneId();
+    }
+    if (_allQuests[_questId]._milestones[_milestoneId - 1]._milestoneId == 0) {
+        revert milestoneDoesntExist();
+    }
 
     _allQuests[_questId]
       ._milestones[_milestoneId - 1]
@@ -250,10 +258,11 @@ contract KinoraQuest is Initializable {
     uint256 _questId,
     uint256 _milestoneId
   ) public onlyDeveloperPKPOrAdmin questOpen(_questId) {
-    require(
-      _allQuests[_questId]._milestones[_milestoneId - 1]._status == Status.Open,
-      "KinoraQuest: Milestone already Closed."
-    );
+    if (
+      _allQuests[_questId]._milestones[_milestoneId - 1]._status != Status.Open
+    ) {
+      revert milestoneClosed();
+    }
 
     delete _allQuests[_questId]._milestones[_milestoneId - 1];
 
@@ -281,15 +290,15 @@ contract KinoraQuest is Initializable {
     uint256 _questId,
     address _userPKPAddress
   ) public onlyDeveloperPKP questOpen(_questId) {
-    require(
-      _pkpDB.userExists(_userPKPAddress),
-      "KinoraQuest: User must have an active PKP account."
-    );
-    require(
-      _allQuests[_questId]._participants.length <
-        _allQuests[_questId]._maxParticipantCount,
-      "KinoraQuest: Max Quest Participant Count reached."
-    );
+    if (!_pkpDB.userExists(_userPKPAddress)) {
+      revert userDoesntExist();
+    }
+    if (
+      _allQuests[_questId]._participants.length >=
+      _allQuests[_questId]._maxParticipantCount
+    ) {
+      revert maxParticipantCountReached();
+    }
 
     bool _canJoinQuest = true;
 
@@ -316,7 +325,7 @@ contract KinoraQuest is Initializable {
       _allUsers[_userPKPAddress]._questsJoined.push(_questId);
       _allQuests[_questId]._participants.push(_userPKPAddress);
     } else {
-      revert("KinoraQuest: User is not eligible to join Quest.");
+      revert userNotEligible();
     }
 
     emit UserJoinQuest(_questId, _userPKPAddress);
@@ -327,18 +336,15 @@ contract KinoraQuest is Initializable {
     uint256 _milestoneId,
     address _userPKPAddress
   ) public onlyDeveloperPKP questOpen(_questId) {
-    require(
-      _milestoneId > 0,
-      "KinoraQuest: Milestone ID should be greater than zero."
-    );
-    require(
-      _milestoneId <= _allQuests[_questId]._milestones.length,
-      "KinoraQuest: Invalid milestone ID."
-    );
-    require(
-      _allQuests[_questId]._milestones[_milestoneId - 1]._milestoneId != 0,
-      "KinoraQuest: Milestone doesn't exist."
-    );
+    if (_milestoneId <= 0) {
+      revert invalidMilestoneId();
+    }
+    if (_milestoneId > _allQuests[_questId]._milestones.length) {
+      revert milestoneDoesntExist();
+    }
+    if (_allQuests[_questId]._milestones[_milestoneId - 1]._milestoneId == 0) {
+      revert questDoesntExist();
+    }
 
     bool _questParticipant = false;
 
@@ -352,10 +358,10 @@ contract KinoraQuest is Initializable {
         break;
       }
     }
-    require(
-      _questParticipant,
-      "KinoraQuest: User must have already joined the Quest."
-    );
+
+    if (!_questParticipant) {
+      revert userNotEligible();
+    }
 
     if (
       _allUsers[_userPKPAddress]._milestonesCompletedPerQuest[_questId].length <
@@ -365,7 +371,7 @@ contract KinoraQuest is Initializable {
         _allQuests[_questId]._milestones[_milestoneId - 1]._reward._type ==
         RewardType.ERC20
       ) {
-        require(
+        if (
           _escrow.getQuestMilestoneIdToERC20Amount(
             _allQuests[_questId]
               ._milestones[_milestoneId - 1]
@@ -373,10 +379,10 @@ contract KinoraQuest is Initializable {
               ._tokenAddress,
             _questId,
             _milestoneId
-          ) >=
-            _allQuests[_questId]._milestones[_milestoneId - 1]._reward._amount,
-          "KinoraQuest: Reward not available to withdraw."
-        );
+          ) < _allQuests[_questId]._milestones[_milestoneId - 1]._reward._amount
+        ) {
+          revert rewardNotAvailable();
+        }
 
         _escrow.withdrawERC20(
           _userPKPAddress,
@@ -403,10 +409,9 @@ contract KinoraQuest is Initializable {
   function updateAllJoinHashes(
     bytes32[] memory _newJoinHashes
   ) public onlyDeveloperPKPOrAdmin {
-    require(
-      _newJoinHashes.length == _questCount,
-      "KinoraQuest: Join Hash array length must match the total quest count."
-    );
+    if (_newJoinHashes.length != _questCount) {
+      revert joinHashCountInvalid();
+    }
     for (uint256 i = 0; i < _questCount; i++) {
       _allQuests[_questCount + 1]._joinHash = _newJoinHashes[i];
     }

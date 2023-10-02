@@ -353,8 +353,11 @@ xdescribe("Kinora Factory Contract", () => {
         kinoraFactory
           .connect(developerTwo)
           .deployFromKinoraFactory(developerPkpThree.address),
-      ).to.be.revertedWith(
-        "KinoraFactory: PKP already mapped to contract factory.",
+      ).to.be.revertedWithCustomError(
+        {
+          interface: kinoraFactory.interface,
+        },
+        "pkpAlreadyMapped",
       );
     });
   });
@@ -393,8 +396,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraAccessControl
             .connect(admin)
             .addAdmin(developerThree.address),
-        ).to.be.revertedWith(
-          "KinoraAccessControl: Only admins can perform this action.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraAccessControl.interface },
+          "userNotAdmin",
         );
       });
 
@@ -411,7 +415,10 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraAccessControl
             .connect(developerOne)
             .addAdmin(developerTwo.address),
-        ).to.be.revertedWith("KinoraAccessControl: Cannot add existing admin.");
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraAccessControl.interface },
+          "adminAlreadyExists",
+        );
       });
 
       it("Should emit AdminAdded event", async () => {
@@ -443,8 +450,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraAccessControl
             .connect(developerOne)
             .removeAdmin(developerOne.address),
-        ).to.be.revertedWith(
-          "KinoraAccessControl: Cannot remove yourself as admin.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraAccessControl.interface },
+          "cantRemoveSelf",
         );
       });
       it("Should update the assigned PKP address", async () => {
@@ -466,8 +474,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraAccessControl
             .connect(developerOne)
             .updateAssignedPKPAddress(developerPkpOne.address),
-        ).to.be.revertedWith(
-          "KinoraAccessControl: PKP already assigned in global DB.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraAccessControl.interface },
+          "pkpAlreadyAssigned",
         );
       });
 
@@ -507,8 +516,9 @@ xdescribe("Kinora Factory Contract", () => {
               metricJSONHash,
               encrypted,
             }),
-        ).to.be.revertedWith(
-          "KinoraAccessControl: Only Assigned PKP can perform this action.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraMetrics.interface },
+          "onlyPKP",
         );
       });
 
@@ -558,8 +568,9 @@ xdescribe("Kinora Factory Contract", () => {
               metricJSONHash: "",
               encrypted: true,
             }),
-        ).to.be.revertedWith(
-          "KinoraQuest: User must have an active PKP account.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraMetrics.interface },
+          "pkpAccountNotActive",
         );
       });
     });
@@ -625,8 +636,9 @@ xdescribe("Kinora Factory Contract", () => {
       it("Should reject update Quest Status", async () => {
         await expect(
           initiatedKinoraQuest.connect(developerPkpOne).updateQuestStatus(1, 1),
-        ).to.be.revertedWith(
-          "KinoraAccessControl: Only an Admin or the Assigned PKP can perform this action.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraQuest.interface },
+          "onlyAdminOrPKP",
         );
       });
 
@@ -644,8 +656,9 @@ xdescribe("Kinora Factory Contract", () => {
                 "c7c3719c0854f10ff2b88b00a55889b7b51998a4088cfcc664d644e3d3926f72",
               10,
             ),
-        ).to.be.revertedWith(
-          "KinoraQuest: Only Assigned PKP can perform this action.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraQuest.interface },
+          "onlyAssignedPKP",
         );
       });
 
@@ -743,8 +756,9 @@ xdescribe("Kinora Factory Contract", () => {
               _newMaxParticipantCount,
               _questId,
             ),
-        ).to.be.revertedWith(
-          "KinoraAccessControl: Only an Admin or the Assigned PKP can perform this action.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraQuest.interface },
+          "onlyAdminOrPKP",
         );
       });
 
@@ -945,7 +959,10 @@ xdescribe("Kinora Factory Contract", () => {
               _questId,
               _pointCount,
             ),
-        ).to.be.revertedWith("KinoraQuest: Quest doesn't exist.");
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraQuest.interface },
+          "questDoesntExist",
+        );
       });
 
       it("Doesn't update milestone if milestone doesn't exist", async () => {
@@ -973,7 +990,10 @@ xdescribe("Kinora Factory Contract", () => {
               _pointCount,
               _questReward._amount,
             ),
-        ).to.be.revertedWith("KinoraQuest: Invalid milestone ID.");
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraQuest.interface },
+          "invalidMilestoneId",
+        );
       });
 
       it("Doesn't add milestone if non Dev PKP", async () => {
@@ -997,8 +1017,9 @@ xdescribe("Kinora Factory Contract", () => {
               _questId,
               _pointCount,
             ),
-        ).to.be.revertedWith(
-          "KinoraAccessControl: Only an Admin or the Assigned PKP can perform this action.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraQuest.interface },
+          "onlyAdminOrPKP",
         );
       });
 
@@ -1076,8 +1097,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraQuest
             .connect(developerPkpFour)
             .userJoinQuest(3, developerTwo.address),
-        ).to.be.revertedWith(
-          "KinoraQuest: User must have an active PKP account.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraQuest.interface },
+          "userDoesntExist",
         );
       });
 
@@ -1086,7 +1108,10 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraQuest
             .connect(developerPkpFour)
             .userCompleteMilestone(3, 1, userPkp.address),
-        ).to.be.revertedWith("KinoraQuest: Reward not available to withdraw.");
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraQuest.interface },
+          "rewardNotAvailable",
+        );
       });
 
       it("User must have joined quest to complete milestone", async () => {
@@ -1094,8 +1119,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraQuest
             .connect(developerPkpFour)
             .userCompleteMilestone(3, 1, userPKPTwo.address),
-        ).to.be.revertedWith(
-          "KinoraQuest: User must have already joined the Quest.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraQuest.interface },
+          "userNotEligible",
         );
       });
 
@@ -1104,8 +1130,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraQuest
             .connect(developerPkpFour)
             .userJoinQuest(3, userPkp.address),
-        ).to.be.revertedWith(
-          "KinoraQuest: User is not eligible to join Quest.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraQuest.interface },
+          "userNotEligible",
         );
       });
 
@@ -1117,8 +1144,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraQuest
             .connect(developerPkpFour)
             .userJoinQuest(3, userPKPTwo.address),
-        ).to.be.revertedWith(
-          "KinoraQuest: Max Quest Participant Count reached.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraQuest.interface },
+          "maxParticipantCountReached",
         );
       });
 
@@ -1181,16 +1209,18 @@ xdescribe("Kinora Factory Contract", () => {
       it("Only Factory can set the Quest and Quest Reward", async () => {
         await expect(
           initiatedKinoraEscrow.setKinoraQuest(initiatedKinoraEscrow.address),
-        ).to.be.revertedWith(
-          "KinoraEscrow: Only the Kinora Factory can perform this action.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraEscrow.interface },
+          "onlyKinoraFactory",
         );
 
         await expect(
           initiatedKinoraEscrow.setKinora721QuestReward(
             initiatedKinoraEscrow.address,
           ),
-        ).to.be.revertedWith(
-          "KinoraEscrow: Only the Kinora Factory can perform this action.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraEscrow.interface },
+          "onlyKinoraFactory",
         );
       });
 
@@ -1213,8 +1243,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraEscrow
             .connect(developerPkpFour)
             .depositERC20(testERC20.address, 20, 3, 1),
-        ).to.be.revertedWith(
-          "KinoraEscrow: Token already exists, update deposit instead.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraEscrow.interface },
+          "tokenAlreadyExists",
         );
       });
 
@@ -1237,7 +1268,10 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraQuest
             .connect(developerPkpFour)
             .userCompleteMilestone(10, 1, userPkp.address),
-        ).to.be.revertedWith("KinoraQuest: Invalid milestone ID.");
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraQuest.interface },
+          "milestoneDoesntExist",
+        );
       });
 
       it("Withdraws reward for user", async () => {
@@ -1255,8 +1289,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraEscrow
             .connect(admin)
             .depositERC20(testERC20.address, 100, 3, 1),
-        ).to.be.revertedWith(
-          "KinoraEscrow: Only an Admin or the Assigned PKP can perform this action.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraEscrow.interface },
+          "onlyAdminOrPKP",
         );
       });
 
@@ -1266,7 +1301,10 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraEscrow
             .connect(developerOne)
             .withdrawERC20(userPKPTwo.address, testERC20.address, 10000, 3, 1),
-        ).to.be.revertedWith("KinoraEscrow: Insufficient balance.");
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraEscrow.interface },
+          "insufficientBalance",
+        );
       });
 
       it("Should deposit ERC721 tokens", async () => {
@@ -1280,8 +1318,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraEscrow
             .connect(developerPkpFour)
             .depositERC721("example_uri", 3, 1),
-        ).to.be.revertedWith(
-          "KinoraEscrow: Token already exists, update deposit instead.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraEscrow.interface },
+          "tokenAlreadyExists",
         );
       });
 
@@ -1300,7 +1339,10 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraEscrow
             .connect(developerPkpFour)
             .updateDepositERC721(uri, 3, 2),
-        ).to.be.revertedWith("KinoraEscrow: Token doesn't exist.");
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraEscrow.interface },
+          "tokenDoesntExist",
+        );
       });
 
       it("Reverts on invalid PKP or Admin for depositing ERC721", async () => {
@@ -1308,8 +1350,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraEscrow
             .connect(admin)
             .depositERC721("example_uri", 3, 1),
-        ).to.be.revertedWith(
-          "KinoraEscrow: Only an Admin or the Assigned PKP can perform this action.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraEscrow.interface },
+          "onlyAdminOrPKP",
         );
       });
 
@@ -1318,7 +1361,10 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinoraEscrow
             .connect(developerPkpFour)
             .depositERC721("example_uri", 999, 1),
-        ).to.be.revertedWith("KinoraEscrow: Quest doesn't exist.");
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinoraEscrow.interface },
+          "questDoesntExist",
+        );
       });
     });
 
@@ -1420,8 +1466,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinora721QuestReward
             .connect(userPkpThree)
             .mintRewardNFT(userPkpThree.address, 5, 1),
-        ).to.be.revertedWith(
-          "Kinora721QuestReward: Only an eligible User can mint.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinora721QuestReward.interface },
+          "userNotEligible",
         );
       });
 
@@ -1430,8 +1477,9 @@ xdescribe("Kinora Factory Contract", () => {
           initiatedKinora721QuestReward
             .connect(userPkpThree)
             .mintRewardNFT(userPkpThree.address, 5, 1),
-        ).to.be.revertedWith(
-          "Kinora721QuestReward: Only an eligible User can mint.",
+        ).to.be.revertedWithCustomError(
+          { interface: initiatedKinora721QuestReward.interface },
+          "userNotEligible",
         );
       });
 

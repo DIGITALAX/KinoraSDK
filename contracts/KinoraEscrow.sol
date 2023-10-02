@@ -15,6 +15,14 @@ contract KinoraEscrow is Initializable {
   address private _factory;
   Kinora721QuestReward private _721QuestReward;
 
+  error onlyAdminOrQuest();
+  error questDoesntExist();
+  error tokenAlreadyExists();
+  error tokenDoesntExist();
+  error onlyAdminOrPKP();
+  error onlyKinoraFactory();
+  error insufficientBalance();
+
   struct ERC20Token {
     uint256 _amount;
     bool _tokenExists;
@@ -39,27 +47,27 @@ contract KinoraEscrow is Initializable {
     private _questMilestoneIdToERC721Deposit;
 
   modifier onlyAdminOrKinoraQuest() {
-    require(
-      _accessControl.isAdmin(msg.sender) || msg.sender == address(_quest),
-      "KinoraEscrow: Only an Admin or the Quest Contract can perform this action."
-    );
+    if (!_accessControl.isAdmin(msg.sender) && msg.sender != address(_quest)) {
+      revert onlyAdminOrQuest();
+    }
     _;
   }
 
   modifier onlyPKPOrAdmin() {
-    require(
-      _accessControl.isAdmin(msg.sender) ||
-        msg.sender == _accessControl.getAssignedPKPAddress(),
-      "KinoraEscrow: Only an Admin or the Assigned PKP can perform this action."
-    );
+    if (
+      !_accessControl.isAdmin(msg.sender) &&
+      msg.sender != _accessControl.getAssignedPKPAddress()
+    ) {
+      revert onlyAdminOrPKP();
+    }
     _;
   }
 
   modifier onlyFactory() {
-    require(
-      msg.sender == _factory,
-      "KinoraEscrow: Only the Kinora Factory can perform this action."
-    );
+    if (msg.sender != _factory) {
+      revert onlyKinoraFactory();
+    }
+
     _;
   }
 
@@ -91,19 +99,16 @@ contract KinoraEscrow is Initializable {
     uint256 _questId,
     uint256 _milestoneId
   ) public onlyPKPOrAdmin {
-    require(
-      _quest.getQuestId(_questId) != 0,
-      "KinoraEscrow: Quest doesn't exist."
-    );
-    require(
-      !_questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
-        ._tokenExists,
-      "KinoraEscrow: Token already exists, update deposit instead."
-    );
-    require(
-      IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _amount),
-      "KinoraEscrow: Transfer failed."
-    );
+    if (_quest.getQuestId(_questId) == 0) {
+      revert questDoesntExist();
+    }
+    if (
+      _questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
+        ._tokenExists
+    ) {
+      revert tokenAlreadyExists();
+    }
+    IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _amount);
 
     _questMilestoneIdToERC20Deposit[_questId][_milestoneId][
       _tokenAddress
@@ -118,15 +123,14 @@ contract KinoraEscrow is Initializable {
     uint256 _milestoneId,
     uint256 _amount
   ) public onlyPKPOrAdmin {
-    require(
-      _questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
-        ._tokenExists,
-      "KinoraEscrow: Token doesn't exist."
-    );
-    require(
-      IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _amount),
-      "KinoraEscrow: Transfer failed."
-    );
+    if (
+      !_questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
+        ._tokenExists
+    ) {
+      revert tokenDoesntExist();
+    }
+
+    IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _amount);
 
     _questMilestoneIdToERC20Deposit[_questId][_milestoneId][
       _tokenAddress
@@ -142,16 +146,14 @@ contract KinoraEscrow is Initializable {
     uint256 _milestoneId,
     uint256 _questId
   ) public onlyAdminOrKinoraQuest {
-    require(
+    if (
       _questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
-        ._amount >= _amount,
-      "KinoraEscrow: Insufficient balance."
-    );
+        ._amount < _amount
+    ) {
+      revert insufficientBalance();
+    }
 
-    require(
-      IERC20(_tokenAddress).transfer(_userAddress, _amount),
-      "KinoraEscrow: Transfer failed."
-    );
+    IERC20(_tokenAddress).transfer(_userAddress, _amount);
 
     _questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
       ._amount -= _amount;
@@ -170,14 +172,12 @@ contract KinoraEscrow is Initializable {
     uint256 _questId,
     uint256 _milestoneId
   ) public onlyPKPOrAdmin {
-    require(
-      _quest.getQuestId(_questId) != 0,
-      "KinoraEscrow: Quest doesn't exist."
-    );
-    require(
-      !_questMilestoneIdToERC721Deposit[_questId][_milestoneId]._tokenExists,
-      "KinoraEscrow: Token already exists, update deposit instead."
-    );
+    if (_quest.getQuestId(_questId) == 0) {
+      revert questDoesntExist();
+    }
+    if (_questMilestoneIdToERC721Deposit[_questId][_milestoneId]._tokenExists) {
+      revert tokenAlreadyExists();
+    }
 
     _questMilestoneIdToERC721Deposit[_questId][_milestoneId] = ERC721Token({
       _tokenExists: true,
@@ -192,10 +192,11 @@ contract KinoraEscrow is Initializable {
     uint256 _questId,
     uint256 _milestoneId
   ) public onlyPKPOrAdmin {
-    require(
-      _questMilestoneIdToERC721Deposit[_questId][_milestoneId]._tokenExists,
-      "KinoraEscrow: Token doesn't exist."
-    );
+    if (
+      !_questMilestoneIdToERC721Deposit[_questId][_milestoneId]._tokenExists
+    ) {
+      revert tokenDoesntExist();
+    }
 
     _questMilestoneIdToERC721Deposit[_questId][_milestoneId]._uri = _uri;
 

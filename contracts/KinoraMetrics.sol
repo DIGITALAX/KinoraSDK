@@ -17,6 +17,9 @@ contract KinoraMetrics is Initializable {
   KinoraAccessControl private _accessControl;
   KinoraGlobalPKPDB private _pkpDB;
 
+  error pkpAccountNotActive();
+  error onlyPKP();
+
   struct UserLivePeerMetrics {
     string _playbackId;
     string _metricJSONHash;
@@ -36,10 +39,9 @@ contract KinoraMetrics is Initializable {
   );
 
   modifier onlyDeveloperPKP() {
-    require(
-      msg.sender == _accessControl.getAssignedPKPAddress(),
-      "KinoraAccessControl: Only Assigned PKP can perform this action."
-    );
+    if (msg.sender != _accessControl.getAssignedPKPAddress()) {
+      revert onlyPKP();
+    }
     _;
   }
 
@@ -55,10 +57,9 @@ contract KinoraMetrics is Initializable {
     address _userPKPAddress,
     MetricsParamsLibrary.MetricParams memory _args
   ) public onlyDeveloperPKP {
-    require(
-      _pkpDB.userExists(_userPKPAddress),
-      "KinoraQuest: User must have an active PKP account."
-    );
+    if (!_pkpDB.userExists(_userPKPAddress)) {
+      revert pkpAccountNotActive();
+    }
     UserLivePeerMetrics memory _newUserLivePeerMetrics;
     _newUserLivePeerMetrics = UserLivePeerMetrics({
       _playbackId: _args.playbackId,

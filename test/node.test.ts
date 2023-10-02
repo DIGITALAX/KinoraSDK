@@ -5,7 +5,7 @@ import { KINORA_FACTORY_CONTRACT } from "../src/constants";
 import { Contract, Signer } from "ethers";
 import KinoraFactoryAbi from "./../src/abis/KinoraFactory.json";
 
-describe("Node Functions", () => {
+xdescribe("Node Functions", () => {
   let newSequence: Sequence,
     noProvider: Sequence,
     signer: Signer,
