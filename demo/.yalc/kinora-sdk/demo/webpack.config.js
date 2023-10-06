@@ -1,6 +1,9 @@
 const path = require("path");
-const webpack = require("webpack");
 const dotenv = require("dotenv");
+const webpack = require("webpack");
+const Dotenv = require("dotenv-webpack");
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
 
 const env = dotenv.config().parsed;
 
@@ -9,15 +12,21 @@ module.exports = {
   output: {
     filename: "index.js",
     path: path.resolve(__dirname, "dist"),
-    publicPath: "",
+    publicPath: "/",
     libraryTarget: "umd",
-    globalObject: "this",
+  },
+  performance: {
+    hints: false,
+  },
+  optimization: {
+    minimize: true,
+    minimizer: [new TerserPlugin()],
   },
   module: {
     rules: [
       {
         test: /\.tsx?$/,
-        exclude: [/(node_modules)/],
+        exclude: [/(node_modules)|test/],
         use: [
           {
             loader: "ts-loader",
@@ -29,12 +38,12 @@ module.exports = {
         use: "ignore-loader",
       },
       {
-        test: /\.js$/,
-        enforce: "pre",
-        use: ["source-map-loader"],
+        test: /\.map$/,
+        use: "ignore-loader",
       },
     ],
   },
+  devtool: false,
   resolve: {
     modules: ["node_modules"],
     extensions: [".tsx", ".ts", ".js"],
@@ -52,14 +61,27 @@ module.exports = {
       pnpapi: false,
       worker_threads: false,
     },
+    alias: {
+      buffer: require.resolve("buffer"),
+    },
   },
-  plugins: [
-    new webpack.DefinePlugin({
-      "process.env": JSON.stringify(env),
-    }),
+  ignoreWarnings: [
+    /Failed to parse source map/,
+    /Critical dependency: require function is used/,
   ],
-  devtool: false,
-  mode: "development",
+  plugins: [
+    new webpack.ProvidePlugin({
+      Buffer: ["buffer", "Buffer"],
+    }),
+    new Dotenv({
+      path: path.resolve(__dirname, ".env"),
+    }),
+    new webpack.DefinePlugin({
+      self: "global",
+    }),
+    new CleanWebpackPlugin(),
+  ],
+  mode: "production",
   // externals: {
   //   react: "react",
   //   "react-dom": "react-dom",

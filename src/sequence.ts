@@ -107,7 +107,7 @@ export class Sequence extends EventEmitter {
     },
   });
   private litNodeClient = new LitJsSdk.LitNodeClient({
-    litNetwork: "serrano",
+    litNetwork: "cayenne",
     debug: false,
     alertWhenUnauthorized: true,
   });

@@ -221,49 +221,43 @@ export const encryptMetrics = async (
   message?: string;
 }> => {
   try {
-    const { encryptedString, symmetricKey } = await LitJsSdk.encryptString(
-      JSON.stringify(metrics),
+    const { ciphertext, dataToEncryptHash } = await LitJsSdk.encryptString(
+      {
+        accessControlConditions: [
+          {
+            contractAddress: "",
+            standardContractType: "",
+            chain: "polygon",
+            method: "",
+            parameters: [":userAddress"],
+            returnValueTest: {
+              comparator: "=",
+              value: developerPKPAddress.toLowerCase(),
+            },
+          },
+          {
+            contractAddress: "",
+            standardContractType: "",
+            chain: "polygon",
+            method: "",
+            parameters: [":userAddress"],
+            returnValueTest: {
+              comparator: "=",
+              value: userPKPAddress?.toLowerCase(),
+            },
+          },
+        ],
+        authSig: userPKPAuthSig,
+        chain: "polygon",
+        dataToEncrypt: JSON.stringify(metrics),
+      },
+      litNodeClient,
     );
-
-    const encryptedSymmetricKey = await litNodeClient.saveEncryptionKey({
-      accessControlConditions: [
-        {
-          contractAddress: "",
-          standardContractType: "",
-          chain: "polygon",
-          method: "",
-          parameters: [":userAddress"],
-          returnValueTest: {
-            comparator: "=",
-            value: developerPKPAddress.toLowerCase(),
-          },
-        },
-        {
-          contractAddress: "",
-          standardContractType: "",
-          chain: "polygon",
-          method: "",
-          parameters: [":userAddress"],
-          returnValueTest: {
-            comparator: "=",
-            value: userPKPAddress?.toLowerCase(),
-          },
-        },
-      ],
-      symmetricKey,
-      authSig: userPKPAuthSig,
-      chain: "polygon",
-    });
-
-    const buffer = await encryptedString.arrayBuffer();
 
     return {
       encryptedString: JSON.stringify({
-        encryptedString: JSON.stringify(Array.from(new Uint8Array(buffer))),
-        symmetricKey: LitJsSdk.uint8arrayToString(
-          encryptedSymmetricKey,
-          "base16",
-        ),
+        ciphertext: ciphertext,
+        dataToEncryptHash: dataToEncryptHash,
       }),
     };
   } catch (err: any) {
@@ -319,45 +313,46 @@ export const getSessionSig = async (
 };
 
 export const decryptMetrics = async (
-  encryptMetrics: { encryptedString: ArrayBufferLike; symmetricKey: string },
+  encryptMetrics: { ciphertext: string; dataToEncryptHash: string },
   developerPKPAddress: `0x${string}`,
   userPKPAddress: `0x${string}`,
   userPKPAuthSig: LitAuthSig,
   litNodeClient: LitJsSdk.LitNodeClient,
 ): Promise<{ decryptedString?: string; error?: boolean; message?: string }> => {
   try {
-    const symmetricKey = await litNodeClient.getEncryptionKey({
-      accessControlConditions: [
-        {
-          contractAddress: "",
-          standardContractType: "",
-          chain: "polygon",
-          method: "",
-          parameters: [":userAddress"],
-          returnValueTest: {
-            comparator: "=",
-            value: developerPKPAddress.toLowerCase(),
+    const decryptedString = await LitJsSdk.decryptToString(
+      {
+        accessControlConditions: [
+          {
+            contractAddress: "",
+            standardContractType: "",
+            chain: "polygon",
+            method: "",
+            parameters: [":userAddress"],
+            returnValueTest: {
+              comparator: "=",
+              value: developerPKPAddress.toLowerCase(),
+            },
           },
-        },
-        {
-          contractAddress: "",
-          standardContractType: "",
-          chain: "polygon",
-          method: "",
-          parameters: [":userAddress"],
-          returnValueTest: {
-            comparator: "=",
-            value: userPKPAddress?.toLowerCase(),
+          {
+            contractAddress: "",
+            standardContractType: "",
+            chain: "polygon",
+            method: "",
+            parameters: [":userAddress"],
+            returnValueTest: {
+              comparator: "=",
+              value: userPKPAddress?.toLowerCase(),
+            },
           },
-        },
-      ],
-      toDecrypt: encryptMetrics.symmetricKey,
-      authSig: userPKPAuthSig,
-      chain: "polygon",
-    });
-    const uintString = new Uint8Array(encryptMetrics.encryptedString).buffer;
-    const blob = new Blob([uintString], { type: "text/plain" });
-    const decryptedString = await LitJsSdk.decryptString(blob, symmetricKey);
+        ],
+        ciphertext: encryptMetrics.ciphertext,
+        dataToEncryptHash: encryptMetrics.dataToEncryptHash,
+        authSig: userPKPAuthSig,
+        chain: "polygon",
+      },
+      litNodeClient,
+    );
 
     return { decryptedString };
   } catch (err: any) {

@@ -1,1 +1,1 @@
-Kinora Demo
+KinoraSDK Demo
