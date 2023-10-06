@@ -5,8 +5,6 @@ import React, {
   useLayoutEffect,
 } from "react";
 
-const isBrowser = typeof window !== 'undefined';
-
 type KinoraPlayerWrapperProps = {
   onPlay?: (event: Event) => void;
   onPause?: (event: Event) => void;
@@ -54,7 +52,6 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
   children,
   ...props
 }) => {
-  if (!isBrowser) return null;
   const mediaElementRef = React.useRef<HTMLVideoElement>(null);
   const [lastSeekId, setLastSeekId] = useState<number>(0);
   const [lastVolumeId, setLastVolumeId] = useState<number>(0);
@@ -188,7 +185,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
     if (fullscreen && mediaElement) {
       if (document.fullscreenElement) {
         document.exitFullscreen();
-      } else {
+      } else { 
         mediaElement.requestFullscreen();
       }
     }

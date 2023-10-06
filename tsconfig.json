@@ -23,8 +23,6 @@
     "moduleResolution": "node"
   },
   "files": ["src/index.ts"],
-  // "include": ["src/**/*", "./hardhat.config.ts", "./scripts/deploy.ts", "./test/**/*.ts"],
-  "include": ["src/**/*", "./hardhat.config.ts", "./test/**/*.ts"],
-  // "exclude": ["node_modules", "lib", "**/*spec.ts"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "./hardhat.config.ts", "./test/**/*.ts"]
 }

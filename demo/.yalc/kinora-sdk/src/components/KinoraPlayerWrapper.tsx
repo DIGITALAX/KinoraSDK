@@ -1,8 +1,15 @@
-import React, { useEffect, useCallback, useState } from "react";
+import React, {
+  useEffect,
+  useCallback,
+  useState,
+  useLayoutEffect,
+} from "react";
+
+const isBrowser = typeof window !== 'undefined';
 
 type KinoraPlayerWrapperProps = {
-  onPlay?: () => void;
-  onPause?: () => void;
+  onPlay?: (event: Event) => void;
+  onPause?: (event: Event) => void;
   onAbort?: (event: Event) => void;
   onCanPlay?: (event: Event) => void;
   onCanPlayThrough?: (event: Event) => void;
@@ -37,7 +44,6 @@ type KinoraPlayerWrapperProps = {
 };
 
 const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
-  children,
   fullscreen = false,
   seekTo = { time: 0, id: Math.random() },
   volume = { level: 0.5, id: Math.random() },
@@ -45,8 +51,10 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
   pause = true,
   customControls = true,
   fillWidthHeight = false,
+  children,
   ...props
 }) => {
+  if (!isBrowser) return null;
   const mediaElementRef = React.useRef<HTMLVideoElement>(null);
   const [lastSeekId, setLastSeekId] = useState<number>(0);
   const [lastVolumeId, setLastVolumeId] = useState<number>(0);
@@ -80,64 +88,77 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
   const setMediaElement = useCallback(
     (node: HTMLVideoElement | null) => {
       if (node !== null) {
-        mediaElementRef.current = node as HTMLVideoElement;
+        (mediaElementRef as any).current = node as HTMLVideoElement;
       }
-    },
-    [children],
-  );
 
-  useEffect(() => {
-    const mediaElement = mediaElementRef.current;
-    if (mediaElement) {
-      eventProps.forEach((key) => {
-        if (
-          typeof (props as any)[key] === "function" &&
-          key !== "onPlay" &&
-          key !== "onPause"
-        ) {
-          mediaElement.addEventListener(
-            key.toLowerCase().substring(2),
-            (props as any)[key],
-          );
-        }
-      });
+      const mediaElement = mediaElementRef.current;
+      if (!mediaElement) return;
 
-      const handlePlay = () => {
-        setIsPlaying(true);
-        if (typeof props.onPlay === "function") {
-          props.onPlay();
-        }
-      };
-
-      const handlePause = () => {
-        setIsPlaying(false);
-        if (typeof props.onPause === "function") {
-          props.onPause();
-        }
-      };
-
-      mediaElement.addEventListener("play", handlePlay);
-      mediaElement.addEventListener("pause", handlePause);
-
-      // Cleanup
-      return () => {
+      const setupEventListeners = () => {
         eventProps.forEach((key) => {
           if (
             typeof (props as any)[key] === "function" &&
             key !== "onPlay" &&
             key !== "onPause"
           ) {
-            mediaElement.removeEventListener(
+            mediaElement.addEventListener(
               key.toLowerCase().substring(2),
               (props as any)[key],
             );
           }
         });
-        mediaElement.removeEventListener("play", handlePlay);
-        mediaElement.removeEventListener("pause", handlePause);
+
+        const handlePlay = (e: Event) => {
+          setIsPlaying(true);
+          if (typeof props.onPlay === "function") {
+            props.onPlay(e);
+          }
+        };
+
+        const handlePause = (e: Event) => {
+          setIsPlaying(false);
+          if (typeof props.onPause === "function") {
+            props.onPause(e);
+          }
+        };
+
+        mediaElement.addEventListener("play", handlePlay);
+        mediaElement.addEventListener("pause", handlePause);
+
+        // Cleanup
+        return () => {
+          eventProps.forEach((key) => {
+            if (
+              typeof (props as any)[key] === "function" &&
+              key !== "onPlay" &&
+              key !== "onPause"
+            ) {
+              mediaElement.removeEventListener(
+                key.toLowerCase().substring(2),
+                (props as any)[key],
+              );
+            }
+          });
+          mediaElement.removeEventListener("play", handlePlay);
+          mediaElement.removeEventListener("pause", handlePause);
+        };
       };
-    }
-  }, [props, children]);
+
+      if (mediaElement) {
+        if (mediaElement.readyState >= 1) {
+          return setupEventListeners();
+        } else {
+          mediaElement.addEventListener("loadedmetadata", setupEventListeners);
+          return () =>
+            mediaElement.removeEventListener(
+              "loadedmetadata",
+              setupEventListeners,
+            );
+        }
+      }
+    },
+    [children, props, mediaElementRef.current],
+  );
 
   useEffect(() => {
     const mediaElement = mediaElementRef.current;
@@ -146,13 +167,13 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
         mediaElement.play().catch((error) => {
           console.error("Error on play from KinoraPlayerWrapper: ", error);
         });
-        setIsPlaying(true); // Set isPlaying to true after successfully playing
+        setIsPlaying(true);
       } else if (pause && isPlaying) {
         mediaElement.pause();
-        setIsPlaying(false); // Set isPlaying to false after successfully pausing
+        setIsPlaying(false);
       }
     }
-  }, [play, pause]); // Only re-run the effect if play or pause changes
+  }, [play, pause]);
 
   useEffect(() => {
     const mediaElement = mediaElementRef.current;
@@ -222,9 +243,11 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
         objectFit: "cover",
       });
     } else {
-      // Revert to original styles or remove the inline styles
       setStyles(livepeerContainer as HTMLElement, { width: "", height: "" });
-      setStyles(aspectRatioContainer as HTMLElement, { width: "", height: "" });
+      setStyles(aspectRatioContainer as HTMLElement, {
+        width: "",
+        height: "",
+      });
       setStyles(videoElement as HTMLElement, {
         width: "",
         height: "",
@@ -232,10 +255,12 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
       });
     }
 
-    // Cleanup function
     return () => {
       setStyles(livepeerContainer as HTMLElement, { width: "", height: "" });
-      setStyles(aspectRatioContainer as HTMLElement, { width: "", height: "" });
+      setStyles(aspectRatioContainer as HTMLElement, {
+        width: "",
+        height: "",
+      });
       setStyles(videoElement as HTMLElement, {
         width: "",
         height: "",
@@ -244,25 +269,37 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
     };
   }, [fillWidthHeight]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.addedNodes.length > 0) {
-          const controlClasses = [
-            ".c-PJLV.c-hqBLfr.c-PJLV-bDGmTT-display-shown",
-            ".c-PJLV.c-hmIsCl.c-PJLV-bDGmTT-display-shown",
-            ".c-PJLV.c-lkuDVF.c-PJLV-bDGmTT-display-shown",
-            "c-PJLV.c-kjUhxK.c-PJLV-cCitdK-display-hidden",
-          ];
+          const parentDiv = document.querySelector(
+            ".livepeer-aspect-ratio-container",
+          );
 
-          controlClasses.forEach((className: string) => {
-            const control = document.querySelector(className);
-            if (control) {
-              (control as HTMLElement).style.display = customControls
-                ? "none"
-                : "block";
+          if (parentDiv) {
+            const videoTag = parentDiv.querySelector("video");
+
+            if (videoTag) {
+              let sibling = videoTag.nextElementSibling;
+              let divsAfterVideo = [];
+              let count = 0;
+
+              while (sibling && count < 4) {
+                if (sibling.tagName.toLowerCase() === "div") {
+                  divsAfterVideo.push(sibling);
+                  count++;
+                }
+                sibling = sibling.nextElementSibling;
+              }
+
+              divsAfterVideo.forEach((div) => {
+                (div as HTMLElement).style.display = customControls
+                  ? "none"
+                  : "block";
+              });
             }
-          });
+          }
         }
       });
     });

@@ -14,6 +14,9 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
 
   mapping(uint256 => string) private _tokenURIs;
 
+  error userNotQuestParticipant();
+  error userNotEligible();
+
   modifier onlyUserQuestCompleted(
     address _userPKPAddress,
     uint256 _questId,
@@ -30,10 +33,9 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
         break;
       }
     }
-    require(
-      _questParticipant,
-      "Kinora721QuestReward: User is not part of Quest."
-    );
+    if (!_questParticipant) {
+      revert userNotQuestParticipant();
+    }
     bool _questCompleted = false;
     for (
       uint256 i = 0;
@@ -55,10 +57,11 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
         break;
       }
     }
-    require(
-      _questCompleted,
-      "Kinora721QuestReward: Only an eligible User can mint."
-    );
+
+    if (!_questCompleted) {
+      revert userNotEligible();
+    }
+
     _;
   }
 

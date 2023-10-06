@@ -25,6 +25,9 @@ contract KinoraFactory {
   string public symbol;
   uint256 private _kinoraIDCount;
 
+  error pkpAlreadyMapped();
+  error userNotAdmin();
+
   struct Kinora {
     address[5] contracts;
     bytes32 playbackIdsString;
@@ -45,10 +48,9 @@ contract KinoraFactory {
   mapping(address => Kinora) private _deployerPKPToKinora;
 
   modifier onlyAdmin() {
-    require(
-      IKinoraAccessControl(_globalAccessControl).isAdmin(msg.sender),
-      "GlobalKinoraAccessControl: Admin Only."
-    );
+    if (!IKinoraAccessControl(_globalAccessControl).isAdmin(msg.sender)) {
+      revert userNotAdmin();
+    }
     _;
   }
 
@@ -61,10 +63,9 @@ contract KinoraFactory {
   }
 
   function deployFromKinoraFactory(address _pkpAddress) public {
-    require(
-      _deployerPKPToKinora[_pkpAddress].kinoraID == 0,
-      "KinoraFactory: PKP already mapped to contract factory."
-    );
+    if (_deployerPKPToKinora[_pkpAddress].kinoraID != 0) {
+      revert pkpAlreadyMapped();
+    }
 
     (
       address _newKAC,

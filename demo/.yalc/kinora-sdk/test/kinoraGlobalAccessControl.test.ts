@@ -50,14 +50,16 @@ xdescribe("Kinora Global Access Control Contract", () => {
     it("Should not add an existing admin or the contract owner", async () => {
       await expect(
         kinoraGlobalAccessControl.connect(admin1).addAdmin(admin1.address),
-      ).to.be.revertedWith(
-        "KinoraGlobalAccessControl: Cannot add existing admin or yourself.",
+      ).to.be.revertedWithCustomError(
+        { interface: kinoraGlobalAccessControl.interface },
+        "adminAlreadyExists",
       );
       await kinoraGlobalAccessControl.connect(admin1).addAdmin(admin2.address);
       await expect(
         kinoraGlobalAccessControl.connect(admin1).addAdmin(admin2.address),
-      ).to.be.revertedWith(
-        "KinoraGlobalAccessControl: Cannot add existing admin or yourself.",
+      ).to.be.revertedWithCustomError(
+        { interface: kinoraGlobalAccessControl.interface },
+        "adminAlreadyExists",
       );
     });
 
@@ -78,12 +80,16 @@ xdescribe("Kinora Global Access Control Contract", () => {
     it("Should not remove a non-existing admin or the contract owner", async () => {
       await expect(
         kinoraGlobalAccessControl.connect(admin1).removeAdmin(admin1.address),
-      ).to.be.revertedWith(
-        "KinoraGlobalAccessControl: Cannot remove yourself as admin.",
+      ).to.be.revertedWithCustomError(
+        { interface: kinoraGlobalAccessControl.interface },
+        "cantRemoveSelf",
       );
       await expect(
         kinoraGlobalAccessControl.connect(admin1).removeAdmin(nonAdmin.address),
-      ).to.be.revertedWith("KinoraGlobalAccessControl: Admin doesn't exist.");
+      ).to.be.revertedWithCustomError(
+        { interface: kinoraGlobalAccessControl.interface },
+        "adminDoesntExist",
+      );
     });
   });
 
@@ -91,13 +97,15 @@ xdescribe("Kinora Global Access Control Contract", () => {
     it("Should restrict non-admins from adding or removing admins", async () => {
       await expect(
         kinoraGlobalAccessControl.connect(nonAdmin).addAdmin(admin2.address),
-      ).to.be.revertedWith(
-        "KinoraGlobalAccessControl: Only admins can perform this action.",
+      ).to.be.revertedWithCustomError(
+        { interface: kinoraGlobalAccessControl.interface },
+        "userNotAdmin",
       );
       await expect(
         kinoraGlobalAccessControl.connect(nonAdmin).removeAdmin(admin1.address),
-      ).to.be.revertedWith(
-        "KinoraGlobalAccessControl: Only admins can perform this action.",
+      ).to.be.revertedWithCustomError(
+        { interface: kinoraGlobalAccessControl.interface },
+        "userNotAdmin",
       );
     });
   });
