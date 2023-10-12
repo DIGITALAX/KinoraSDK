@@ -1,10 +1,9 @@
 import { gql } from "@apollo/client";
 import { authClient } from "../client";
 
-export const LENS_VALUES = `query($pubId: PubId, $profileId: ProfileId) Publication {
-    publication(request: {
-      publicationId: $pubId
-    }) {
+export const LENS_VALUES = `query {
+  Publication($request: request, $profileId: ProfileId) {
+    publication(request: $request) {
      __typename 
       ... on Post {
         bookmarked(by: $profileId)
@@ -15,13 +14,19 @@ export const LENS_VALUES = `query($pubId: PubId, $profileId: ProfileId) Publicat
         mirrors(by: $profileId)
       }
     }
-  }`;
+  }
+}`;
 
-const getLensValues = (pubId: string, profileId: string) => {
+const getLensValues = (
+  request: {
+    publicationId: string;
+  },
+  profileId: string,
+) => {
   return authClient.query({
     query: gql(LENS_VALUES),
     variables: {
-      pubId,
+      request,
       profileId,
     },
   });

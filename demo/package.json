@@ -9,7 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@apollo/client": "^3.8.5",
     "@livepeer/react": "^2.8.8",
+    "graphql": "^16.8.1",
     "kinora-sdk": "file:.yalc/kinora-sdk",
     "next": "13.5.4",
     "react": "^18",

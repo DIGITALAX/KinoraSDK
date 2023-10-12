@@ -2225,7 +2225,9 @@ export class Sequence extends EventEmitter {
 
         if (this.userProfileId) {
           const { data } = await getLensValues(
-            this.lensPubId,
+            {
+              publicationId: this.lensPubId,
+            },
             this.userProfileId,
           );
 
@@ -2319,7 +2321,9 @@ export class Sequence extends EventEmitter {
       } else {
         if (this.userProfileId) {
           const { data } = await getLensValues(
-            this.lensPubId,
+            {
+              publicationId: this.lensPubId,
+            },
             this.userProfileId,
           );
 
