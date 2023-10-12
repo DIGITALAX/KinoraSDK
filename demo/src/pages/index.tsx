@@ -1,23 +1,23 @@
 "use client";
- 
+
 import {
   Player,
   LivepeerConfig,
   createReactClient,
   studioProvider,
-} from "@livepeer/react"; 
+} from "@livepeer/react";
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
 
 const KinoraPlayerWrapper = dynamic(
-  () => import('kinora-sdk').then((mod) => mod.KinoraPlayerWrapper),
-  { ssr: false }  
+  () => import("kinora-sdk").then((mod) => mod.KinoraPlayerWrapper),
+  { ssr: false },
 );
 
-const client = createReactClient({ 
+const client = createReactClient({
   provider: studioProvider({
     apiKey: process.env.REACT_APP_LIVEPEER_STUDIO_KEY!,
-  }), 
+  }),
 });
 
 export default function Home() {
@@ -60,9 +60,9 @@ export default function Home() {
               onSeeked={handleSeek}
               volume={volume}
               seekTo={seekTo}
-              play={isPlaying} 
-              fillWidthHeight 
-              fullscreen={fullScreen} 
+              play={isPlaying}
+              fillWidthHeight
+              fullscreen={fullScreen}
               customControls={true}
               onTimeUpdate={(e) =>
                 setCurrentTime((e.target as any).currentTime)
@@ -70,6 +70,8 @@ export default function Home() {
               onCanPlayThrough={(e) => {
                 setDuration((e.target as any).duration);
               }}
+              pubId="0x016305-0xd4"
+              onLensVideoData={(data, error) => console.log({ data, error })}
             >
               {(setMediaElement: (node: HTMLVideoElement) => void) => (
                 <Player

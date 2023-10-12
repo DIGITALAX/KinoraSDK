@@ -18,7 +18,6 @@ export const IPFS_HASH_NEW_USER: string =
 
 export const CHAIN: string = "mumbai";
 
-
 export const DENO_BUNDLED = `function decode(b64) {
   const binString = atob(b64);
   const size = binString.length;
@@ -2733,4 +2732,4 @@ const mod = {
   _wasmModule: _wasmModule,
   _wasmInstance: _wasmInstance,
   _wasmBytes: data
-};`
+};`;

@@ -1,11 +1,14 @@
+import { ApolloError } from "@apollo/client";
 import React, {
   useEffect,
   useCallback,
   useState,
   useLayoutEffect,
 } from "react";
+import getVideoData from "./../apollo/queries/getVideoData";
+import { Mirror, Publication } from "src/@types/generated";
 
-const isBrowser = typeof window !== 'undefined';
+const isBrowser = typeof window !== "undefined";
 
 type KinoraPlayerWrapperProps = {
   onPlay?: (event: Event) => void;
@@ -31,6 +34,10 @@ type KinoraPlayerWrapperProps = {
   onVolumeChange?: (event: Event) => void;
   onWaiting?: (event: Event) => void;
   onFullScreenChange?: (event: Event) => void;
+  onLensVideoData?: (
+    data: Publication | Mirror | Comment,
+    error: ApolloError | undefined,
+  ) => void;
   volume?: { level: number; id: number };
   seekTo?: { time: number; id: number };
   play?: boolean;
@@ -38,6 +45,8 @@ type KinoraPlayerWrapperProps = {
   fullscreen?: boolean;
   fillWidthHeight?: boolean;
   customControls?: boolean;
+  pubId?: string;
+  userId?: string;
   children: (
     setMediaElement: (node: HTMLVideoElement) => void,
   ) => React.ReactNode;
@@ -51,7 +60,10 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
   pause = true,
   customControls = true,
   fillWidthHeight = false,
+  pubId,
+  userId,
   children,
+  onLensVideoData,
   ...props
 }) => {
   if (!isBrowser) return null;
@@ -159,6 +171,22 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
     },
     [children, props, mediaElementRef.current],
   );
+
+  useEffect(() => {
+    if (onLensVideoData && pubId) {
+      const handleVideoLensData = async () => {
+        const { data, error } = await getVideoData(
+          {
+            publicationId: pubId,
+          },
+          userId,
+        );
+        onLensVideoData(data, error);
+      };
+
+      handleVideoLensData();
+    }
+  }, [onLensVideoData, pubId]);
 
   useEffect(() => {
     const mediaElement = mediaElementRef.current;
