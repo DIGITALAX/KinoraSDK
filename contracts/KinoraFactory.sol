@@ -45,7 +45,7 @@ contract KinoraFactory {
     address _deployerAddress,
     uint256 _profileId,
     uint256 _pubId
-  ) external {
+  ) external returns (address, address) {
     if (_deployerPKPToKinora[_pkpAddress].profileId != 0) {
       revert KinoraErrors.PkpExists();
     }
@@ -80,6 +80,8 @@ contract KinoraFactory {
       _newKQ,
       _newKE
     );
+
+    return (_newKQ, _newKE);
   }
 
   function _deploySuite(
