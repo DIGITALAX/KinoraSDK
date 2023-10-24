@@ -4,263 +4,198 @@ pragma solidity ^0.8.19;
 
 import "./KinoraAccessControl.sol";
 import "./KinoraQuest.sol";
-import "./Kinora721QuestReward.sol";
+import "./KinoraLibrary.sol";
+import "./KinoraNFTCreator.sol";
+import "./KinoraQuestData.sol";
+import "./KinoraErrors.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract KinoraEscrow is Initializable {
-  KinoraAccessControl private _accessControl;
-  KinoraQuest private _quest;
-  address private _factory;
-  Kinora721QuestReward private _721QuestReward;
+  string public name;
+  string public symbol;
+  KinoraAccessControl public accessControl;
+  KinoraQuest public quest;
+  KinoraQuestData public kinoraQuestData;
+  KinoraNFTCreator public kinoraNFTCreator;
+  address public factory;
+  address public kinoraOpenAction;
 
-  error onlyAdminOrQuest();
-  error questDoesntExist();
-  error tokenAlreadyExists();
-  error tokenDoesntExist();
-  error onlyAdminOrPKP();
-  error onlyKinoraFactory();
-  error insufficientBalance();
+  mapping(uint256 => mapping(uint256 => mapping(address => uint256)))
+    private _questMilestoneERC20Deposit;
+  mapping(uint256 => mapping(uint256 => string))
+    private _questMilestoneERC721Deposit;
 
-  struct ERC20Token {
-    uint256 _amount;
-    bool _tokenExists;
-  }
-
-  struct ERC721Token {
-    string _uri;
-    bool _tokenExists;
-  }
-
-  function initialize(
-    address _accessControlAddress,
-    address _factoryAddress
-  ) public {
-    _accessControl = KinoraAccessControl(_accessControlAddress);
-    _factory = _factoryAddress;
-  }
-
-  mapping(uint256 => mapping(uint256 => mapping(address => ERC20Token)))
-    private _questMilestoneIdToERC20Deposit;
-  mapping(uint256 => mapping(uint256 => ERC721Token))
-    private _questMilestoneIdToERC721Deposit;
-
-  modifier onlyAdminOrKinoraQuest() {
-    if (!_accessControl.isAdmin(msg.sender) && msg.sender != address(_quest)) {
-      revert onlyAdminOrQuest();
+  modifier onlyOpenAction() {
+    if (msg.sender != kinoraOpenAction) {
+      revert KinoraErrors.InvalidContract();
     }
     _;
   }
 
-  modifier onlyPKPOrAdmin() {
-    if (
-      !_accessControl.isAdmin(msg.sender) &&
-      msg.sender != _accessControl.getAssignedPKPAddress()
-    ) {
-      revert onlyAdminOrPKP();
+  modifier onlyKinoraQuest() {
+    if (msg.sender != address(quest)) {
+      revert KinoraErrors.InvalidContract();
     }
     _;
   }
 
   modifier onlyFactory() {
-    if (msg.sender != _factory) {
-      revert onlyKinoraFactory();
+    if (msg.sender != factory) {
+      revert KinoraErrors.InvalidContract();
     }
-
     _;
   }
 
   event ERC20Deposited(
-    address indexed tokenAddress,
+    address tokenAddress,
     uint256 amount,
-    uint256 questId,
-    uint256 milestoneId
+    uint256 pubId,
+    uint256 milestone
   );
-  event ERC721URISet(string uri, uint256 questId, uint256 milestoneId);
-  event ERC20DepositUpdated(
-    address indexed tokenAddress,
-    uint256 amount,
-    uint256 questId,
-    uint256 milestoneId
+  event ERC721URISet(string uri, uint256 pubId, uint256 milestone);
+  event ERC20Withdrawn(address toAddress, uint256 pubId, uint256 milestone);
+  event EmergencyERC20Withdrawn(
+    address toAddress,
+    uint256 pubId,
+    uint256 milestone
   );
-  event ERC721URISetUpdated(string uri, uint256 questId, uint256 milestoneId);
-  event ERC20Withdrawn(
-    address indexed user,
-    address indexed tokenAddress,
-    uint256 amount,
-    uint256 questId,
-    uint256 milestoneId
-  );
+  event ERC721Minted(address playerAddress, uint256 pubId, uint256 milestone);
+
+  function initialize(
+    address _accessControlAddress,
+    address _factoryAddress,
+    address _kinoraQuestDataAddress,
+    address _kinoraNFTCreatorAddress,
+    address _kinoraOpenActionAddress
+  ) public {
+    name = "KinoraEscrow";
+    symbol = "KES";
+    accessControl = KinoraAccessControl(_accessControlAddress);
+    factory = _factoryAddress;
+    kinoraQuestData = KinoraQuestData(_kinoraQuestDataAddress);
+    kinoraNFTCreator = KinoraNFTCreator(_kinoraNFTCreatorAddress);
+    kinoraOpenAction = _kinoraOpenActionAddress;
+  }
 
   function depositERC20(
     address _tokenAddress,
+    address _fromAddress,
     uint256 _amount,
-    uint256 _questId,
-    uint256 _milestoneId
-  ) public onlyPKPOrAdmin {
-    if (_quest.getQuestId(_questId) == 0) {
-      revert questDoesntExist();
-    }
-    if (
-      _questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
-        ._tokenExists
-    ) {
-      revert tokenAlreadyExists();
-    }
-    IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _amount);
+    uint256 _pubId,
+    uint256 _milestone
+  ) external onlyOpenAction {
+    IERC20(_tokenAddress).transferFrom(_fromAddress, address(this), _amount);
 
-    _questMilestoneIdToERC20Deposit[_questId][_milestoneId][
-      _tokenAddress
-    ] = ERC20Token({_tokenExists: true, _amount: _amount});
+    _questMilestoneERC20Deposit[_pubId][_milestone][_tokenAddress] = _amount;
 
-    emit ERC20Deposited(_tokenAddress, _amount, _questId, _milestoneId);
-  }
-
-  function updateDepositERC20(
-    address _tokenAddress,
-    uint256 _questId,
-    uint256 _milestoneId,
-    uint256 _amount
-  ) public onlyPKPOrAdmin {
-    if (
-      !_questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
-        ._tokenExists
-    ) {
-      revert tokenDoesntExist();
-    }
-
-    IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _amount);
-
-    _questMilestoneIdToERC20Deposit[_questId][_milestoneId][
-      _tokenAddress
-    ] = ERC20Token({_tokenExists: true, _amount: _amount});
-
-    emit ERC20DepositUpdated(_tokenAddress, _amount, _questId, _milestoneId);
+    emit ERC20Deposited(_tokenAddress, _amount, _pubId, _milestone);
   }
 
   function withdrawERC20(
-    address _userAddress,
-    address _tokenAddress,
-    uint256 _amount,
-    uint256 _milestoneId,
-    uint256 _questId
-  ) public onlyAdminOrKinoraQuest {
+    address _toAddress,
+    uint256 _pubId,
+    uint256 _milestone
+  ) external onlyKinoraQuest {
+    uint256 _profileId = accessControl.getProfileId();
     if (
-      _questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
-        ._amount < _amount
+      kinoraQuestData.getQuestStatus(_profileId, _pubId) !=
+      KinoraLibrary.Status.Open
     ) {
-      revert insufficientBalance();
+      revert KinoraErrors.QuestClosed();
     }
 
-    IERC20(_tokenAddress).transfer(_userAddress, _amount);
+    _erc20Transfer(_toAddress, _pubId, _milestone, _profileId);
 
-    _questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
-      ._amount -= _amount;
+    emit ERC20Withdrawn(_toAddress, _pubId, _milestone);
+  }
 
-    emit ERC20Withdrawn(
-      _userAddress,
-      _tokenAddress,
-      _amount,
-      _questId,
-      _milestoneId
-    );
+  function emergencyWithdrawERC20(
+    address _toAddress,
+    uint256 _pubId,
+    uint256 _milestone
+  ) public {
+    if (!accessControl.isAdmin(msg.sender)) {
+      revert KinoraErrors.OnlyAdmin();
+    }
+    uint256 _profileId = accessControl.getProfileId();
+
+    _erc20Transfer(_toAddress, _pubId, _milestone, _profileId);
+
+    kinoraQuestData.updateQuestStatus(_profileId, _pubId);
+
+    emit EmergencyERC20Withdrawn(_toAddress, _pubId, _milestone);
   }
 
   function depositERC721(
     string memory _uri,
-    uint256 _questId,
-    uint256 _milestoneId
-  ) public onlyPKPOrAdmin {
-    if (_quest.getQuestId(_questId) == 0) {
-      revert questDoesntExist();
-    }
-    if (_questMilestoneIdToERC721Deposit[_questId][_milestoneId]._tokenExists) {
-      revert tokenAlreadyExists();
-    }
+    uint256 _pubId,
+    uint256 _milestone
+  ) external onlyOpenAction {
+    _questMilestoneERC721Deposit[_pubId][_milestone] = _uri;
 
-    _questMilestoneIdToERC721Deposit[_questId][_milestoneId] = ERC721Token({
-      _tokenExists: true,
-      _uri: _uri
-    });
-
-    emit ERC721URISet(_uri, _questId, _milestoneId);
+    emit ERC721URISet(_uri, _pubId, _milestone);
   }
 
-  function updateDepositERC721(
-    string memory _uri,
-    uint256 _questId,
-    uint256 _milestoneId
-  ) public onlyPKPOrAdmin {
-    if (
-      !_questMilestoneIdToERC721Deposit[_questId][_milestoneId]._tokenExists
-    ) {
-      revert tokenDoesntExist();
-    }
+  function mintERC721(
+    address _playerAddress,
+    uint256 _profileId,
+    uint256 _pubId,
+    uint256 _milestone
+  ) external onlyKinoraQuest {
+    kinoraNFTCreator.mintToken(
+      _questMilestoneERC721Deposit[_pubId][_milestone],
+      _playerAddress,
+      _profileId,
+      _pubId
+    );
 
-    _questMilestoneIdToERC721Deposit[_questId][_milestoneId]._uri = _uri;
-
-    emit ERC721URISetUpdated(_uri, _questId, _milestoneId);
+    emit ERC721Minted(_playerAddress, _pubId, _milestone);
   }
 
   function setKinoraQuest(address _questContract) public onlyFactory {
-    _quest = KinoraQuest(_questContract);
+    quest = KinoraQuest(_questContract);
   }
 
-  function setKinora721QuestReward(
-    address _questRewardContract
-  ) public onlyFactory {
-    _721QuestReward = Kinora721QuestReward(_questRewardContract);
+  function _erc20Transfer(
+    address _toAddress,
+    uint256 _pubId,
+    uint256 _milestone,
+    uint256 _profileId
+  ) internal {
+    uint256 _amount = kinoraQuestData.getQuestMilestoneRewardTokenAmount(
+      _profileId,
+      _pubId,
+      _milestone
+    );
+    address _tokenAddress = kinoraQuestData.getQuestMilestoneRewardTokenAddress(
+      _profileId,
+      _pubId,
+      _milestone
+    );
+
+    if (_questMilestoneERC20Deposit[_pubId][_milestone][_toAddress] < _amount) {
+      revert KinoraErrors.InsufficientBalance();
+    }
+
+    IERC20(_tokenAddress).transfer(_toAddress, _amount);
+
+    _questMilestoneERC20Deposit[_pubId][_milestone][_tokenAddress] -= _amount;
   }
 
-  function getKinoraAccessControl() public view returns (address) {
-    return address(_accessControl);
-  }
-
-  function getKinoraQuest() public view returns (address) {
-    return address(_quest);
-  }
-
-  function getKinora721QuestReward() public view returns (address) {
-    return address(_721QuestReward);
-  }
-
-  function getKinoraFactory() public view returns (address) {
-    return _factory;
-  }
-
-  function getQuestMilestoneIdToERC20Amount(
+  function getQuestMilestoneERC20Amount(
     address _tokenAddress,
-    uint256 _questId,
-    uint256 _milestoneId
+    uint256 _pubId,
+    uint256 _milestone
   ) public view returns (uint256) {
-    return
-      _questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
-        ._amount;
+    return _questMilestoneERC20Deposit[_pubId][_milestone][_tokenAddress];
   }
 
-  function getQuestMilestoneIdToERC20Exists(
-    address _tokenAddress,
-    uint256 _questId,
-    uint256 _milestoneId
-  ) public view returns (bool) {
-    return
-      _questMilestoneIdToERC20Deposit[_questId][_milestoneId][_tokenAddress]
-        ._tokenExists;
-  }
-
-  function getQuestMilestoneIdToERC721Exists(
-    uint256 _questId,
-    uint256 _milestoneId
-  ) public view returns (bool) {
-    return
-      _questMilestoneIdToERC721Deposit[_questId][_milestoneId]._tokenExists;
-  }
-
-  function getQuestMilestoneIdToERC721URI(
-    uint256 _questId,
-    uint256 _milestoneId
+  function getQuestMilestoneERC721URI(
+    uint256 _pubId,
+    uint256 _milestone
   ) public view returns (string memory) {
-    return _questMilestoneIdToERC721Deposit[_questId][_milestoneId]._uri;
+    return _questMilestoneERC721Deposit[_pubId][_milestone];
   }
 }

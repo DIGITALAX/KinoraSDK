@@ -30,7 +30,6 @@ contract KinoraFactory {
 
   struct Kinora {
     address[5] contracts;
-    bytes32 playbackIdsString;
     address deployer;
     uint256 kinoraID;
   }
@@ -82,7 +81,6 @@ contract KinoraFactory {
 
     Kinora memory _newKinoraFactoryDetails = Kinora({
       kinoraID: _kinoraIDCount,
-      playbackIdsString: "",
       contracts: [_newKAC, _newKM, _newKQ, _newKE, _newKQR],
       deployer: msg.sender
     });
@@ -191,12 +189,6 @@ contract KinoraFactory {
     address _pkpAddress
   ) public view returns (address) {
     return _deployerPKPToKinora[_pkpAddress].deployer;
-  }
-
-  function getKinoraPlaybackIdsToPKP(
-    address _pkpAddress
-  ) public view returns (bytes32) {
-    return _deployerPKPToKinora[_pkpAddress].playbackIdsString;
   }
 
   function getGlobalAccessControlContract() public view returns (address) {

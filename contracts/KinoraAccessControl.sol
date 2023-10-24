@@ -3,18 +3,14 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./KinoraFactory.sol";
+import "./KinoraErrors.sol";
 
 contract KinoraAccessControl is Initializable {
   string public symbol;
   string public name;
-  KinoraFactory private _kinoraFactory;
+  KinoraFactory public kinoraFactory;
   address private _assignedPKPAddress;
-
-  error userNotAdmin();
-  error adminAlreadyExists();
-  error pkpAlreadyAssigned();
-  error adminDoesntExist();
-  error cantRemoveSelf();
+  uint256 private _profileId;
 
   mapping(address => bool) private _admins;
 
@@ -24,7 +20,7 @@ contract KinoraAccessControl is Initializable {
 
   modifier onlyAdmin() {
     if (!_admins[msg.sender]) {
-      revert userNotAdmin();
+      revert KinoraErrors.OnlyAdmin();
     }
     _;
   }
@@ -32,19 +28,21 @@ contract KinoraAccessControl is Initializable {
   function initialize(
     address _pkpAddress,
     address _deployerAdmin,
-    address _kinoraFactoryAddress
+    address _kinoraFactoryAddress,
+    uint256 _profile
   ) public {
     symbol = "KAC";
     name = "KinoraAccessControl";
-    _assignedPKPAddress = _pkpAddress;
+    kinoraFactory = KinoraFactory(_kinoraFactoryAddress);
     _admins[msg.sender] = true;
     _admins[_deployerAdmin] = true;
-    _kinoraFactory = KinoraFactory(_kinoraFactoryAddress);
+    _assignedPKPAddress = _pkpAddress;
+    _profileId = _profile;
   }
 
   function addAdmin(address _admin) external onlyAdmin {
     if (_admins[_admin]) {
-      revert adminAlreadyExists();
+      revert KinoraErrors.InvalidAddress();
     }
 
     _admins[_admin] = true;
@@ -52,11 +50,8 @@ contract KinoraAccessControl is Initializable {
   }
 
   function removeAdmin(address _admin) external onlyAdmin {
-    if (_admin == msg.sender) {
-      revert cantRemoveSelf();
-    }
-    if (!_admins[_admin]) {
-      revert adminDoesntExist();
+    if (_admin == msg.sender || !_admins[_admin]) {
+      revert KinoraErrors.InvalidAddress();
     }
     delete _admins[_admin];
     emit AdminRemoved(_admin);
@@ -65,8 +60,8 @@ contract KinoraAccessControl is Initializable {
   function updateAssignedPKPAddress(
     address _newAssignedPKPAddress
   ) public onlyAdmin {
-    if (_kinoraFactory.getKinoraIDToPKP(_newAssignedPKPAddress) != 0) {
-      revert pkpAlreadyAssigned();
+    if (kinoraFactory.getPKPToPubId(_newAssignedPKPAddress) != 0) {
+      revert KinoraErrors.PkpExists();
     }
     _assignedPKPAddress = _newAssignedPKPAddress;
     emit AssignedPKPAddressUpdated(_newAssignedPKPAddress);
@@ -76,11 +71,11 @@ contract KinoraAccessControl is Initializable {
     return _admins[_address];
   }
 
-  function getAssignedPKPAddress() public view returns (address) {
-    return _assignedPKPAddress;
+  function getProfileId() public view returns (uint256) {
+    return _profileId;
   }
 
-  function getFactoryAddress() public view returns (address) {
-    return address(_kinoraFactory);
+  function getAssignedPKPAddress() public view returns (address) {
+    return _assignedPKPAddress;
   }
 }
