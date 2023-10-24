@@ -68,12 +68,13 @@ contract KinoraQuest is Initializable {
   function initialize(
     address _accessControlAddress,
     address _escrowAddress,
-    address _kinoraQuestData
+    address _kinoraQuestDataAddress
   ) public {
     name = "KinoraQuest";
     symbol = "KQU";
     accessControl = KinoraAccessControl(_accessControlAddress);
     escrow = KinoraEscrow(_escrowAddress);
+    kinoraQuestData = KinoraQuestData(_kinoraQuestDataAddress);
   }
 
   function instantiateNewQuest(

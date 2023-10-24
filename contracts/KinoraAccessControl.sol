@@ -60,7 +60,7 @@ contract KinoraAccessControl is Initializable {
   function updateAssignedPKPAddress(
     address _newAssignedPKPAddress
   ) public onlyAdmin {
-    if (kinoraFactory.getPKPToPubId(_newAssignedPKPAddress) != 0) {
+    if (kinoraFactory.getPKPToProfileId(_newAssignedPKPAddress) != 0) {
       revert KinoraErrors.PkpExists();
     }
     _assignedPKPAddress = _newAssignedPKPAddress;
