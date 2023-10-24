@@ -82,7 +82,7 @@ contract KinoraQuest is Initializable {
     uint256 _maxPlayerCount,
     uint256 _pubId,
     uint256 _profileId
-  ) public onlyOpenAction {
+  ) external onlyOpenAction {
     kinoraQuestData.newQuest(
       _milestones,
       _joinHash,
@@ -108,7 +108,7 @@ contract KinoraQuest is Initializable {
     address _playerAddress,
     uint256 _pubId,
     uint256 _playerProfileId
-  ) public onlyOpenAction questOpen(_pubId) {
+  ) external onlyOpenAction questOpen(_pubId) {
     uint256 _profileId = accessControl.getProfileId();
     kinoraQuestData.joinQuest(
       _playerAddress,
@@ -124,7 +124,7 @@ contract KinoraQuest is Initializable {
     uint256 _pubId,
     uint256 _milestone,
     uint256 _playerProfileId
-  ) public onlyOpenAction questOpen(_pubId) {
+  ) external onlyOpenAction questOpen(_pubId) {
     uint256 _profileId = accessControl.getProfileId();
     address _playerAddress = kinoraQuestData.getPlayerAddress(_playerProfileId);
     if (
