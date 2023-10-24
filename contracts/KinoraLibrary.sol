@@ -29,6 +29,7 @@ contract KinoraLibrary {
     RewardType rewardType;
     address tokenAddress;
     uint256 amount;
+    string uri;
   }
   struct Milestone {
     Reward reward;
@@ -61,5 +62,20 @@ contract KinoraLibrary {
     uint256 profileId;
     uint256 pubId;
     bool encrypted;
+  }
+  struct InitializeAction {
+    address developerPKP;
+    bytes32 joinHash;
+    uint256 maxPlayerCount;
+  }
+  struct InitializeDeposit {
+    Milestone[] milestones;
+    bytes32 joinHash;
+    address escrowContract;
+    address questContract;
+    address questDeployer;
+    uint256 maxPlayerCount;
+    uint256 profileId;
+    uint256 pubId;
   }
 }

@@ -63,7 +63,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
     address questDeployer,
     uint256 profileId,
     uint256 pubId,
-    string joinHash
+    bytes32 joinHash
   );
   event MilestoneCompleted(
     uint256 playerProfileId,
@@ -96,57 +96,47 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
     bytes calldata _data
   ) external override onlyHub returns (bytes memory) {
     (
-      address _developerPKP,
-      KinoraLibrary.Milestone[] memory _milestones,
-      bytes32 _joinHash,
-      uint256 _maxPlayerCount
+      KinoraLibrary.InitializeAction memory _params,
+      KinoraLibrary.Milestone[] memory _milestones
     ) = abi.decode(
         _data,
-        (address, KinoraLibrary.Milestone[], bytes32, uint256)
+        (KinoraLibrary.InitializeAction, KinoraLibrary.Milestone[])
       );
+
     address _questContract;
     address _escrowContract;
-    if (_questDeployer != kinoraFactory.getPKPToDeployer(_developerPKP)) {
+    if (
+      _questDeployer != kinoraFactory.getPKPToDeployer(_params.developerPKP)
+    ) {
       (_questContract, _escrowContract) = kinoraFactory.deployFromKinoraFactory(
-        _developerPKP,
+        _params.developerPKP,
         _questDeployer,
         _profileId,
         _pubId
       );
     } else {
-      _questContract = kinoraFactory.getPKPToDeployedKinoraQuest(_developerPKP);
+      _questContract = kinoraFactory.getPKPToDeployedKinoraQuest(
+        _params.developerPKP
+      );
       _escrowContract = kinoraFactory.getPKPToDeployedKinoraEscrow(
-        _developerPKP
+        _params.developerPKP
       );
     }
 
-    for (uint256 i; i < _milestones.length; i++) {
-      if (_milestones[i].rewardType == KinoraLibrary.RewardType.ERC20) {
-        IKinoraEscrow(_escrowContract).depositERC20(
-          _milestones[i].tokenAddress,
-          _questDeployer,
-          _milestones[i].amount,
-          _pubId,
-          i + 1
-        );
-      } else {
-        IKinoraEscrow(_escrowContract).depositERC721(
-          _milestones[i].uri,
-          _pubId,
-          i + 1
-        );
-      }
-    }
-
-    IKinoraQuest(_questContract).instantiateNewQuest(
-      _milestones,
-      _joinHash,
-      _maxPlayerCount,
-      _pubId,
-      _profileId
+    _depositMilestoneRewards(
+      KinoraLibrary.InitializeDeposit({
+        milestones: _milestones,
+        joinHash: _params.joinHash,
+        escrowContract: _escrowContract,
+        questContract: _questContract,
+        questDeployer: _questDeployer,
+        maxPlayerCount: _params.maxPlayerCount,
+        profileId: _profileId,
+        pubId: _pubId
+      })
     );
 
-    emit QuestInitialized(_questDeployer, _profileId, _pubId, _joinHash);
+    emit QuestInitialized(_questDeployer, _profileId, _pubId, _params.joinHash);
 
     return _data;
   }
@@ -155,7 +145,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
     Types.ProcessActionParams calldata _params
   ) external override onlyHub returns (bytes memory) {
     (address _developerPKP, uint256 _milestone) = abi.decode(
-      _params,
+      _params.actionModuleData,
       (address, uint256)
     );
 
@@ -197,6 +187,39 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
       );
     }
 
-    return;
+    return abi.encode(_developerPKP, _milestone);
+  }
+
+  function _depositMilestoneRewards(
+    KinoraLibrary.InitializeDeposit memory _params
+  ) internal {
+    for (uint256 i; i < _params.milestones.length; i++) {
+      if (
+        _params.milestones[i].reward.rewardType ==
+        KinoraLibrary.RewardType.ERC20
+      ) {
+        IKinoraEscrow(_params.escrowContract).depositERC20(
+          _params.milestones[i].reward.tokenAddress,
+          _params.questDeployer,
+          _params.milestones[i].reward.amount,
+          _params.pubId,
+          i + 1
+        );
+      } else {
+        IKinoraEscrow(_params.escrowContract).depositERC721(
+          _params.milestones[i].reward.uri,
+          _params.pubId,
+          i + 1
+        );
+      }
+    }
+
+    IKinoraQuest(_params.questContract).instantiateNewQuest(
+      _params.milestones,
+      _params.joinHash,
+      _params.maxPlayerCount,
+      _params.pubId,
+      _params.profileId
+    );
   }
 }
