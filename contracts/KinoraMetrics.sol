@@ -2,111 +2,61 @@
 pragma solidity ^0.8.19;
 
 import "./KinoraAccessControl.sol";
+import "./KinoraLibrary.sol";
+import "./KinoraQuestData.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "./KinoraGlobalPKPDB.sol";
-
-library MetricsParamsLibrary {
-  struct MetricParams {
-    string playbackId;
-    string metricJSONHash;
-    bool encrypted;
-  }
-}
 
 contract KinoraMetrics is Initializable {
-  KinoraAccessControl private _accessControl;
-  KinoraGlobalPKPDB private _pkpDB;
+  string public name;
+  string public symbol;
+  KinoraAccessControl public accessControl;
+  KinoraQuestData public kinoraQuestData;
 
-  error pkpAccountNotActive();
-  error onlyPKP();
+  mapping(address => mapping(string => KinoraLibrary.PlayerLivePeerMetrics))
+    private _playerLivePeerMetricsByPlaybackId;
 
-  struct UserLivePeerMetrics {
-    string _playbackId;
-    string _metricJSONHash;
-    bool _encrypted;
-  }
-
-  mapping(address => mapping(string => UserLivePeerMetrics))
-    private _pkpToUserLivePeerMetricsByPlaybackId;
-
-  event AddUserPKP(address addedUserPKPAddress);
-  event RemoveUserPKP(address removedUserPKPAddress);
-  event AddUserMetrics(
+  event AddPlayerMetrics(
     string playbackId,
     string metricJSON,
-    address userPKPAddress,
+    uint256 playerProfileId,
     bool encrypted
   );
 
   modifier onlyDeveloperPKP() {
-    if (msg.sender != _accessControl.getAssignedPKPAddress()) {
-      revert onlyPKP();
+    if (msg.sender != accessControl.getAssignedPKPAddress()) {
+      revert KinoraErrors.OnlyPKP();
     }
     _;
   }
 
   function initialize(
     address _accessControlAddress,
-    address _pkpDBAddress
+    address _kinoraQuestDataAddress
   ) public {
-    _accessControl = KinoraAccessControl(_accessControlAddress);
-    _pkpDB = KinoraGlobalPKPDB(_pkpDBAddress);
+    name = "KinoraMetrics";
+    symbol = "KME";
+    accessControl = KinoraAccessControl(_accessControlAddress);
+    kinoraQuestData = KinoraQuestData(_kinoraQuestDataAddress);
   }
 
-  function addUserMetrics(
-    address _userPKPAddress,
-    MetricsParamsLibrary.MetricParams memory _args
+  function addPlayerMetrics(
+    string memory _playbackId,
+    string memory _json,
+    uint256 _playerProfileId,
+    uint256 _pubId,
+    bool _encrypted
   ) public onlyDeveloperPKP {
-    if (!_pkpDB.userExists(_userPKPAddress)) {
-      revert pkpAccountNotActive();
-    }
-    UserLivePeerMetrics memory _newUserLivePeerMetrics;
-    _newUserLivePeerMetrics = UserLivePeerMetrics({
-      _playbackId: _args.playbackId,
-      _metricJSONHash: _args.metricJSONHash,
-      _encrypted: _args.encrypted
-    });
+    uint256 _profileId = accessControl.getProfileId();
 
-    _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][
-      _args.playbackId
-    ] = _newUserLivePeerMetrics;
-
-    emit AddUserMetrics(
-      _args.playbackId,
-      _args.metricJSONHash,
-      _userPKPAddress,
-      _args.encrypted
+    kinoraQuestData.updatePlayerMetrics(
+      _playbackId,
+      _json,
+      _playerProfileId,
+      _profileId,
+      _pubId,
+      _encrypted
     );
-  }
 
-  function getUserEncryptedByPlaybackId(
-    address _userPKPAddress,
-    string memory _playbackId
-  ) public view returns (bool) {
-    return
-      _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
-        ._encrypted;
-  }
-
-  function getUserMetricsJSONHashByPlaybackId(
-    address _userPKPAddress,
-    string memory _playbackId
-  ) public view returns (string memory) {
-    return
-      _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
-        ._metricJSONHash;
-  }
-
-  function getUserPlaybackIdByPlaybackId(
-    address _userPKPAddress,
-    string memory _playbackId
-  ) public view returns (string memory) {
-    return
-      _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
-        ._playbackId;
-  }
-
-  function getKinoraAccessControl() public view returns (address) {
-    return address(_accessControl);
+    emit AddPlayerMetrics(_playbackId, _json, _playerProfileId, _encrypted);
   }
 }

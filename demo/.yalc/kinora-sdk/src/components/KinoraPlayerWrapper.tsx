@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useState,
   useLayoutEffect,
+  memo,
 } from "react";
 import getVideoData from "./../apollo/queries/getVideoData";
 import { Mirror, Publication } from "src/@types/generated";
@@ -52,292 +53,351 @@ type KinoraPlayerWrapperProps = {
   ) => React.ReactNode;
 };
 
-const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = ({
-  fullscreen = false,
-  seekTo = { time: 0, id: Math.random() },
-  volume = { level: 0.5, id: Math.random() },
-  play = false,
-  pause = true,
-  customControls = true,
-  fillWidthHeight = false,
-  pubId,
-  userId,
-  children,
-  onLensVideoData,
-  ...props
-}) => {
-  if (!isBrowser) return null;
-  const mediaElementRef = React.useRef<HTMLVideoElement>(null);
-  const [lastSeekId, setLastSeekId] = useState<number>(0);
-  const [lastVolumeId, setLastVolumeId] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const eventProps: string[] = [
-    "onAbort",
-    "onCanPlay",
-    "onCanPlayThrough",
-    "onDurationChange",
-    "onEmptied",
-    "onEnded",
-    "onError",
-    "onLoadedData",
-    "onLoadedMetadata",
-    "onLoadStart",
-    "onPause",
-    "onPlay",
-    "onPlaying",
-    "onProgress",
-    "onRateChange",
-    "onSeeked",
-    "onSeeking",
-    "onStalled",
-    "onSuspend",
-    "onTimeUpdate",
-    "onVolumeChange",
-    "onWaiting",
-    "onFullScreenChange",
-  ];
+const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
+  ({
+    fullscreen = false,
+    seekTo = { time: 0, id: Math.random() },
+    volume = { level: 0.5, id: Math.random() },
+    play = false,
+    pause = true,
+    customControls = true,
+    fillWidthHeight = false,
+    pubId,
+    userId,
+    children,
+    onLensVideoData,
+    ...props
+  }) => {
+    if (!isBrowser) return null;
+    const mediaElementRef = React.useRef<HTMLVideoElement>(null);
+    const [lastSeekId, setLastSeekId] = useState<number>(0);
+    const [lastVolumeId, setLastVolumeId] = useState<number>(0);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [lensProps, setLensProps] = useState<{
+      pubId: string | undefined;
+      userId: string | undefined;
+      onLensVideoData: (
+        data: Publication | Mirror | Comment,
+        error: ApolloError | undefined,
+      ) => void | undefined;
+    }>({
+      pubId: undefined,
+      userId: undefined,
+      onLensVideoData: undefined,
+    });
+    const eventProps: string[] = [
+      "onAbort",
+      "onCanPlay",
+      "onCanPlayThrough",
+      "onDurationChange",
+      "onEmptied",
+      "onEnded",
+      "onError",
+      "onLoadedData",
+      "onLoadedMetadata",
+      "onLoadStart",
+      "onPause",
+      "onPlay",
+      "onPlaying",
+      "onProgress",
+      "onRateChange",
+      "onSeeked",
+      "onSeeking",
+      "onStalled",
+      "onSuspend",
+      "onTimeUpdate",
+      "onVolumeChange",
+      "onWaiting",
+      "onFullScreenChange",
+    ];
 
-  const setMediaElement = useCallback(
-    (node: HTMLVideoElement | null) => {
-      if (node !== null) {
-        (mediaElementRef as any).current = node as HTMLVideoElement;
-      }
+    const setMediaElement = useCallback(
+      (node: HTMLVideoElement | null) => {
+        if (node !== null) {
+          (mediaElementRef as any).current = node as HTMLVideoElement;
+        }
 
-      const mediaElement = mediaElementRef.current;
-      if (!mediaElement) return;
+        const mediaElement = mediaElementRef.current;
+        if (!mediaElement) return;
 
-      const setupEventListeners = () => {
-        eventProps.forEach((key) => {
-          if (
-            typeof (props as any)[key] === "function" &&
-            key !== "onPlay" &&
-            key !== "onPause"
-          ) {
-            mediaElement.addEventListener(
-              key.toLowerCase().substring(2),
-              (props as any)[key],
-            );
-          }
-        });
-
-        const handlePlay = (e: Event) => {
-          setIsPlaying(true);
-          if (typeof props.onPlay === "function") {
-            props.onPlay(e);
-          }
-        };
-
-        const handlePause = (e: Event) => {
-          setIsPlaying(false);
-          if (typeof props.onPause === "function") {
-            props.onPause(e);
-          }
-        };
-
-        mediaElement.addEventListener("play", handlePlay);
-        mediaElement.addEventListener("pause", handlePause);
-
-        // Cleanup
-        return () => {
+        const setupEventListeners = () => {
           eventProps.forEach((key) => {
             if (
               typeof (props as any)[key] === "function" &&
               key !== "onPlay" &&
               key !== "onPause"
             ) {
-              mediaElement.removeEventListener(
+              mediaElement.addEventListener(
                 key.toLowerCase().substring(2),
                 (props as any)[key],
               );
             }
           });
-          mediaElement.removeEventListener("play", handlePlay);
-          mediaElement.removeEventListener("pause", handlePause);
-        };
-      };
 
-      if (mediaElement) {
-        if (mediaElement.readyState >= 1) {
-          return setupEventListeners();
-        } else {
-          mediaElement.addEventListener("loadedmetadata", setupEventListeners);
-          return () =>
-            mediaElement.removeEventListener(
+          const handlePlay = (e: Event) => {
+            setIsPlaying(true);
+            if (typeof props.onPlay === "function") {
+              props.onPlay(e);
+            }
+          };
+
+          const handlePause = (e: Event) => {
+            setIsPlaying(false);
+            if (typeof props.onPause === "function") {
+              props.onPause(e);
+            }
+          };
+
+          mediaElement.addEventListener("play", handlePlay);
+          mediaElement.addEventListener("pause", handlePause);
+
+          // Cleanup
+          return () => {
+            eventProps.forEach((key) => {
+              if (
+                typeof (props as any)[key] === "function" &&
+                key !== "onPlay" &&
+                key !== "onPause"
+              ) {
+                mediaElement.removeEventListener(
+                  key.toLowerCase().substring(2),
+                  (props as any)[key],
+                );
+              }
+            });
+            mediaElement.removeEventListener("play", handlePlay);
+            mediaElement.removeEventListener("pause", handlePause);
+          };
+        };
+
+        if (mediaElement) {
+          if (mediaElement.readyState >= 1) {
+            return setupEventListeners();
+          } else {
+            mediaElement.addEventListener(
               "loadedmetadata",
               setupEventListeners,
             );
-        }
-      }
-    },
-    [children, props, mediaElementRef.current],
-  );
-
-  useEffect(() => {
-    if (onLensVideoData && pubId) {
-      const handleVideoLensData = async () => {
-        const { data, error } = await getVideoData(
-          {
-            publicationId: pubId,
-          },
-          userId,
-        );
-        onLensVideoData(data, error);
-      };
-
-      handleVideoLensData();
-    }
-  }, [onLensVideoData, pubId]);
-
-  useEffect(() => {
-    const mediaElement = mediaElementRef.current;
-    if (mediaElement) {
-      if (play && !isPlaying) {
-        mediaElement.play().catch((error) => {
-          console.error("Error on play from KinoraPlayerWrapper: ", error);
-        });
-        setIsPlaying(true);
-      } else if (pause && isPlaying) {
-        mediaElement.pause();
-        setIsPlaying(false);
-      }
-    }
-  }, [play, pause]);
-
-  useEffect(() => {
-    const mediaElement = mediaElementRef.current;
-    if (mediaElement && isFinite(volume.level) && volume.id !== lastVolumeId) {
-      mediaElement.volume = Math.min(Math.max(volume.level, 0), 1);
-      setLastVolumeId(volume.id);
-    }
-  }, [volume]);
-
-  useEffect(() => {
-    const mediaElement = mediaElementRef.current;
-    if (fullscreen && mediaElement) {
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else {
-        mediaElement.requestFullscreen();
-      }
-    }
-  }, [fullscreen]);
-
-  useEffect(() => {
-    const mediaElement = mediaElementRef.current;
-    if (
-      mediaElement &&
-      isFinite(seekTo.time) &&
-      seekTo.id !== lastSeekId &&
-      seekTo.time >= 0 &&
-      isFinite(mediaElement.duration)
-    ) {
-      mediaElement.currentTime = Math.min(seekTo.time, mediaElement.duration);
-      setLastSeekId(seekTo.id);
-    }
-  }, [seekTo]);
-
-  useEffect(() => {
-    const livepeerContainer = document.querySelector(
-      ".livepeer-contents-container",
-    );
-    const aspectRatioContainer = document.querySelector(
-      ".livepeer-aspect-ratio-container",
-    );
-    const videoElement = document.querySelector(".c-lioqzt");
-
-    const setStyles = (
-      element: HTMLElement | null,
-      styles: Record<string, string>,
-    ) => {
-      if (element) {
-        Object.keys(styles).forEach((key) => {
-          (element.style as any)[key] = styles[key];
-        });
-      }
-    };
-
-    if (fillWidthHeight) {
-      setStyles(livepeerContainer as HTMLElement, {
-        width: "100%",
-        height: "100%",
-      });
-      setStyles(aspectRatioContainer as HTMLElement, {
-        width: "100%",
-        height: "100%",
-      });
-      setStyles(videoElement as HTMLElement, {
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
-      });
-    } else {
-      setStyles(livepeerContainer as HTMLElement, { width: "", height: "" });
-      setStyles(aspectRatioContainer as HTMLElement, {
-        width: "",
-        height: "",
-      });
-      setStyles(videoElement as HTMLElement, {
-        width: "",
-        height: "",
-        objectFit: "",
-      });
-    }
-
-    return () => {
-      setStyles(livepeerContainer as HTMLElement, { width: "", height: "" });
-      setStyles(aspectRatioContainer as HTMLElement, {
-        width: "",
-        height: "",
-      });
-      setStyles(videoElement as HTMLElement, {
-        width: "",
-        height: "",
-        objectFit: "",
-      });
-    };
-  }, [fillWidthHeight]);
-
-  useLayoutEffect(() => {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.addedNodes.length > 0) {
-          const parentDiv = document.querySelector(
-            ".livepeer-aspect-ratio-container",
-          );
-
-          if (parentDiv) {
-            const videoTag = parentDiv.querySelector("video");
-
-            if (videoTag) {
-              let sibling = videoTag.nextElementSibling;
-              let divsAfterVideo = [];
-              let count = 0;
-
-              while (sibling && count < 4) {
-                if (sibling.tagName.toLowerCase() === "div") {
-                  divsAfterVideo.push(sibling);
-                  count++;
-                }
-                sibling = sibling.nextElementSibling;
-              }
-
-              divsAfterVideo.forEach((div) => {
-                (div as HTMLElement).style.display = customControls
-                  ? "none"
-                  : "block";
-              });
-            }
+            return () =>
+              mediaElement.removeEventListener(
+                "loadedmetadata",
+                setupEventListeners,
+              );
           }
         }
+      },
+      [children, props, mediaElementRef.current],
+    );
+
+    useEffect(() => {
+      if (onLensVideoData && pubId) {
+        if (
+          !handleIsEqual(lensProps, {
+            pubId,
+            userId,
+            onLensVideoData,
+          })
+        ) {
+          handleVideoLensData();
+          setLensProps({
+            pubId,
+            userId,
+            onLensVideoData,
+          });
+        }
+      }
+    }, [onLensVideoData, pubId, userId]);
+
+    useEffect(() => {
+      const mediaElement = mediaElementRef.current;
+      if (mediaElement) {
+        if (play && !isPlaying) {
+          mediaElement.play().catch((error) => {
+            console.error("Error on play from KinoraPlayerWrapper: ", error);
+          });
+          setIsPlaying(true);
+        } else if (pause && isPlaying) {
+          mediaElement.pause();
+          setIsPlaying(false);
+        }
+      }
+    }, [play, pause]);
+
+    useEffect(() => {
+      const mediaElement = mediaElementRef.current;
+      if (
+        mediaElement &&
+        isFinite(volume.level) &&
+        volume.id !== lastVolumeId
+      ) {
+        mediaElement.volume = Math.min(Math.max(volume.level, 0), 1);
+        setLastVolumeId(volume.id);
+      }
+    }, [volume]);
+
+    useEffect(() => {
+      const mediaElement = mediaElementRef.current;
+      if (fullscreen && mediaElement) {
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          mediaElement.requestFullscreen();
+        }
+      }
+    }, [fullscreen]);
+
+    useEffect(() => {
+      const mediaElement = mediaElementRef.current;
+      if (
+        mediaElement &&
+        isFinite(seekTo.time) &&
+        seekTo.id !== lastSeekId &&
+        seekTo.time >= 0 &&
+        isFinite(mediaElement.duration)
+      ) {
+        mediaElement.currentTime = Math.min(seekTo.time, mediaElement.duration);
+        setLastSeekId(seekTo.id);
+      }
+    }, [seekTo]);
+
+    useEffect(() => {
+      const livepeerContainer = document.querySelector(
+        ".livepeer-contents-container",
+      );
+      const aspectRatioContainer = document.querySelector(
+        ".livepeer-aspect-ratio-container",
+      );
+      const videoElement = document.querySelector(".c-lioqzt");
+
+      const setStyles = (
+        element: HTMLElement | null,
+        styles: Record<string, string>,
+      ) => {
+        if (element) {
+          Object.keys(styles).forEach((key) => {
+            (element.style as any)[key] = styles[key];
+          });
+        }
+      };
+
+      if (fillWidthHeight) {
+        setStyles(livepeerContainer as HTMLElement, {
+          width: "100%",
+          height: "100%",
+        });
+        setStyles(aspectRatioContainer as HTMLElement, {
+          width: "100%",
+          height: "100%",
+        });
+        setStyles(videoElement as HTMLElement, {
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+        });
+      } else {
+        setStyles(livepeerContainer as HTMLElement, { width: "", height: "" });
+        setStyles(aspectRatioContainer as HTMLElement, {
+          width: "",
+          height: "",
+        });
+        setStyles(videoElement as HTMLElement, {
+          width: "",
+          height: "",
+          objectFit: "",
+        });
+      }
+
+      return () => {
+        setStyles(livepeerContainer as HTMLElement, { width: "", height: "" });
+        setStyles(aspectRatioContainer as HTMLElement, {
+          width: "",
+          height: "",
+        });
+        setStyles(videoElement as HTMLElement, {
+          width: "",
+          height: "",
+          objectFit: "",
+        });
+      };
+    }, [fillWidthHeight]);
+
+    useLayoutEffect(() => {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes.length > 0) {
+            const parentDiv = document.querySelector(
+              ".livepeer-aspect-ratio-container",
+            );
+
+            if (parentDiv) {
+              const videoTag = parentDiv.querySelector("video");
+
+              if (videoTag) {
+                let sibling = videoTag.nextElementSibling;
+                let divsAfterVideo = [];
+                let count = 0;
+
+                while (sibling && count < 4) {
+                  if (sibling.tagName.toLowerCase() === "div") {
+                    divsAfterVideo.push(sibling);
+                    count++;
+                  }
+                  sibling = sibling.nextElementSibling;
+                }
+
+                divsAfterVideo.forEach((div) => {
+                  (div as HTMLElement).style.display = customControls
+                    ? "none"
+                    : "block";
+                });
+              }
+            }
+          }
+        });
       });
-    });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+      observer.observe(document.body, { childList: true, subtree: true });
 
-    return () => observer.disconnect();
-  }, [customControls]);
+      return () => observer.disconnect();
+    }, [customControls]);
 
-  return <>{children(setMediaElement)}</>;
-};
+    const handleIsEqual = (
+      prevProps: {
+        pubId: string;
+        userId: string;
+        onLensVideoData: (
+          data: Publication | Mirror | Comment,
+          error: ApolloError | undefined,
+        ) => void;
+      },
+      nextProps: {
+        pubId: string;
+        userId: string;
+        onLensVideoData: (
+          data: Publication | Mirror | Comment,
+          error: ApolloError | undefined,
+        ) => void;
+      },
+    ): boolean => {
+      return (
+        prevProps.pubId === nextProps.pubId &&
+        prevProps.onLensVideoData === nextProps.onLensVideoData &&
+        prevProps.userId === nextProps.userId
+      );
+    };
+
+    const handleVideoLensData = async (): Promise<void> => {
+      const { data, error } = await getVideoData(
+        {
+          publicationId: pubId,
+        },
+        userId,
+      );
+      onLensVideoData(data, error);
+    };
+
+    return <>{children(setMediaElement)}</>;
+  },
+);
 
 export default KinoraPlayerWrapper;
