@@ -1,5 +1,10 @@
 [
   {
+    "inputs": [],
+    "name": "OnlyPKP",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -16,9 +21,9 @@
       },
       {
         "indexed": false,
-        "internalType": "address",
-        "name": "userPKPAddress",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "playerProfileId",
+        "type": "uint256"
       },
       {
         "indexed": false,
@@ -27,20 +32,7 @@
         "type": "bool"
       }
     ],
-    "name": "AddUserMetrics",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "addedUserPKPAddress",
-        "type": "address"
-      }
-    ],
-    "name": "AddUserPKP",
+    "name": "AddPlayerMetrics",
     "type": "event"
   },
   {
@@ -57,59 +49,11 @@
     "type": "event"
   },
   {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "removedUserPKPAddress",
-        "type": "address"
-      }
-    ],
-    "name": "RemoveUserPKP",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_userPKPAddress",
-        "type": "address"
-      },
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "playbackId",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "metricJSONHash",
-            "type": "string"
-          },
-          {
-            "internalType": "bool",
-            "name": "encrypted",
-            "type": "bool"
-          }
-        ],
-        "internalType": "struct MetricsParamsLibrary.MetricParams",
-        "name": "_args",
-        "type": "tuple"
-      }
-    ],
-    "name": "addUserMetrics",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
-    "name": "getKinoraAccessControl",
+    "name": "accessControl",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "contract KinoraAccessControl",
         "name": "",
         "type": "address"
       }
@@ -120,73 +64,34 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_userPKPAddress",
-        "type": "address"
-      },
-      {
         "internalType": "string",
         "name": "_playbackId",
         "type": "string"
-      }
-    ],
-    "name": "getUserEncryptedByPlaybackId",
-    "outputs": [
+      },
+      {
+        "internalType": "string",
+        "name": "_json",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
       {
         "internalType": "bool",
-        "name": "",
+        "name": "_encrypted",
         "type": "bool"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_userPKPAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "_playbackId",
-        "type": "string"
-      }
-    ],
-    "name": "getUserMetricsJSONHashByPlaybackId",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_userPKPAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "_playbackId",
-        "type": "string"
-      }
-    ],
-    "name": "getUserPlaybackIdByPlaybackId",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
+    "name": "addPlayerMetrics",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -198,13 +103,52 @@
       },
       {
         "internalType": "address",
-        "name": "_pkpDBAddress",
+        "name": "_kinoraQuestDataAddress",
         "type": "address"
       }
     ],
     "name": "initialize",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraQuestData",
+    "outputs": [
+      {
+        "internalType": "contract KinoraQuestData",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "name",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   }
 ]

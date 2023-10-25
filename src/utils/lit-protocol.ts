@@ -22,7 +22,7 @@ import {
   ContractABI,
   GeneratedTxData,
   LitAuthSig,
-  UserMetrics,
+  PlayerMetrics,
 } from "./../../src/@types/kinora-sdk";
 import { IRelayPKP, SessionSigs } from "@lit-protocol/types";
 
@@ -210,10 +210,10 @@ export const hashHex = (input: string): string => {
 };
 
 export const encryptMetrics = async (
-  metrics: UserMetrics,
-  developerPKPAddress: `0x${string}`,
-  userPKPAddress: `0x${string}`,
-  userPKPAuthSig: LitAuthSig,
+  metrics: PlayerMetrics,
+  questInvokerPKPAddress: `0x${string}`,
+  playerPKPAddress: `0x${string}`,
+  playerPKPAuthSig: LitAuthSig,
   litNodeClient: LitJsSdk.LitNodeClient,
 ): Promise<{
   encryptedString?: string;
@@ -229,10 +229,10 @@ export const encryptMetrics = async (
             standardContractType: "",
             chain: "polygon",
             method: "",
-            parameters: [":userAddress"],
+            parameters: [":playerAddress"],
             returnValueTest: {
               comparator: "=",
-              value: developerPKPAddress.toLowerCase(),
+              value: questInvokerPKPAddress.toLowerCase(),
             },
           },
           {
@@ -240,14 +240,14 @@ export const encryptMetrics = async (
             standardContractType: "",
             chain: "polygon",
             method: "",
-            parameters: [":userAddress"],
+            parameters: [":playerAddress"],
             returnValueTest: {
               comparator: "=",
-              value: userPKPAddress?.toLowerCase(),
+              value: playerPKPAddress?.toLowerCase(),
             },
           },
         ],
-        authSig: userPKPAuthSig,
+        authSig: playerPKPAuthSig,
         chain: "polygon",
         dataToEncrypt: JSON.stringify(metrics),
       },
@@ -314,9 +314,9 @@ export const getSessionSig = async (
 
 export const decryptMetrics = async (
   encryptMetrics: { ciphertext: string; dataToEncryptHash: string },
-  developerPKPAddress: `0x${string}`,
-  userPKPAddress: `0x${string}`,
-  userPKPAuthSig: LitAuthSig,
+  questInvokerPKPAddress: `0x${string}`,
+  playerPKPAddress: `0x${string}`,
+  playerPKPAuthSig: LitAuthSig,
   litNodeClient: LitJsSdk.LitNodeClient,
 ): Promise<{ decryptedString?: string; error?: boolean; message?: string }> => {
   try {
@@ -328,10 +328,10 @@ export const decryptMetrics = async (
             standardContractType: "",
             chain: "polygon",
             method: "",
-            parameters: [":userAddress"],
+            parameters: [":playerAddress"],
             returnValueTest: {
               comparator: "=",
-              value: developerPKPAddress.toLowerCase(),
+              value: questInvokerPKPAddress.toLowerCase(),
             },
           },
           {
@@ -339,16 +339,16 @@ export const decryptMetrics = async (
             standardContractType: "",
             chain: "polygon",
             method: "",
-            parameters: [":userAddress"],
+            parameters: [":playerAddress"],
             returnValueTest: {
               comparator: "=",
-              value: userPKPAddress?.toLowerCase(),
+              value: playerPKPAddress?.toLowerCase(),
             },
           },
         ],
         ciphertext: encryptMetrics.ciphertext,
         dataToEncryptHash: encryptMetrics.dataToEncryptHash,
-        authSig: userPKPAuthSig,
+        authSig: playerPKPAuthSig,
         chain: "polygon",
       },
       litNodeClient,
@@ -392,13 +392,11 @@ export const assignLitAction = async (
   bytesHash: string,
 ): Promise<{ txHash?: string; error?: boolean; message?: string }> => {
   try {
-    console.log("before");
     const addedLitActionTx = await pkpPermissionsContract.addPermittedAction(
       tokenId,
       bytesHash,
       [],
     );
-    console.log("here");
     return { txHash: addedLitActionTx };
   } catch (err: any) {
     return {
@@ -540,7 +538,7 @@ export const getLitActionCodeForMilestoneCompletion = (
   `;
 };
 
-export const getLitActionCodeForAddUserMetrics = (
+export const getLitActionCodeForAddPlayerMetrics = (
   conditionalHash: string,
   contractAddress: string,
 ): string => {

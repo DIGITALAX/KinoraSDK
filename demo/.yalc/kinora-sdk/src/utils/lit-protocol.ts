@@ -211,7 +211,7 @@ export const hashHex = (input: string): string => {
 
 export const encryptMetrics = async (
   metrics: UserMetrics,
-  developerPKPAddress: `0x${string}`,
+  questInvokerPKPAddress: `0x${string}`,
   userPKPAddress: `0x${string}`,
   userPKPAuthSig: LitAuthSig,
   litNodeClient: LitJsSdk.LitNodeClient,
@@ -232,7 +232,7 @@ export const encryptMetrics = async (
             parameters: [":userAddress"],
             returnValueTest: {
               comparator: "=",
-              value: developerPKPAddress.toLowerCase(),
+              value: questInvokerPKPAddress.toLowerCase(),
             },
           },
           {
@@ -314,7 +314,7 @@ export const getSessionSig = async (
 
 export const decryptMetrics = async (
   encryptMetrics: { ciphertext: string; dataToEncryptHash: string },
-  developerPKPAddress: `0x${string}`,
+  questInvokerPKPAddress: `0x${string}`,
   userPKPAddress: `0x${string}`,
   userPKPAuthSig: LitAuthSig,
   litNodeClient: LitJsSdk.LitNodeClient,
@@ -331,7 +331,7 @@ export const decryptMetrics = async (
             parameters: [":userAddress"],
             returnValueTest: {
               comparator: "=",
-              value: developerPKPAddress.toLowerCase(),
+              value: questInvokerPKPAddress.toLowerCase(),
             },
           },
           {

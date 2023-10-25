@@ -19,7 +19,7 @@ contract KinoraErrors {
   error UserNotMaintainer();
   error QuestClosed();
   error InsufficientBalance();
-  error PlayerNotEligible();
+  error PlayerNotElegible();
   error MaxPlayerCountReached();
   error MilestoneInvalid();
 }

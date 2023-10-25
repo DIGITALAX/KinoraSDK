@@ -1,7 +1,6 @@
-export const KINORA_PKP_DB_CONTRACT: `0x${string}` =
-  "0x8Af27590B7B9527518549b84962D1E1Dd464C31D";
-export const KINORA_FACTORY_CONTRACT: `0x${string}` =
-  "0xdFf27C77d9aD5cf78960c2a2063517Ecd99FB35a";
+export const KINORA_OPEN_ACTION_CONTRACT: `0x${string}` = "0x";
+export const KINORA_FACTORY_CONTRACT: `0x${string}` = "0x";
+export const KINORA_QUEST_DATA_CONTRACT: `0x${string}` = "0x";
 export const CHRONICLE_PKP_CONTRACT: `0x${string}` =
   "0x8F75a53F65e31DD0D2e40d0827becAaE2299D111";
 export const CHRONICLE_PKP_PERMISSIONS_CONTRACT: `0x${string}` =

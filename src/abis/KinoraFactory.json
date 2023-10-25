@@ -3,17 +3,27 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_accessControlsAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_pkpDBAddress",
+        "name": "_openActionAddress",
         "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyAdmin",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PkpExists",
+    "type": "error"
   },
   {
     "anonymous": false,
@@ -47,12 +57,6 @@
         "internalType": "address",
         "name": "escrowAddress",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "questRewardAddress",
-        "type": "address"
       }
     ],
     "name": "KinoraFactoryDeployed",
@@ -64,98 +68,42 @@
         "internalType": "address",
         "name": "_pkpAddress",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_deployerAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
       }
     ],
     "name": "deployFromKinoraFactory",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_pkpAddress",
-        "type": "address"
-      }
-    ],
-    "name": "getDeployedKinoraAccessControlToPKP",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_pkpAddress",
-        "type": "address"
-      }
-    ],
-    "name": "getDeployedKinoraEscrowToPKP",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_pkpAddress",
-        "type": "address"
-      }
-    ],
-    "name": "getDeployedKinoraMetricsToPKP",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_pkpAddress",
-        "type": "address"
-      }
-    ],
-    "name": "getDeployedKinoraQuestRewardToPKP",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_pkpAddress",
-        "type": "address"
-      }
-    ],
-    "name": "getDeployedKinoraQuestToPKP",
+    "inputs": [],
+    "name": "factoryMaintainer",
     "outputs": [
       {
         "internalType": "address",
@@ -186,34 +134,14 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getGlobalAccessControlContract",
-    "outputs": [
+    "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "_pkpAddress",
         "type": "address"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getGlobalPKPDBContract",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getKinoraAccessControlLogicAddress",
+    "name": "getPKPToDeployedKinoraAccessControl",
     "outputs": [
       {
         "internalType": "address",
@@ -232,7 +160,7 @@
         "type": "address"
       }
     ],
-    "name": "getKinoraDeployerToPKP",
+    "name": "getPKPToDeployedKinoraEscrow",
     "outputs": [
       {
         "internalType": "address",
@@ -244,8 +172,14 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getKinoraEscrowLogicAddress",
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_pkpAddress",
+        "type": "address"
+      }
+    ],
+    "name": "getPKPToDeployedKinoraMetrics",
     "outputs": [
       {
         "internalType": "address",
@@ -257,8 +191,52 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getKinoraIDCount",
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_pkpAddress",
+        "type": "address"
+      }
+    ],
+    "name": "getPKPToDeployedKinoraQuest",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_pkpAddress",
+        "type": "address"
+      }
+    ],
+    "name": "getPKPToDeployer",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_pkpAddress",
+        "type": "address"
+      }
+    ],
+    "name": "getPKPToProfileId",
     "outputs": [
       {
         "internalType": "uint256",
@@ -270,59 +248,8 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_pkpAddress",
-        "type": "address"
-      }
-    ],
-    "name": "getKinoraIDToPKP",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [],
-    "name": "getKinoraMetricsLogicAddress",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_pkpAddress",
-        "type": "address"
-      }
-    ],
-    "name": "getKinoraPlaybackIdsToPKP",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getKinoraQuestLogicAddress",
+    "name": "kinoraAccessControl",
     "outputs": [
       {
         "internalType": "address",
@@ -335,10 +262,75 @@
   },
   {
     "inputs": [],
-    "name": "getKinoraQuestRewardLogicAddress",
+    "name": "kinoraEscrow",
     "outputs": [
       {
         "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraMetrics",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraNFTCreator",
+    "outputs": [
+      {
+        "internalType": "contract KinoraNFTCreator",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraOpenAction",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraQuest",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraQuestData",
+    "outputs": [
+      {
+        "internalType": "contract KinoraQuestData",
         "name": "",
         "type": "address"
       }
@@ -357,32 +349,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_newAccessControlAddress",
-        "type": "address"
-      }
-    ],
-    "name": "setGlobalAccessControl",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_newPKPDBAddress",
-        "type": "address"
-      }
-    ],
-    "name": "setGlobalPKPDBControl",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -409,7 +375,17 @@
       },
       {
         "internalType": "address",
-        "name": "_logicAddressQR",
+        "name": "_questDataAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_nftCreatorAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraOpenActionAddress",
         "type": "address"
       }
     ],

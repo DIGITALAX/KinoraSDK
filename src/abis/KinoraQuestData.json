@@ -1,0 +1,1071 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_factoryAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraOpenActionAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidContract",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MaxPlayerCountReached",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "profileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "metricsContract",
+        "type": "address"
+      }
+    ],
+    "name": "MetricsContractValidated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "profileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "MilestoneCompleted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "profileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "playerProfileId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PlayerJoinedQuest",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "playbackId",
+        "type": "string"
+      }
+    ],
+    "name": "PlayerMetricsUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "profileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "questContract",
+        "type": "address"
+      }
+    ],
+    "name": "QuestContractValidated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "profileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "milestoneCount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "joinHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "QuestInstantiated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "profileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum KinoraLibrary.Status",
+        "name": "status",
+        "type": "uint8"
+      }
+    ],
+    "name": "QuestStatusUpdated",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "completeMilestone",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "factoryContract",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPlayerAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPlayerHasJoinedQuest",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPlayerMilestonesCompletedPerQuest",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPlayerNumberOfPoints",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_playbackId",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPlayerPlaybackIdMetricsEncrypted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_playbackId",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPlayerPlaybackIdMetricsHash",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPlayerQuestsJoined",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestJoinHash",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestMaxPlayerCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestMilestoneCompletionHash",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestMilestoneCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestMilestoneNumberOfPoints",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestMilestoneRewardTokenAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestMilestoneRewardTokenAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestMilestoneRewardType",
+    "outputs": [
+      {
+        "internalType": "enum KinoraLibrary.RewardType",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestPlayers",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestProfileId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestPubId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestStatus",
+    "outputs": [
+      {
+        "internalType": "enum KinoraLibrary.Status",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTotalPlayerCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTotalQuestCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getValidMetricsContract",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getValidQuestContract",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_playerAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      }
+    ],
+    "name": "joinQuest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraOpenAction",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "name",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "enum KinoraLibrary.RewardType",
+                "name": "rewardType",
+                "type": "uint8"
+              },
+              {
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+              }
+            ],
+            "internalType": "struct KinoraLibrary.Reward",
+            "name": "reward",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "completionHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "numberOfPoints",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "milestone",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct KinoraLibrary.Milestone[]",
+        "name": "_milestones",
+        "type": "tuple[]"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_joinHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_maxPlayerCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      }
+    ],
+    "name": "newQuest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_newMetricsContract",
+        "type": "address"
+      }
+    ],
+    "name": "setValidMetricsContract",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_newQuestContract",
+        "type": "address"
+      }
+    ],
+    "name": "setValidQuestContract",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_playbackId",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_json",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_encrypted",
+        "type": "bool"
+      }
+    ],
+    "name": "updatePlayerMetrics",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "updateQuestStatus",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

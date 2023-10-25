@@ -1,16 +1,23 @@
 [
   {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "bytes32[]",
-        "name": "newCompletionHashes",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "CompletionHashesUpdated",
-    "type": "event"
+    "inputs": [],
+    "name": "InvalidAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MilestoneInvalid",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PlayerNotElegible",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "QuestClosed",
+    "type": "error"
   },
   {
     "anonymous": false,
@@ -30,28 +37,21 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "bytes32[]",
-        "name": "newJoinHashes",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "JoinHashesUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
         "internalType": "uint256",
-        "name": "questCount",
+        "name": "profileId",
         "type": "uint256"
       },
       {
         "indexed": false,
-        "internalType": "string",
-        "name": "uriDetails",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "milestoneCount",
+        "type": "uint256"
       },
       {
         "indexed": false,
@@ -60,104 +60,66 @@
         "type": "bytes32"
       }
     ],
-    "name": "QuestInstantiated",
+    "name": "NewQuestCreated",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
-        "name": "questId",
+        "name": "pubId",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "milestoneId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes32",
-        "name": "completionHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "QuestMilestoneAdded",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "questId",
+        "name": "milestone",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "milestoneId",
+        "name": "playerProfileId",
         "type": "uint256"
       }
     ],
-    "name": "QuestMilestoneRemoved",
+    "name": "PlayerCompleteQuestMilestone",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
-        "name": "questId",
+        "name": "pubId",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "milestoneId",
+        "name": "playerProfileId",
         "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes32",
-        "name": "completionHash",
-        "type": "bytes32"
       }
     ],
-    "name": "QuestMilestoneUpdated",
+    "name": "PlayerJoinQuest",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
-        "name": "questId",
+        "name": "profileId",
         "type": "uint256"
       },
       {
         "indexed": false,
-        "internalType": "enum KinoraQuest.Status",
-        "name": "status",
-        "type": "uint8"
-      }
-    ],
-    "name": "QuestStatusUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
         "internalType": "uint256",
-        "name": "questId",
+        "name": "pubId",
         "type": "uint256"
       }
     ],
@@ -165,130 +127,11 @@
     "type": "event"
   },
   {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "questId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "newUriDetails",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes32",
-        "name": "joinHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "QuestUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "questId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "milestoneId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "userAddress",
-        "type": "address"
-      }
-    ],
-    "name": "UserCompleteQuestMilestone",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "questId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "userAddress",
-        "type": "address"
-      }
-    ],
-    "name": "UserJoinQuest",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "enum KinoraQuest.RewardType",
-            "name": "_type",
-            "type": "uint8"
-          },
-          {
-            "internalType": "address",
-            "name": "_tokenAddress",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "_amount",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct KinoraQuest.Reward",
-        "name": "_questReward",
-        "type": "tuple"
-      },
-      {
-        "internalType": "string",
-        "name": "_uriDetails",
-        "type": "string"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "_completionHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_pointCount",
-        "type": "uint256"
-      }
-    ],
-    "name": "addQuestMilestone",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
-    "name": "getKinoraAccessControl",
+    "name": "accessControl",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "contract KinoraAccessControl",
         "name": "",
         "type": "address"
       }
@@ -298,414 +141,12 @@
   },
   {
     "inputs": [],
-    "name": "getKinoraEscrow",
+    "name": "escrow",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "contract KinoraEscrow",
         "name": "",
         "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getKinoraGlobalPKPDB",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestId",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestJoinHash",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestMaxParticipantCount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_milestoneId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestMilestoneCompletionHash",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestMilestoneCount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_milestoneId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestMilestoneNumberOfPoints",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_milestoneId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestMilestoneRewardTokenAddress",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_milestoneId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestMilestoneRewardTokenAmount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_milestoneId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestMilestoneRewardType",
-    "outputs": [
-      {
-        "internalType": "enum KinoraQuest.RewardType",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_milestoneId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestMilestoneStatus",
-    "outputs": [
-      {
-        "internalType": "enum KinoraQuest.Status",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_milestoneId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestMilestoneURIDetails",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestParticipants",
-    "outputs": [
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestStatus",
-    "outputs": [
-      {
-        "internalType": "enum KinoraQuest.Status",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestURIDetails",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getTotalQuestCount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getTotalUserCount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_userPKPAddress",
-        "type": "address"
-      }
-    ],
-    "name": "getUserId",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_userPKPAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getUserMilestonesCompletedPerQuest",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_userPKPAddress",
-        "type": "address"
-      }
-    ],
-    "name": "getUserQuestsJoined",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",
@@ -725,7 +166,7 @@
       },
       {
         "internalType": "address",
-        "name": "_pkpDBAddress",
+        "name": "_kinoraQuestDataAddress",
         "type": "address"
       }
     ],
@@ -737,9 +178,53 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "_uriDetails",
-        "type": "string"
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "enum KinoraLibrary.RewardType",
+                "name": "rewardType",
+                "type": "uint8"
+              },
+              {
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+              }
+            ],
+            "internalType": "struct KinoraLibrary.Reward",
+            "name": "reward",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "completionHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "numberOfPoints",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "milestone",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct KinoraLibrary.Milestone[]",
+        "name": "_milestones",
+        "type": "tuple[]"
       },
       {
         "internalType": "bytes32",
@@ -748,7 +233,17 @@
       },
       {
         "internalType": "uint256",
-        "name": "_maxParticipantCount",
+        "name": "_maxPlayerCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
         "type": "uint256"
       }
     ],
@@ -758,19 +253,63 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "kinoraOpenAction",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraQuestData",
+    "outputs": [
+      {
+        "internalType": "contract KinoraQuestData",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "name",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_questId",
+        "name": "_pubId",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_milestoneId",
+        "name": "_milestone",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
         "type": "uint256"
       }
     ],
-    "name": "removeQuestMilestone",
+    "name": "playerCompleteMilestone",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -778,232 +317,48 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "_playerAddress",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
-        "name": "_questId",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      }
+    ],
+    "name": "playerJoinQuest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
         "type": "uint256"
       }
     ],
     "name": "terminateQuest",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32[]",
-        "name": "_newCompletionHashes",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "updateAllCompletionHashes",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32[]",
-        "name": "_newJoinHashes",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "updateAllJoinHashes",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_newURIDetails",
-        "type": "string"
-      },
-      {
-        "internalType": "enum KinoraQuest.RewardType",
-        "name": "_newType",
-        "type": "uint8"
-      },
-      {
-        "internalType": "address",
-        "name": "_newTokenAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "_completionHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_milestoneId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_newPoints",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_newAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "updateMilestoneDetails",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_newURIDetails",
-        "type": "string"
-      },
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "_uriDetails",
-            "type": "string"
-          },
-          {
-            "components": [
-              {
-                "internalType": "enum KinoraQuest.RewardType",
-                "name": "_type",
-                "type": "uint8"
-              },
-              {
-                "internalType": "address",
-                "name": "_tokenAddress",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "_amount",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct KinoraQuest.Reward",
-            "name": "_reward",
-            "type": "tuple"
-          },
-          {
-            "internalType": "enum KinoraQuest.Status",
-            "name": "_status",
-            "type": "uint8"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "_completionHash",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "uint256",
-            "name": "_numberOfPoints",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "_milestoneId",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct KinoraQuest.Milestone[]",
-        "name": "_newMilestones",
-        "type": "tuple[]"
-      },
-      {
-        "internalType": "enum KinoraQuest.Status",
-        "name": "_newStatus",
-        "type": "uint8"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "_joinHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_newMaxParticipantCount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      }
-    ],
-    "name": "updateQuestDetails",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "enum KinoraQuest.Status",
-        "name": "_newStatus",
-        "type": "uint8"
-      }
-    ],
-    "name": "updateQuestStatus",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_milestoneId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "_userPKPAddress",
-        "type": "address"
-      }
-    ],
-    "name": "userCompleteMilestone",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "_userPKPAddress",
-        "type": "address"
-      }
-    ],
-    "name": "userJoinQuest",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
