@@ -50,7 +50,7 @@ export type LitAuthSig = {
   address: string;
 };
 
-export interface UserMetrics {
+export interface PlayerMetrics {
   rawTotalDuration: number;
   rawPlayCount: number;
   rawPauseCount: number;
@@ -89,22 +89,7 @@ export interface Reward {
   amount: number;
 }
 
-export interface QuestURI {
-  questCoverImage: string;
-  questDescription: string;
-  questTitle: string;
-  joinCondition: QuestEligibility;
-}
-
-export interface MilestoneURI {
-  milestoneCoverImage: string;
-  milestoneDescription: string;
-  milestoneTitle: string;
-  completionCondition: QuestEligibility;
-}
-
 export interface Milestone {
-  uriDetails: MilestoneURI;
   completionHash: Bytes;
   reward: Reward;
   numberOfPoints: number;

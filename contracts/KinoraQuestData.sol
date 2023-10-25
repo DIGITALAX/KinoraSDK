@@ -52,6 +52,13 @@ contract KinoraQuestData {
     uint256 playerProfileId,
     uint256 milestone
   );
+  event PlayerMilestoneEligibilityUpdated(
+    uint256 playerProfileId,
+    uint256 profileId,
+    uint256 pubId,
+    uint256 milestone,
+    bool eligibility
+  );
 
   modifier onlyValidQuestContract(uint256 _profileId, uint256 _pubId) {
     if (_validQuestContract[_profileId][_pubId] != msg.sender) {
@@ -188,6 +195,26 @@ contract KinoraQuestData {
     emit QuestContractValidated(_profileId, _pubId, _newQuestContract);
   }
 
+  function updatePlayerMilestoneEligibility(
+    uint256 _playerProfileId,
+    uint256 _profileId,
+    uint256 _pubId,
+    uint256 _milestone,
+    bool _eligibility
+  ) external onlyValidMetricsContract(_profileId, _pubId) {
+    _allPlayers[_playerProfileId].elegibleToClaimMilestone[_profileId][_pubId][
+        _milestone
+      ] = _eligibility;
+
+    emit PlayerMilestoneEligibilityUpdated(
+      _playerProfileId,
+      _profileId,
+      _pubId,
+      _milestone,
+      _eligibility
+    );
+  }
+
   function updateQuestStatus(
     uint256 _profileId,
     uint256 _pubId
@@ -231,6 +258,18 @@ contract KinoraQuestData {
       _allPlayers[_playerProfileId].milestonesCompletedPerQuest[
         _questProfileId
       ][_pubId];
+  }
+
+  function getPlayerElegibleToClaimMilestone(
+    uint256 _playerProfileId,
+    uint256 _questProfileId,
+    uint256 _pubId,
+    uint256 _milestone
+  ) public view returns (bool) {
+    return
+      _allPlayers[_playerProfileId].elegibleToClaimMilestone[_questProfileId][
+        _pubId
+      ][_milestone];
   }
 
   function getPlayerPlaybackIdMetricsEncrypted(

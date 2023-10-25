@@ -26,7 +26,7 @@ xdescribe("Node Functions", () => {
     175177,
   );
 
-  describe("Developer Factory Contract Deploy", () => {
+  describe("QuestInvoker Factory Contract Deploy", () => {
     before(async () => {
       signer = new ethers.Wallet(process.env.PRIVATE_KEY!, chronicleProvider);
       noProvider = new Sequence({ signer });
@@ -35,7 +35,7 @@ xdescribe("Node Functions", () => {
         rpcURL: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_MUMBAI_KEY}`,
       });
 
-      results = await newSequence.developerFactoryContractDeploy();
+      results = await newSequence.questInvokerFactoryContractDeploy();
 
       factoryContract = new ethers.Contract(
         KINORA_FACTORY_CONTRACT,
@@ -53,7 +53,7 @@ xdescribe("Node Functions", () => {
       expect(results.multihashDevKey).to.be.a("string");
     });
 
-    it("Mints developer PKP", async () => {
+    it("Mints questInvoker PKP", async () => {
       expect(results).to.have.property("pkpEthAddress");
       expect(results).to.have.property("pkpPublicKey");
       expect(results).to.have.property("pkpTokenId");
@@ -107,7 +107,7 @@ xdescribe("Node Functions", () => {
       let error: any;
 
       try {
-        await noProvider.developerFactoryContractDeploy();
+        await noProvider.questInvokerFactoryContractDeploy();
       } catch (err: any) {
         error = err.message;
       }

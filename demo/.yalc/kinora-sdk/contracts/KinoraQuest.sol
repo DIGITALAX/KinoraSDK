@@ -17,7 +17,7 @@ contract KinoraQuest is Initializable {
   error onlyAssignedPKP();
   error questClosed();
   error questDoesntExist();
-  error userNotEligible();
+  error userNotElegible();
   error maxParticipantCountReached();
   error userDoesntExist();
   error rewardNotAvailable();
@@ -68,14 +68,14 @@ contract KinoraQuest is Initializable {
   mapping(uint256 => Quest) private _allQuests;
   mapping(address => User) private _allUsers;
 
-  modifier onlyDeveloperPKP() {
+  modifier onlyQuestInvokerPKP() {
     if (msg.sender != _accessControl.getAssignedPKPAddress()) {
       revert onlyAssignedPKP();
     }
     _;
   }
 
-  modifier onlyDeveloperPKPOrAdmin() {
+  modifier onlyQuestInvokerPKPOrAdmin() {
     if (
       msg.sender != _accessControl.getAssignedPKPAddress() &&
       !_accessControl.isAdmin(msg.sender)
@@ -140,7 +140,7 @@ contract KinoraQuest is Initializable {
     string memory _uriDetails,
     bytes32 _joinHash,
     uint256 _maxParticipantCount
-  ) public onlyDeveloperPKP {
+  ) public onlyQuestInvokerPKP {
     _questCount++;
     address[] memory _emptyParticipants;
     Milestone[] memory _emptyMilestones;
@@ -166,7 +166,7 @@ contract KinoraQuest is Initializable {
     bytes32 _joinHash,
     uint256 _newMaxParticipantCount,
     uint256 _questId
-  ) public onlyDeveloperPKPOrAdmin {
+  ) public onlyQuestInvokerPKPOrAdmin {
     _allQuests[_questId]._uriDetails = _newURIDetails;
     _allQuests[_questId]._status = _newStatus;
     _allQuests[_questId]._maxParticipantCount = _newMaxParticipantCount;
@@ -187,7 +187,7 @@ contract KinoraQuest is Initializable {
     bytes32 _completionHash,
     uint256 _questId,
     uint256 _pointCount
-  ) public onlyDeveloperPKPOrAdmin questOpen(_questId) {
+  ) public onlyQuestInvokerPKPOrAdmin questOpen(_questId) {
     if (_allQuests[_questId]._questId == 0) {
       revert questDoesntExist();
     }
@@ -221,7 +221,7 @@ contract KinoraQuest is Initializable {
     uint256 _milestoneId,
     uint256 _newPoints,
     uint256 _newAmount
-  ) public onlyDeveloperPKPOrAdmin {
+  ) public onlyQuestInvokerPKPOrAdmin {
     if (_milestoneId <= 0) {
       revert invalidMilestoneId();
     }
@@ -257,7 +257,7 @@ contract KinoraQuest is Initializable {
   function removeQuestMilestone(
     uint256 _questId,
     uint256 _milestoneId
-  ) public onlyDeveloperPKPOrAdmin questOpen(_questId) {
+  ) public onlyQuestInvokerPKPOrAdmin questOpen(_questId) {
     if (
       _allQuests[_questId]._milestones[_milestoneId - 1]._status != Status.Open
     ) {
@@ -271,7 +271,7 @@ contract KinoraQuest is Initializable {
 
   function terminateQuest(
     uint256 _questId
-  ) public onlyDeveloperPKPOrAdmin questOpen(_questId) {
+  ) public onlyQuestInvokerPKPOrAdmin questOpen(_questId) {
     _allQuests[_questId]._status = Status.Closed;
 
     emit QuestTerminated(_questId);
@@ -280,7 +280,7 @@ contract KinoraQuest is Initializable {
   function updateQuestStatus(
     uint256 _questId,
     Status _newStatus
-  ) public onlyDeveloperPKPOrAdmin {
+  ) public onlyQuestInvokerPKPOrAdmin {
     _allQuests[_questId]._status = _newStatus;
 
     emit QuestStatusUpdated(_questId, _newStatus);
@@ -289,7 +289,7 @@ contract KinoraQuest is Initializable {
   function userJoinQuest(
     uint256 _questId,
     address _userPKPAddress
-  ) public onlyDeveloperPKP questOpen(_questId) {
+  ) public onlyQuestInvokerPKP questOpen(_questId) {
     if (!_pkpDB.userExists(_userPKPAddress)) {
       revert userDoesntExist();
     }
@@ -325,7 +325,7 @@ contract KinoraQuest is Initializable {
       _allUsers[_userPKPAddress]._questsJoined.push(_questId);
       _allQuests[_questId]._participants.push(_userPKPAddress);
     } else {
-      revert userNotEligible();
+      revert userNotElegible();
     }
 
     emit UserJoinQuest(_questId, _userPKPAddress);
@@ -335,7 +335,7 @@ contract KinoraQuest is Initializable {
     uint256 _questId,
     uint256 _milestoneId,
     address _userPKPAddress
-  ) public onlyDeveloperPKP questOpen(_questId) {
+  ) public onlyQuestInvokerPKP questOpen(_questId) {
     if (_milestoneId <= 0) {
       revert invalidMilestoneId();
     }
@@ -360,7 +360,7 @@ contract KinoraQuest is Initializable {
     }
 
     if (!_questParticipant) {
-      revert userNotEligible();
+      revert userNotElegible();
     }
 
     if (
@@ -400,7 +400,7 @@ contract KinoraQuest is Initializable {
         _milestoneId
       );
     } else {
-      revert("KinoraQuest: User not eligible to complete milestone.");
+      revert("KinoraQuest: User not elegible to complete milestone.");
     }
 
     emit UserCompleteQuestMilestone(_questId, _milestoneId, _userPKPAddress);
@@ -408,7 +408,7 @@ contract KinoraQuest is Initializable {
 
   function updateAllJoinHashes(
     bytes32[] memory _newJoinHashes
-  ) public onlyDeveloperPKPOrAdmin {
+  ) public onlyQuestInvokerPKPOrAdmin {
     if (_newJoinHashes.length != _questCount) {
       revert joinHashCountInvalid();
     }
@@ -421,7 +421,7 @@ contract KinoraQuest is Initializable {
 
   function updateAllCompletionHashes(
     bytes32[] memory _newCompletionHashes
-  ) public onlyDeveloperPKPOrAdmin {
+  ) public onlyQuestInvokerPKPOrAdmin {
     for (uint256 i = 0; i < _questCount; i++) {
       for (
         uint256 j = 0;

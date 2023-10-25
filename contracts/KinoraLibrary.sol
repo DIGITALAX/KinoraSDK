@@ -33,6 +33,7 @@ contract KinoraLibrary {
   }
   struct Milestone {
     Reward reward;
+    string completionCondition;
     bytes32 completionHash;
     uint256 numberOfPoints;
     uint256 milestone;
@@ -52,6 +53,7 @@ contract KinoraLibrary {
     mapping(uint256 => uint256[]) questsJoined;
     mapping(uint256 => mapping(uint256 => bool)) joinedQuest;
     mapping(uint256 => mapping(uint256 => mapping(string => PlayerLivePeerMetrics))) playbackIdMetrics;
+    mapping(uint256 => mapping(uint256 => mapping(uint256 => bool))) elegibleToClaimMilestone;
     address playerAddress;
     uint256 activeSince;
     uint256 totalPointCount;
@@ -64,7 +66,8 @@ contract KinoraLibrary {
     bool encrypted;
   }
   struct InitializeAction {
-    address developerPKP;
+    address questInvokerPKP;
+    address questInvoker;
     bytes32 joinHash;
     uint256 maxPlayerCount;
   }
@@ -73,7 +76,7 @@ contract KinoraLibrary {
     bytes32 joinHash;
     address escrowContract;
     address questContract;
-    address questDeployer;
+    address questInvoker;
     uint256 maxPlayerCount;
     uint256 profileId;
     uint256 pubId;

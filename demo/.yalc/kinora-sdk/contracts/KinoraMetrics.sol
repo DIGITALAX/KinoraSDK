@@ -38,7 +38,7 @@ contract KinoraMetrics is Initializable {
     bool encrypted
   );
 
-  modifier onlyDeveloperPKP() {
+  modifier onlyQuestInvokerPKP() {
     if (msg.sender != _accessControl.getAssignedPKPAddress()) {
       revert onlyPKP();
     }
@@ -56,7 +56,7 @@ contract KinoraMetrics is Initializable {
   function addUserMetrics(
     address _userPKPAddress,
     MetricsParamsLibrary.MetricParams memory _args
-  ) public onlyDeveloperPKP {
+  ) public onlyQuestInvokerPKP {
     if (!_pkpDB.userExists(_userPKPAddress)) {
       revert pkpAccountNotActive();
     }

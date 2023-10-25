@@ -5,8 +5,8 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 xdescribe("Kinora Global PKP Contract", () => {
   let admin: SignerWithAddress,
-    developerOne: SignerWithAddress,
-    developerPkpOne: SignerWithAddress,
+    questInvokerOne: SignerWithAddress,
+    questInvokerPkpOne: SignerWithAddress,
     userPkp: SignerWithAddress,
     userPkpThree: SignerWithAddress,
     kinoraGlobalAccessControl: Contract,
@@ -19,7 +19,7 @@ xdescribe("Kinora Global PKP Contract", () => {
     kinoraAccessControl: Contract;
 
   before(async () => {
-    [admin, developerOne, developerPkpOne, userPkp, userPkpThree] =
+    [admin, questInvokerOne, questInvokerPkpOne, userPkp, userPkpThree] =
       await ethers.getSigners();
 
     const KinoraGlobalAccessControl = await ethers.getContractFactory(
@@ -64,8 +64,8 @@ xdescribe("Kinora Global PKP Contract", () => {
     await kinoraGlobalPKPDB.setKinoraFactoyAddress(kinoraFactory.address);
 
     const tx = await kinoraFactory
-      .connect(developerOne)
-      .deployFromKinoraFactory(developerPkpOne.address);
+      .connect(questInvokerOne)
+      .deployFromKinoraFactory(questInvokerPkpOne.address);
     await tx.wait();
   });
 
@@ -80,7 +80,7 @@ xdescribe("Kinora Global PKP Contract", () => {
   describe("User management", () => {
     it("Should add a new user PKP", async () => {
       await kinoraGlobalPKPDB
-        .connect(developerPkpOne)
+        .connect(questInvokerPkpOne)
         .addUserPKP(userPkp.address);
       expect(await kinoraGlobalPKPDB.userExists(userPkp.address)).to.equal(
         true,
@@ -89,7 +89,7 @@ xdescribe("Kinora Global PKP Contract", () => {
 
     it("Should not add an existing user PKP", async () => {
       await expect(
-        kinoraGlobalPKPDB.connect(developerPkpOne).addUserPKP(userPkp.address),
+        kinoraGlobalPKPDB.connect(questInvokerPkpOne).addUserPKP(userPkp.address),
       ).to.be.revertedWithCustomError(
         { interface: kinoraGlobalPKPDB.interface },
         "userAlreadyExists",
@@ -98,12 +98,12 @@ xdescribe("Kinora Global PKP Contract", () => {
 
     it("Only admin can remove user", async () => {
       await kinoraGlobalPKPDB
-        .connect(developerPkpOne)
+        .connect(questInvokerPkpOne)
         .addUserPKP(userPkpThree.address);
 
       await expect(
         kinoraGlobalPKPDB
-          .connect(developerPkpOne)
+          .connect(questInvokerPkpOne)
           .removeUserPKP(userPkpThree.address),
       ).to.be.revertedWithCustomError(
         { interface: kinoraGlobalPKPDB.interface },

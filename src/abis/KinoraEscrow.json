@@ -1,0 +1,499 @@
+[
+  {
+    "inputs": [],
+    "name": "InsufficientBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidContract",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyAdmin",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "QuestClosed",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "ERC20Deposited",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "toAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "ERC20Withdrawn",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "playerAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "ERC721Minted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "uri",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "ERC721URISet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "toAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "EmergencyERC20Withdrawn",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "version",
+        "type": "uint8"
+      }
+    ],
+    "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "accessControl",
+    "outputs": [
+      {
+        "internalType": "contract KinoraAccessControl",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_fromAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "depositERC20",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "depositERC721",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_toAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "emergencyWithdrawERC20",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "factory",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestMilestoneERC20Amount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestMilestoneERC721URI",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_accessControlAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_factoryAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraQuestDataAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraNFTCreatorAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraOpenActionAddress",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraNFTCreator",
+    "outputs": [
+      {
+        "internalType": "contract KinoraNFTCreator",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraOpenAction",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraQuestData",
+    "outputs": [
+      {
+        "internalType": "contract KinoraQuestData",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_playerAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "mintERC721",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "name",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "quest",
+    "outputs": [
+      {
+        "internalType": "contract KinoraQuest",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_questContract",
+        "type": "address"
+      }
+    ],
+    "name": "setKinoraQuest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_toAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdrawERC20",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

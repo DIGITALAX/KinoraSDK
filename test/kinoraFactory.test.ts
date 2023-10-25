@@ -5,13 +5,13 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 xdescribe("Kinora Factory Contract", () => {
   let admin: SignerWithAddress,
-    developerOne: SignerWithAddress,
-    developerTwo: SignerWithAddress,
-    developerThree: SignerWithAddress,
-    developerPkpOne: SignerWithAddress,
-    developerPkpTwo: SignerWithAddress,
-    developerPkpThree: SignerWithAddress,
-    developerPkpFour: SignerWithAddress,
+    questInvokerOne: SignerWithAddress,
+    questInvokerTwo: SignerWithAddress,
+    questInvokerThree: SignerWithAddress,
+    questInvokerPkpOne: SignerWithAddress,
+    questInvokerPkpTwo: SignerWithAddress,
+    questInvokerPkpThree: SignerWithAddress,
+    questInvokerPkpFour: SignerWithAddress,
     userPkp: SignerWithAddress,
     userPKPTwo: SignerWithAddress,
     userPkpThree: SignerWithAddress,
@@ -34,13 +34,13 @@ xdescribe("Kinora Factory Contract", () => {
   before(async () => {
     [
       admin,
-      developerOne,
-      developerTwo,
-      developerThree,
-      developerPkpOne,
-      developerPkpTwo,
-      developerPkpThree,
-      developerPkpFour,
+      questInvokerOne,
+      questInvokerTwo,
+      questInvokerThree,
+      questInvokerPkpOne,
+      questInvokerPkpTwo,
+      questInvokerPkpThree,
+      questInvokerPkpFour,
       userPkp,
       userPKPTwo,
       userPkpThree,
@@ -92,8 +92,8 @@ xdescribe("Kinora Factory Contract", () => {
     await kinoraGlobalPKPDB.setKinoraFactoyAddress(kinoraFactory.address);
 
     const tx = await kinoraFactory
-      .connect(developerOne)
-      .deployFromKinoraFactory(developerPkpOne.address);
+      .connect(questInvokerOne)
+      .deployFromKinoraFactory(questInvokerPkpOne.address);
     const receipt = await tx.wait();
 
     const event = receipt.events.find(
@@ -112,10 +112,10 @@ xdescribe("Kinora Factory Contract", () => {
     );
 
     await testERC20
-      .connect(developerPkpFour)
+      .connect(questInvokerPkpFour)
       .approve(initiatedKinoraEscrow.address, 2000);
 
-    await testERC20.transfer(developerPkpFour.address, 2000);
+    await testERC20.transfer(questInvokerPkpFour.address, 2000);
   });
 
   describe("Set and update functions", () => {
@@ -175,50 +175,50 @@ xdescribe("Kinora Factory Contract", () => {
     it("Correctly updates the Kinora ID", async () => {
       expect(await kinoraFactory.getKinoraIDCount()).to.equal(1);
       expect(
-        await kinoraFactory.getKinoraIDToPKP(developerPkpOne.address),
+        await kinoraFactory.getKinoraIDToPKP(questInvokerPkpOne.address),
       ).to.equal(1);
     });
 
-    it("Correctly maps contracts to developer PKP", async () => {
+    it("Correctly maps contracts to questInvoker PKP", async () => {
       expect(
         await kinoraFactory.getDeployedKinoraAccessControlToPKP(
-          developerPkpOne.address,
+          questInvokerPkpOne.address,
         ),
       ).to.equal(eventData.accessControlAddress);
       expect(
         await kinoraFactory.getDeployedKinoraMetricsToPKP(
-          developerPkpOne.address,
+          questInvokerPkpOne.address,
         ),
       ).to.equal(eventData.metricsAddress);
       expect(
         await kinoraFactory.getDeployedKinoraQuestToPKP(
-          developerPkpOne.address,
+          questInvokerPkpOne.address,
         ),
       ).to.equal(eventData.questAddress);
       expect(
         await kinoraFactory.getDeployedKinoraEscrowToPKP(
-          developerPkpOne.address,
+          questInvokerPkpOne.address,
         ),
       ).to.equal(eventData.escrowAddress);
       expect(
         await kinoraFactory.getDeployedKinoraQuestRewardToPKP(
-          developerPkpOne.address,
+          questInvokerPkpOne.address,
         ),
       ).to.equal(eventData.questRewardAddress);
     });
 
     it("Correctly maps deployer address to PKP", async () => {
       expect(
-        await kinoraFactory.getKinoraDeployerToPKP(developerPkpOne.address),
-      ).to.equal(developerOne.address);
+        await kinoraFactory.getKinoraDeployerToPKP(questInvokerPkpOne.address),
+      ).to.equal(questInvokerOne.address);
     });
 
     it("Correctly maps PKPs to deployer address", async () => {
-      const developerPKPs = await kinoraFactory.getDeployerToPKPs(
-        developerOne.address,
+      const questInvokerPKPs = await kinoraFactory.getDeployerToPKPs(
+        questInvokerOne.address,
       );
-      expect(developerPKPs[developerPKPs.length - 1]).to.equal(
-        developerPkpOne.address,
+      expect(questInvokerPKPs[questInvokerPKPs.length - 1]).to.equal(
+        questInvokerPkpOne.address,
       );
     });
   });
@@ -229,8 +229,8 @@ xdescribe("Kinora Factory Contract", () => {
     before(async () => {
       const receipt = await (
         await kinoraFactory
-          .connect(developerOne)
-          .deployFromKinoraFactory(developerPkpTwo.address)
+          .connect(questInvokerOne)
+          .deployFromKinoraFactory(questInvokerPkpTwo.address)
       ).wait();
 
       const event = receipt.events.find(
@@ -240,8 +240,8 @@ xdescribe("Kinora Factory Contract", () => {
 
       const newReceipt = await (
         await kinoraFactory
-          .connect(developerTwo)
-          .deployFromKinoraFactory(developerPkpThree.address)
+          .connect(questInvokerTwo)
+          .deployFromKinoraFactory(questInvokerPkpThree.address)
       ).wait();
 
       const newEvent = newReceipt.events.find(
@@ -253,106 +253,106 @@ xdescribe("Kinora Factory Contract", () => {
     it("Updates ID on new deploy", async () => {
       expect(await kinoraFactory.getKinoraIDCount()).to.equal(3);
       expect(
-        await kinoraFactory.getKinoraIDToPKP(developerPkpTwo.address),
+        await kinoraFactory.getKinoraIDToPKP(questInvokerPkpTwo.address),
       ).to.equal(2);
     });
 
     it("Maps new contract on additional deploy", async () => {
       expect(
         await kinoraFactory.getDeployedKinoraAccessControlToPKP(
-          developerPkpTwo.address,
+          questInvokerPkpTwo.address,
         ),
       ).to.equal(secondDeployEventData.accessControlAddress);
       expect(
         await kinoraFactory.getDeployedKinoraMetricsToPKP(
-          developerPkpTwo.address,
+          questInvokerPkpTwo.address,
         ),
       ).to.equal(secondDeployEventData.metricsAddress);
       expect(
         await kinoraFactory.getDeployedKinoraQuestToPKP(
-          developerPkpTwo.address,
+          questInvokerPkpTwo.address,
         ),
       ).to.equal(secondDeployEventData.questAddress);
       expect(
         await kinoraFactory.getDeployedKinoraEscrowToPKP(
-          developerPkpTwo.address,
+          questInvokerPkpTwo.address,
         ),
       ).to.equal(secondDeployEventData.escrowAddress);
       expect(
         await kinoraFactory.getDeployedKinoraQuestRewardToPKP(
-          developerPkpTwo.address,
+          questInvokerPkpTwo.address,
         ),
       ).to.equal(secondDeployEventData.questRewardAddress);
     });
 
     it("Sets new PKP to deployer address", async () => {
       expect(
-        await kinoraFactory.getKinoraDeployerToPKP(developerPkpTwo.address),
-      ).to.equal(developerOne.address);
+        await kinoraFactory.getKinoraDeployerToPKP(questInvokerPkpTwo.address),
+      ).to.equal(questInvokerOne.address);
     });
 
     it("Correctly adds new PKP to deployer address", async () => {
-      const developerPKPs = await kinoraFactory.getDeployerToPKPs(
-        developerOne.address,
+      const questInvokerPKPs = await kinoraFactory.getDeployerToPKPs(
+        questInvokerOne.address,
       );
-      expect(developerPKPs[developerPKPs.length - 1]).to.equal(
-        developerPkpTwo.address,
+      expect(questInvokerPKPs[questInvokerPKPs.length - 1]).to.equal(
+        questInvokerPkpTwo.address,
       );
     });
 
     it("Updates ID on new deploy different address", async () => {
       expect(
-        await kinoraFactory.getKinoraIDToPKP(developerPkpThree.address),
+        await kinoraFactory.getKinoraIDToPKP(questInvokerPkpThree.address),
       ).to.equal(3);
     });
 
     it("Maps new contracts to new deployer", async () => {
       expect(
         await kinoraFactory.getDeployedKinoraAccessControlToPKP(
-          developerPkpThree.address,
+          questInvokerPkpThree.address,
         ),
       ).to.equal(thirdDeployEventData.accessControlAddress);
       expect(
         await kinoraFactory.getDeployedKinoraMetricsToPKP(
-          developerPkpThree.address,
+          questInvokerPkpThree.address,
         ),
       ).to.equal(thirdDeployEventData.metricsAddress);
       expect(
         await kinoraFactory.getDeployedKinoraQuestToPKP(
-          developerPkpThree.address,
+          questInvokerPkpThree.address,
         ),
       ).to.equal(thirdDeployEventData.questAddress);
       expect(
         await kinoraFactory.getDeployedKinoraEscrowToPKP(
-          developerPkpThree.address,
+          questInvokerPkpThree.address,
         ),
       ).to.equal(thirdDeployEventData.escrowAddress);
       expect(
         await kinoraFactory.getDeployedKinoraQuestRewardToPKP(
-          developerPkpThree.address,
+          questInvokerPkpThree.address,
         ),
       ).to.equal(thirdDeployEventData.questRewardAddress);
     });
     it("Correctly maps new deployer address to PKP", async () => {
       expect(
-        await kinoraFactory.getKinoraDeployerToPKP(developerPkpThree.address),
-      ).to.equal(developerTwo.address);
+        await kinoraFactory.getKinoraDeployerToPKP(questInvokerPkpThree.address),
+      ).to.equal(questInvokerTwo.address);
     });
 
     it("Correctly maps PKPs to new deployer address", async () => {
-      const developerPKPs = await kinoraFactory.getDeployerToPKPs(
-        developerTwo.address,
+      const questInvokerPKPs = await kinoraFactory.getDeployerToPKPs(
+        questInvokerTwo.address,
       );
-      expect(developerPKPs[developerPKPs.length - 1]).to.equal(
-        developerPkpThree.address,
+      expect(questInvokerPKPs[questInvokerPKPs.length - 1]).to.equal(
+        questInvokerPkpThree.address,
       );
     });
 
     it("Won't deploy factory if PKP already exists", async () => {
       await expect(
         kinoraFactory
-          .connect(developerTwo)
-          .deployFromKinoraFactory(developerPkpThree.address),
+          .connect(questInvokerTwo)
+          .deployFromKinoraFactory(questInvokerPkpThree.address),
       ).to.be.revertedWithCustomError(
         {
           interface: kinoraFactory.interface,
@@ -365,15 +365,15 @@ xdescribe("Kinora Factory Contract", () => {
   describe("Initiated Logic Contracts", () => {
     before(async () => {
       await kinoraGlobalPKPDB
-        .connect(developerPkpOne)
+        .connect(questInvokerPkpOne)
         .addUserPKP(userPkp.address);
 
       await kinoraGlobalPKPDB
-        .connect(developerPkpOne)
+        .connect(questInvokerPkpOne)
         .addUserPKP(userPKPTwo.address);
 
       await kinoraGlobalPKPDB
-        .connect(developerPkpOne)
+        .connect(questInvokerPkpOne)
         .addUserPKP(userPkpThree.address);
     });
 
@@ -385,9 +385,9 @@ xdescribe("Kinora Factory Contract", () => {
         );
         expect(
           await initiatedKinoraAccessControl.getAssignedPKPAddress(),
-        ).to.equal(developerPkpOne.address);
+        ).to.equal(questInvokerPkpOne.address);
         expect(
-          await initiatedKinoraAccessControl.isAdmin(developerOne.address),
+          await initiatedKinoraAccessControl.isAdmin(questInvokerOne.address),
         ).to.equal(true);
       });
 
@@ -395,7 +395,7 @@ xdescribe("Kinora Factory Contract", () => {
         await expect(
           initiatedKinoraAccessControl
             .connect(admin)
-            .addAdmin(developerThree.address),
+            .addAdmin(questInvokerThree.address),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraAccessControl.interface },
           "userNotAdmin",
@@ -404,17 +404,17 @@ xdescribe("Kinora Factory Contract", () => {
 
       it("Should add a new admin", async () => {
         await initiatedKinoraAccessControl
-          .connect(developerOne)
-          .addAdmin(developerTwo.address);
+          .connect(questInvokerOne)
+          .addAdmin(questInvokerTwo.address);
 
         expect(
-          await initiatedKinoraAccessControl.isAdmin(developerTwo.address),
+          await initiatedKinoraAccessControl.isAdmin(questInvokerTwo.address),
         ).to.equal(true);
 
         await expect(
           initiatedKinoraAccessControl
-            .connect(developerOne)
-            .addAdmin(developerTwo.address),
+            .connect(questInvokerOne)
+            .addAdmin(questInvokerTwo.address),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraAccessControl.interface },
           "adminAlreadyExists",
@@ -424,32 +424,32 @@ xdescribe("Kinora Factory Contract", () => {
       it("Should emit AdminAdded event", async () => {
         expect(
           await initiatedKinoraAccessControl
-            .connect(developerOne)
-            .addAdmin(developerThree.address),
+            .connect(questInvokerOne)
+            .addAdmin(questInvokerThree.address),
         )
           .to.emit(initiatedKinoraAccessControl, "AdminAdded")
-          .withArgs(developerThree.address);
+          .withArgs(questInvokerThree.address);
       });
 
       it("Should remove an existing admin", async () => {
         expect(
           await initiatedKinoraAccessControl
-            .connect(developerOne)
-            .removeAdmin(developerTwo.address),
+            .connect(questInvokerOne)
+            .removeAdmin(questInvokerTwo.address),
         )
           .to.emit(initiatedKinoraAccessControl, "AdminRemoved")
-          .withArgs(developerTwo.address);
+          .withArgs(questInvokerTwo.address);
 
         expect(
-          await initiatedKinoraAccessControl.isAdmin(developerTwo.address),
+          await initiatedKinoraAccessControl.isAdmin(questInvokerTwo.address),
         ).to.equal(false);
       });
 
       it("Should not allow removing oneself", async () => {
         await expect(
           initiatedKinoraAccessControl
-            .connect(developerOne)
-            .removeAdmin(developerOne.address),
+            .connect(questInvokerOne)
+            .removeAdmin(questInvokerOne.address),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraAccessControl.interface },
           "cantRemoveSelf",
@@ -458,22 +458,22 @@ xdescribe("Kinora Factory Contract", () => {
       it("Should update the assigned PKP address", async () => {
         expect(
           await initiatedKinoraAccessControl
-            .connect(developerOne)
-            .updateAssignedPKPAddress(developerPkpFour.address),
+            .connect(questInvokerOne)
+            .updateAssignedPKPAddress(questInvokerPkpFour.address),
         )
           .to.emit(initiatedKinoraAccessControl, "AssignedPKPAddressUpdated")
-          .withArgs(developerPkpFour.address);
+          .withArgs(questInvokerPkpFour.address);
 
         expect(
           await initiatedKinoraAccessControl.getAssignedPKPAddress(),
-        ).to.equal(developerPkpFour.address);
+        ).to.equal(questInvokerPkpFour.address);
       });
 
       it("Should revert for PKP already existing in Global DB", async () => {
         await expect(
           initiatedKinoraAccessControl
-            .connect(developerOne)
-            .updateAssignedPKPAddress(developerPkpOne.address),
+            .connect(questInvokerOne)
+            .updateAssignedPKPAddress(questInvokerPkpOne.address),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraAccessControl.interface },
           "pkpAlreadyAssigned",
@@ -482,7 +482,7 @@ xdescribe("Kinora Factory Contract", () => {
 
       it("Should correctly identify admins", async () => {
         expect(
-          await initiatedKinoraAccessControl.isAdmin(developerOne.address),
+          await initiatedKinoraAccessControl.isAdmin(questInvokerOne.address),
         ).to.equal(true);
         expect(
           await initiatedKinoraAccessControl.isAdmin(admin.address),
@@ -492,7 +492,7 @@ xdescribe("Kinora Factory Contract", () => {
       it("Should return the correct assigned PKP address", async () => {
         expect(
           await initiatedKinoraAccessControl.getAssignedPKPAddress(),
-        ).to.equal(developerPkpFour.address);
+        ).to.equal(questInvokerPkpFour.address);
       });
     });
 
@@ -510,7 +510,7 @@ xdescribe("Kinora Factory Contract", () => {
 
         await expect(
           initiatedKinoraMetrics
-            .connect(developerPkpTwo)
+            .connect(questInvokerPkpTwo)
             .addUserMetrics(userPkp.address, {
               playbackId,
               metricJSONHash,
@@ -528,7 +528,7 @@ xdescribe("Kinora Factory Contract", () => {
         const encrypted = true;
 
         const tx = await initiatedKinoraMetrics
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .addUserMetrics(userPkp.address, {
             playbackId,
             metricJSONHash,
@@ -562,8 +562,8 @@ xdescribe("Kinora Factory Contract", () => {
       it("Should fail to add a non existent user", async () => {
         await expect(
           initiatedKinoraMetrics
-            .connect(developerPkpFour)
-            .addUserMetrics(developerPkpOne.address, {
+            .connect(questInvokerPkpFour)
+            .addUserMetrics(questInvokerPkpOne.address, {
               playbackId: "",
               metricJSONHash: "",
               encrypted: true,
@@ -593,7 +593,7 @@ xdescribe("Kinora Factory Contract", () => {
       it("Should instantiate a new quest", async () => {
         expect(
           await initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .instantiateNewQuest(
               "uri",
               "0x" +
@@ -628,14 +628,14 @@ xdescribe("Kinora Factory Contract", () => {
 
       it("Should update Quest Status", async () => {
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .updateQuestStatus(1, 1);
         expect(await initiatedKinoraQuest.getQuestStatus(1)).to.equal(1);
       });
 
       it("Should reject update Quest Status", async () => {
         await expect(
-          initiatedKinoraQuest.connect(developerPkpOne).updateQuestStatus(1, 1),
+          initiatedKinoraQuest.connect(questInvokerPkpOne).updateQuestStatus(1, 1),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraQuest.interface },
           "onlyAdminOrPKP",
@@ -665,7 +665,7 @@ xdescribe("Kinora Factory Contract", () => {
       it("Should successfully add another Quest", async () => {
         expect(
           await initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .instantiateNewQuest(
               "uri",
               "0x" +
@@ -708,7 +708,7 @@ xdescribe("Kinora Factory Contract", () => {
 
         expect(
           await initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .updateQuestDetails(
               _newURIDetails,
               _newMilestones,
@@ -747,7 +747,7 @@ xdescribe("Kinora Factory Contract", () => {
 
         await expect(
           initiatedKinoraQuest
-            .connect(developerPkpOne)
+            .connect(questInvokerPkpOne)
             .updateQuestDetails(
               _newURIDetails,
               _newMilestones,
@@ -776,7 +776,7 @@ xdescribe("Kinora Factory Contract", () => {
 
         expect(
           await initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .addQuestMilestone(
               _questReward,
               _uriDetails,
@@ -833,7 +833,7 @@ xdescribe("Kinora Factory Contract", () => {
 
         expect(
           await initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .updateMilestoneDetails(
               _uriDetails,
               _questReward._type,
@@ -895,7 +895,7 @@ xdescribe("Kinora Factory Contract", () => {
 
         expect(
           await initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .addQuestMilestone(
               _questReward,
               _uriDetails,
@@ -951,7 +951,7 @@ xdescribe("Kinora Factory Contract", () => {
         };
         await expect(
           initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .addQuestMilestone(
               _questReward,
               _uriDetails,
@@ -979,7 +979,7 @@ xdescribe("Kinora Factory Contract", () => {
 
         await expect(
           initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .updateMilestoneDetails(
               _uriDetails,
               _questReward._type,
@@ -1026,7 +1026,7 @@ xdescribe("Kinora Factory Contract", () => {
       it("Should remove Quest Milestone", async () => {
         expect(
           await initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .removeQuestMilestone(2, 1),
         )
           .to.emit(initiatedKinoraQuest, "QuestMilestoneRemoved")
@@ -1036,7 +1036,7 @@ xdescribe("Kinora Factory Contract", () => {
       it("Should remove Terminate Quest", async () => {
         expect(
           await initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .terminateQuest(2),
         )
           .to.emit(initiatedKinoraQuest, "QuestTerminated")
@@ -1049,7 +1049,7 @@ xdescribe("Kinora Factory Contract", () => {
 
       it("User joins quest", async () => {
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .instantiateNewQuest(
             "uri",
             "0x" +
@@ -1069,7 +1069,7 @@ xdescribe("Kinora Factory Contract", () => {
         };
 
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .addQuestMilestone(
             _questReward,
             _uriDetails,
@@ -1079,7 +1079,7 @@ xdescribe("Kinora Factory Contract", () => {
           );
         expect(
           await initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .userJoinQuest(3, userPkp.address),
         )
           .to.emit(initiatedKinoraQuest, "UserJoinQuest")
@@ -1095,8 +1095,8 @@ xdescribe("Kinora Factory Contract", () => {
       it("User must exist to join quest", async () => {
         await expect(
           initiatedKinoraQuest
-            .connect(developerPkpFour)
-            .userJoinQuest(3, developerTwo.address),
+            .connect(questInvokerPkpFour)
+            .userJoinQuest(3, questInvokerTwo.address),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraQuest.interface },
           "userDoesntExist",
@@ -1106,7 +1106,7 @@ xdescribe("Kinora Factory Contract", () => {
       it("User completes milestone without reward available", async () => {
         await expect(
           initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .userCompleteMilestone(3, 1, userPkp.address),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraQuest.interface },
@@ -1117,32 +1117,32 @@ xdescribe("Kinora Factory Contract", () => {
       it("User must have joined quest to complete milestone", async () => {
         await expect(
           initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .userCompleteMilestone(3, 1, userPKPTwo.address),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraQuest.interface },
-          "userNotEligible",
+          "userNotElegible",
         );
       });
 
       it("User can't rejoin Quest", async () => {
         await expect(
           initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .userJoinQuest(3, userPkp.address),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraQuest.interface },
-          "userNotEligible",
+          "userNotElegible",
         );
       });
 
       it("User can't join on maximum participation", async () => {
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .userJoinQuest(3, userPkpThree.address);
         await expect(
           initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .userJoinQuest(3, userPKPTwo.address),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraQuest.interface },
@@ -1153,7 +1153,7 @@ xdescribe("Kinora Factory Contract", () => {
       it("Update all join hashes", async () => {
         expect(
           await initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .updateAllJoinHashes([
               ethers.utils.keccak256("0x00"),
               ethers.utils.keccak256("0x00"),
@@ -1171,7 +1171,7 @@ xdescribe("Kinora Factory Contract", () => {
       it("Update all completion hashes", async () => {
         expect(
           await initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .updateAllCompletionHashes([
               ethers.utils.keccak256("0x00"),
               ethers.utils.keccak256("0x00"),
@@ -1226,7 +1226,7 @@ xdescribe("Kinora Factory Contract", () => {
 
       it("Should deposit ERC20 tokens", async () => {
         await initiatedKinoraEscrow
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .depositERC20(testERC20.address, 100, 3, 1);
 
         expect(
@@ -1241,7 +1241,7 @@ xdescribe("Kinora Factory Contract", () => {
       it("Won't update if token exists", async () => {
         await expect(
           initiatedKinoraEscrow
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .depositERC20(testERC20.address, 20, 3, 1),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraEscrow.interface },
@@ -1251,7 +1251,7 @@ xdescribe("Kinora Factory Contract", () => {
 
       it("Should update the ERC20 deposit", async () => {
         await initiatedKinoraEscrow
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .updateDepositERC20(testERC20.address, 3, 1, 1000);
 
         expect(
@@ -1266,7 +1266,7 @@ xdescribe("Kinora Factory Contract", () => {
       it("Reverts on Quest doesn't exist", async () => {
         await expect(
           initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .userCompleteMilestone(10, 1, userPkp.address),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraQuest.interface },
@@ -1277,7 +1277,7 @@ xdescribe("Kinora Factory Contract", () => {
       it("Withdraws reward for user", async () => {
         expect(
           await initiatedKinoraQuest
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .userCompleteMilestone(3, 1, userPkp.address),
         )
           .to.emit(initiatedKinoraQuest, "UserCompleteQuestMilestone")
@@ -1299,7 +1299,7 @@ xdescribe("Kinora Factory Contract", () => {
         // it's only the admin not the PKP, for extra safety
         await expect(
           initiatedKinoraEscrow
-            .connect(developerOne)
+            .connect(questInvokerOne)
             .withdrawERC20(userPKPTwo.address, testERC20.address, 10000, 3, 1),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraEscrow.interface },
@@ -1309,14 +1309,14 @@ xdescribe("Kinora Factory Contract", () => {
 
       it("Should deposit ERC721 tokens", async () => {
         await initiatedKinoraEscrow
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .depositERC721("example_uri", 3, 1);
       });
 
       it("Reverts on trying to deposit ERC721 that already exists", async () => {
         await expect(
           initiatedKinoraEscrow
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .depositERC721("example_uri", 3, 1),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraEscrow.interface },
@@ -1326,7 +1326,7 @@ xdescribe("Kinora Factory Contract", () => {
 
       it("Should update ERC721 token deposit", async () => {
         await initiatedKinoraEscrow
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .updateDepositERC721("new_example_uri", 3, 1);
         expect(
           await initiatedKinoraEscrow.getQuestMilestoneIdToERC721URI(3, 1),
@@ -1337,7 +1337,7 @@ xdescribe("Kinora Factory Contract", () => {
         const uri = "newUri";
         await expect(
           initiatedKinoraEscrow
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .updateDepositERC721(uri, 3, 2),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraEscrow.interface },
@@ -1359,7 +1359,7 @@ xdescribe("Kinora Factory Contract", () => {
       it("Reverts on depositing ERC721 to a non-existing Quest", async () => {
         await expect(
           initiatedKinoraEscrow
-            .connect(developerPkpFour)
+            .connect(questInvokerPkpFour)
             .depositERC721("example_uri", 999, 1),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraEscrow.interface },
@@ -1381,7 +1381,7 @@ xdescribe("Kinora Factory Contract", () => {
 
       it("Should mint a new NFT if conditions are met", async () => {
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .instantiateNewQuest(
             "uri",
             "0x" +
@@ -1401,7 +1401,7 @@ xdescribe("Kinora Factory Contract", () => {
         };
 
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .addQuestMilestone(
             _questReward,
             _uriDetails,
@@ -1411,10 +1411,10 @@ xdescribe("Kinora Factory Contract", () => {
           );
 
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .userJoinQuest(4, userPkp.address);
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .userCompleteMilestone(4, 1, userPkp.address);
         expect(
           await initiatedKinora721QuestReward
@@ -1429,7 +1429,7 @@ xdescribe("Kinora Factory Contract", () => {
 
       it("Should revert if the user has not completed the quest", async () => {
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .instantiateNewQuest(
             "uri",
             "0x" +
@@ -1449,7 +1449,7 @@ xdescribe("Kinora Factory Contract", () => {
         };
 
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .addQuestMilestone(
             _questReward,
             _uriDetails,
@@ -1459,7 +1459,7 @@ xdescribe("Kinora Factory Contract", () => {
           );
 
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .userJoinQuest(5, userPkpThree.address);
 
         await expect(
@@ -1468,7 +1468,7 @@ xdescribe("Kinora Factory Contract", () => {
             .mintRewardNFT(userPkpThree.address, 5, 1),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinora721QuestReward.interface },
-          "userNotEligible",
+          "userNotElegible",
         );
       });
 
@@ -1479,13 +1479,13 @@ xdescribe("Kinora Factory Contract", () => {
             .mintRewardNFT(userPkpThree.address, 5, 1),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinora721QuestReward.interface },
-          "userNotEligible",
+          "userNotElegible",
         );
       });
 
       it("Should increment count after minting", async () => {
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .instantiateNewQuest(
             "uri",
             "0x" +
@@ -1505,7 +1505,7 @@ xdescribe("Kinora Factory Contract", () => {
         };
 
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .addQuestMilestone(
             _questReward,
             _uriDetails,
@@ -1515,15 +1515,15 @@ xdescribe("Kinora Factory Contract", () => {
           );
 
         await initiatedKinoraEscrow
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .depositERC721("uri_for_721", 6, 1);
 
         await initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .userJoinQuest(6, userPkp.address);
 
         initiatedKinoraQuest
-          .connect(developerPkpFour)
+          .connect(questInvokerPkpFour)
           .userCompleteMilestone(6, 1, userPkp.address);
         expect(
           await initiatedKinora721QuestReward

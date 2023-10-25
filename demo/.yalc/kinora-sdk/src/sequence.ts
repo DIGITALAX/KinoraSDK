@@ -83,7 +83,7 @@ export class Sequence extends EventEmitter {
   private lensPubId: string;
   private userProfileId: string;
   private playbackId: string;
-  private developerPKPData: {
+  private questInvokerPKPData: {
     publicKey: `0x04${string}`;
     tokenId: string;
     ethAddress: `0x${string}`;
@@ -120,8 +120,8 @@ export class Sequence extends EventEmitter {
     metricsOnChainInterval?: number; // in minutes,
     encryptUserMetrics?: boolean;
     errorHandlingModeStrict?: boolean;
-    developerPKPPublicKey?: `0x04${string}`;
-    developerPKPTokenId?: string;
+    questInvokerPKPPublicKey?: `0x04${string}`;
+    questInvokerPKPTokenId?: string;
     lensPubId?: string;
     userProfileId?: string;
     multihashDevKey?: string;
@@ -140,12 +140,12 @@ export class Sequence extends EventEmitter {
     this.playbackId = args.playbackId;
     this.redirectURL = args.redirectURL;
     this.rpcURL = args.rpcURL;
-    if (args.developerPKPPublicKey)
-      this.developerPKPData = {
-        publicKey: args.developerPKPPublicKey,
-        tokenId: args.developerPKPTokenId,
+    if (args.questInvokerPKPPublicKey)
+      this.questInvokerPKPData = {
+        publicKey: args.questInvokerPKPPublicKey,
+        tokenId: args.questInvokerPKPTokenId,
         ethAddress: ethers.utils.computeAddress(
-          args.developerPKPPublicKey,
+          args.questInvokerPKPPublicKey,
         ) as `0x${string}`,
       };
     this.multihashDevKey = args.multihashDevKey;
@@ -237,7 +237,7 @@ export class Sequence extends EventEmitter {
     }
   };
 
-  developerFactoryContractDeploy = async (): Promise<{
+  questInvokerFactoryContractDeploy = async (): Promise<{
     multihashDevKey: string;
     kinoraAccessControlAddress: `0x${string}`;
     kinoraMetricsAddress: `0x${string}`;
@@ -257,7 +257,7 @@ export class Sequence extends EventEmitter {
     const { pkpTokenId, publicKey, error, message } = await mintNextPKP(
       this.pkpContract,
     );
-    this.developerPKPData = {
+    this.questInvokerPKPData = {
       publicKey: publicKey,
       tokenId: pkpTokenId,
       ethAddress: ethers.utils.computeAddress(publicKey) as `0x${string}`,
@@ -265,12 +265,12 @@ export class Sequence extends EventEmitter {
     if (error) {
       this.log(
         LogCategory.ERROR,
-        `Mint developer PKP failed.`,
+        `Mint questInvoker PKP failed.`,
         message,
         new Date().toISOString(),
       );
       if (this.errorHandlingModeStrict) {
-        throw new Error(`Error minting developer PKP: ${message}`);
+        throw new Error(`Error minting questInvoker PKP: ${message}`);
       }
       return;
     }
@@ -287,11 +287,11 @@ export class Sequence extends EventEmitter {
 
     const estimateGasLimit =
       await factoryContract.estimateGas.deployFromKinoraFactory(
-        this.developerPKPData.ethAddress,
+        this.questInvokerPKPData.ethAddress,
       );
 
     const txHash = await factoryContract.deployFromKinoraFactory(
-      this.developerPKPData.ethAddress,
+      this.questInvokerPKPData.ethAddress,
       {
         maxPriorityFeePerGas,
         maxFeePerGas,
@@ -333,7 +333,7 @@ export class Sequence extends EventEmitter {
 
       const { error, message } = await assignLitAction(
         this.pkpPermissionsContract,
-        this.developerPKPData.tokenId,
+        this.questInvokerPKPData.tokenId,
         getBytesFromMultihash(IPFS_HASH_NEW_USER),
       );
 
@@ -357,9 +357,9 @@ export class Sequence extends EventEmitter {
         kinoraQuestAddress: filteredLogs[0].args[3],
         kinoraEscrowAddress: filteredLogs[0].args[4],
         kinoraQuestRewardAddress: filteredLogs[0].args[5],
-        pkpEthAddress: this.developerPKPData.ethAddress,
-        pkpPublicKey: this.developerPKPData.publicKey,
-        pkpTokenId: this.developerPKPData.tokenId,
+        pkpEthAddress: this.questInvokerPKPData.ethAddress,
+        pkpPublicKey: this.questInvokerPKPData.publicKey,
+        pkpTokenId: this.questInvokerPKPData.tokenId,
       };
     }
   };
@@ -367,10 +367,10 @@ export class Sequence extends EventEmitter {
   generateNewMultiHashDevKey = async (): Promise<{
     multihashDevKey: string;
   }> => {
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     try {
       this.multihashDevKey = generateSecureRandomKey();
 
@@ -401,7 +401,7 @@ export class Sequence extends EventEmitter {
           txHash: removeTx,
         } = await removeLitAction(
           this.pkpPermissionsContract,
-          this.developerPKPData.tokenId,
+          this.questInvokerPKPData.tokenId,
           oldJoinHashBytes,
         );
 
@@ -424,7 +424,7 @@ export class Sequence extends EventEmitter {
           txHash: assignTx,
         } = await assignLitAction(
           this.pkpPermissionsContract,
-          this.developerPKPData.tokenId,
+          this.questInvokerPKPData.tokenId,
           newJoinHash,
         );
 
@@ -469,7 +469,7 @@ export class Sequence extends EventEmitter {
             txHash: removeTx,
           } = await removeLitAction(
             this.pkpPermissionsContract,
-            this.developerPKPData.tokenId,
+            this.questInvokerPKPData.tokenId,
             oldCompletionHashBytes,
           );
 
@@ -492,7 +492,7 @@ export class Sequence extends EventEmitter {
             txHash: assignTx,
           } = await assignLitAction(
             this.pkpPermissionsContract,
-            this.developerPKPData.tokenId,
+            this.questInvokerPKPData.tokenId,
             newMilestoneHash,
           );
 
@@ -571,10 +571,10 @@ export class Sequence extends EventEmitter {
         "This function can only be used in a browser environment.",
       );
     }
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     try {
       this.authMethod = await this.litProvider.authenticate();
       this.currentUserPKP = await this.handlePKPs();
@@ -614,7 +614,7 @@ export class Sequence extends EventEmitter {
   }> => {
     const { error, message, txHash } = await assignLitAction(
       this.pkpPermissionsContract,
-      this.developerPKPData.tokenId,
+      this.questInvokerPKPData.tokenId,
       getBytesFromMultihash(litActionHash),
     );
 
@@ -647,10 +647,10 @@ export class Sequence extends EventEmitter {
       throw new Error(
         "Video element not detected. Make sure to set your LivePeer Player component in your app.",
       );
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     if (!this.multihashDevKey)
       throw new Error("Set multi hash dev key before continuing.");
     if (!this.currentUserPKP)
@@ -695,10 +695,10 @@ export class Sequence extends EventEmitter {
       throw new Error("Set Kinora Quest Address before continuing.");
     if (!this.multihashDevKey)
       throw new Error("Set multi hash dev key before continuing.");
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     try {
       const added = await this.ipfsClient.add(
         JSON.stringify(questInputs.uriDetails),
@@ -720,7 +720,7 @@ export class Sequence extends EventEmitter {
 
       const { error, message, txHash } = await assignLitAction(
         this.pkpPermissionsContract,
-        this.developerPKPData.tokenId,
+        this.questInvokerPKPData.tokenId,
         getBytesFromMultihash(litActionHash),
       );
 
@@ -769,7 +769,7 @@ export class Sequence extends EventEmitter {
 
         const { error, message, txHash } = await assignLitAction(
           this.pkpPermissionsContract,
-          this.developerPKPData.tokenId,
+          this.questInvokerPKPData.tokenId,
           getBytesFromMultihash(litActionHash),
         );
 
@@ -835,10 +835,10 @@ export class Sequence extends EventEmitter {
       throw new Error("Set Kinora Quest Address before continuing.");
     if (!this.multihashDevKey)
       throw new Error("Set multi hash dev key before continuing.");
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     try {
       let txHashes: string[] = [];
       let txHashesAssignAction: string[] = [];
@@ -871,7 +871,7 @@ export class Sequence extends EventEmitter {
           txHash: addMilestone,
         } = await assignLitAction(
           this.pkpPermissionsContract,
-          this.developerPKPData.tokenId,
+          this.questInvokerPKPData.tokenId,
           getBytesFromMultihash(litActionHash),
         );
 
@@ -932,10 +932,10 @@ export class Sequence extends EventEmitter {
       );
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     if (!this.multihashDevKey)
       throw new Error("Set multi hash dev key before continuing.");
     try {
@@ -968,7 +968,7 @@ export class Sequence extends EventEmitter {
         txHash: removeTx,
       } = await removeLitAction(
         this.pkpPermissionsContract,
-        this.developerPKPData.tokenId,
+        this.questInvokerPKPData.tokenId,
         oldJoinHashBytes,
       );
 
@@ -993,7 +993,7 @@ export class Sequence extends EventEmitter {
         txHash: assignTx,
       } = await assignLitAction(
         this.pkpPermissionsContract,
-        this.developerPKPData.tokenId,
+        this.questInvokerPKPData.tokenId,
         getBytesFromMultihash(litActionHash),
       );
 
@@ -1039,7 +1039,7 @@ export class Sequence extends EventEmitter {
           txHash: addMilestoneTx,
         } = await assignLitAction(
           this.pkpPermissionsContract,
-          this.developerPKPData.tokenId,
+          this.questInvokerPKPData.tokenId,
           getBytesFromMultihash(litActionHash),
         );
 
@@ -1070,7 +1070,7 @@ export class Sequence extends EventEmitter {
           txHash: removeTx,
         } = await removeLitAction(
           this.pkpPermissionsContract,
-          this.developerPKPData.tokenId,
+          this.questInvokerPKPData.tokenId,
           oldLitActionBytes,
         );
 
@@ -1095,7 +1095,7 @@ export class Sequence extends EventEmitter {
           txHash,
         } = await assignLitAction(
           this.pkpPermissionsContract,
-          this.developerPKPData.tokenId,
+          this.questInvokerPKPData.tokenId,
           getBytesFromMultihash(litActionHash),
         );
 
@@ -1150,10 +1150,10 @@ export class Sequence extends EventEmitter {
   ): Promise<{ txHash: string }> => {
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest address before continuing.");
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     if (!this.multihashDevKey)
       throw new Error("Set multi hash dev key before continuing.");
     try {
@@ -1193,10 +1193,10 @@ export class Sequence extends EventEmitter {
       );
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     if (!this.multihashDevKey)
       throw new Error("Set multi hash dev key before continuing.");
     try {
@@ -1231,7 +1231,7 @@ export class Sequence extends EventEmitter {
         txHash: removeTx,
       } = await removeLitAction(
         this.pkpPermissionsContract,
-        this.developerPKPData.tokenId,
+        this.questInvokerPKPData.tokenId,
         oldLitActionBytes,
       );
 
@@ -1256,7 +1256,7 @@ export class Sequence extends EventEmitter {
         txHash: assignTx,
       } = await assignLitAction(
         this.pkpPermissionsContract,
-        this.developerPKPData.tokenId,
+        this.questInvokerPKPData.tokenId,
         getBytesFromMultihash(litActionHash),
       );
 
@@ -1308,10 +1308,10 @@ export class Sequence extends EventEmitter {
   ): Promise<{ txHash: string }> => {
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     if (!this.multihashDevKey)
       throw new Error("Set multi hash dev key before continuing.");
 
@@ -1333,7 +1333,7 @@ export class Sequence extends EventEmitter {
         txHash: removeTx,
       } = await removeLitAction(
         this.pkpPermissionsContract,
-        this.developerPKPData.tokenId,
+        this.questInvokerPKPData.tokenId,
         oldLitActionBytes,
       );
 
@@ -1370,10 +1370,10 @@ export class Sequence extends EventEmitter {
   terminateQuest = async (questId: number): Promise<{ txHash: string }> => {
     if (!this.kinoraQuestAddress)
       throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     if (!this.multihashDevKey)
       throw new Error("Set multi hash dev key before continuing.");
     try {
@@ -1389,7 +1389,7 @@ export class Sequence extends EventEmitter {
         txHash: removeTx,
       } = await removeLitAction(
         this.pkpPermissionsContract,
-        this.developerPKPData.tokenId,
+        this.questInvokerPKPData.tokenId,
         oldLitActionBytes,
       );
 
@@ -1429,10 +1429,10 @@ export class Sequence extends EventEmitter {
   ): Promise<{ txHash: string }> => {
     if (!this.kinoraQuestAddress.address)
       throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     if (!this.multihashDevKey)
       throw new Error("Set multi hash dev key before continuing.");
     if (!this.currentUserPKP.ethAddress)
@@ -1519,7 +1519,7 @@ export class Sequence extends EventEmitter {
         "userJoinQuest",
         this.authSig ? this.authSig : litAuthSig,
         joinQuestLitActionIPFSCid,
-        this.developerPKPData.publicKey,
+        this.questInvokerPKPData.publicKey,
         this.multihashDevKey,
         JSON.stringify(joinCondition),
       );
@@ -1574,10 +1574,10 @@ export class Sequence extends EventEmitter {
   ): Promise<{ txHash: string }> => {
     if (!this.kinoraQuestAddress.address)
       throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     if (!this.multihashDevKey)
       throw new Error("Set multi hash dev key before continuing.");
     if (!this.currentUserPKP.ethAddress)
@@ -1668,7 +1668,7 @@ export class Sequence extends EventEmitter {
         "userCompleteMilestone",
         this.authSig ? this.authSig : litAuthSig,
         completeMilestoneIPFSCid,
-        this.developerPKPData.publicKey,
+        this.questInvokerPKPData.publicKey,
         this.multihashDevKey,
         JSON.stringify(completeCondition),
       );
@@ -2004,7 +2004,7 @@ export class Sequence extends EventEmitter {
         "addUserPKP",
         this.authSig ? this.authSig : litAuthSig,
         IPFS_HASH_NEW_USER,
-        this.developerPKPData.publicKey,
+        this.questInvokerPKPData.publicKey,
         this.multihashDevKey,
         "",
       );
@@ -2197,7 +2197,7 @@ export class Sequence extends EventEmitter {
             decryptedString,
           } = await decryptMetrics(
             await JSON.parse(oldMetrics),
-            this.developerPKPData.ethAddress,
+            this.questInvokerPKPData.ethAddress,
             this.currentUserPKP.ethAddress as `0x${string}`,
             this.userPKPAuthSig,
             this.litNodeClient,
@@ -2384,10 +2384,10 @@ export class Sequence extends EventEmitter {
       throw new Error(
         "This function can only be run in a Node.js environment.",
       );
-    if (!this.developerPKPData.publicKey)
-      throw new Error("Set developer PKP Public Key before continuing.");
-    if (!this.developerPKPData.tokenId)
-      throw new Error("Set developer PKP Token Id before continuing.");
+    if (!this.questInvokerPKPData.publicKey)
+      throw new Error("Set questInvoker PKP Public Key before continuing.");
+    if (!this.questInvokerPKPData.tokenId)
+      throw new Error("Set questInvoker PKP Token Id before continuing.");
     if (!this.currentUserPKP)
       throw new Error("Set user's PKP before continuing.");
     if (!this.kinoraMetricsAddress)
@@ -2397,7 +2397,7 @@ export class Sequence extends EventEmitter {
       if (this.encryptUserMetrics) {
         const { error, message, encryptedString } = await encryptMetrics(
           userMetrics,
-          this.developerPKPData.ethAddress,
+          this.questInvokerPKPData.ethAddress,
           this.currentUserPKP.ethAddress as `0x${string}`,
           this.userPKPAuthSig,
           this.litNodeClient,
@@ -2490,7 +2490,7 @@ export class Sequence extends EventEmitter {
         "addUserMetrics",
         this.authSig ? this.authSig : litAuthSig,
         litActionHash,
-        this.developerPKPData.publicKey,
+        this.questInvokerPKPData.publicKey,
         this.multihashDevKey,
         this.currentUserPKP.ethAddress,
       );
@@ -2542,7 +2542,7 @@ export class Sequence extends EventEmitter {
     milestoneId?: number,
   ): Promise<boolean> => {
     try {
-      let userEligible = false;
+      let userElegible = false;
 
       let currentMetricsHash: string =
         await this.kinoraMetricsAddress.getUserMetricsJSONHashByPlaybackId(
@@ -2564,7 +2564,7 @@ export class Sequence extends EventEmitter {
       ) {
         const { error, message, decryptedString } = await decryptMetrics(
           await JSON.parse(currentMetrics),
-          this.developerPKPData.ethAddress,
+          this.questInvokerPKPData.ethAddress,
           this.currentUserPKP.ethAddress as `0x${string}`,
           this.userPKPAuthSig,
           this.litNodeClient,
@@ -2599,7 +2599,7 @@ export class Sequence extends EventEmitter {
 
         const uriParsed: QuestURI = await JSON.parse(response.data);
 
-        userEligible = this.metricComparison(
+        userElegible = this.metricComparison(
           currentUserMetrics,
           uriParsed.joinCondition,
         );
@@ -2612,13 +2612,13 @@ export class Sequence extends EventEmitter {
 
         const uriParsed: MilestoneURI = await JSON.parse(milestoneUriDetails);
 
-        userEligible = this.metricComparison(
+        userElegible = this.metricComparison(
           currentUserMetrics,
           uriParsed.completionCondition,
         );
       }
 
-      return userEligible;
+      return userElegible;
     } catch (err: any) {
       this.log(
         LogCategory.ERROR,

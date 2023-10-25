@@ -21,8 +21,13 @@ contract KinoraMetrics is Initializable {
     uint256 playerProfileId,
     bool encrypted
   );
+  event PlayerElegibleToClaimMilestone(
+    uint256 pubId,
+    uint256 milestone,
+    uint256 playerProfileId
+  );
 
-  modifier onlyDeveloperPKP() {
+  modifier onlyQuestInvokerPKP() {
     if (msg.sender != accessControl.getAssignedPKPAddress()) {
       revert KinoraErrors.OnlyPKP();
     }
@@ -45,7 +50,7 @@ contract KinoraMetrics is Initializable {
     uint256 _playerProfileId,
     uint256 _pubId,
     bool _encrypted
-  ) public onlyDeveloperPKP {
+  ) public onlyQuestInvokerPKP {
     uint256 _profileId = accessControl.getProfileId();
 
     kinoraQuestData.updatePlayerMetrics(
@@ -58,5 +63,24 @@ contract KinoraMetrics is Initializable {
     );
 
     emit AddPlayerMetrics(_playbackId, _json, _playerProfileId, _encrypted);
+  }
+
+  function playerElegibleToClaimMilestone(
+    uint256 _pubId,
+    uint256 _milestone,
+    uint256 _playerProfileId,
+    bool _eligibility
+  ) public onlyQuestInvokerPKP {
+    uint256 _profileId = accessControl.getProfileId();
+
+    kinoraQuestData.updatePlayerMilestoneEligibility(
+      _playerProfileId,
+      _profileId,
+      _pubId,
+      _milestone,
+      _eligibility
+    );
+
+    emit PlayerElegibleToClaimMilestone(_pubId, _milestone, _playerProfileId);
   }
 }

@@ -16,14 +16,14 @@ contract KinoraQuest is Initializable {
   KinoraEscrow public escrow;
   address public kinoraOpenAction;
 
-  modifier onlyDeveloperPKP() {
+  modifier onlyQuestInvokerPKP() {
     if (msg.sender != accessControl.getAssignedPKPAddress()) {
       revert KinoraErrors.OnlyPKP();
     }
     _;
   }
 
-  modifier onlyDeveloperPKPOrAdmin() {
+  modifier onlyQuestInvokerPKPOrAdmin() {
     if (
       msg.sender != accessControl.getAssignedPKPAddress() &&
       !accessControl.isAdmin(msg.sender)
@@ -97,7 +97,7 @@ contract KinoraQuest is Initializable {
 
   function terminateQuest(
     uint256 _pubId
-  ) public onlyDeveloperPKPOrAdmin questOpen(_pubId) {
+  ) public onlyQuestInvokerPKPOrAdmin questOpen(_pubId) {
     uint256 _profileId = accessControl.getProfileId();
 
     kinoraQuestData.updateQuestStatus(_profileId, _pubId);
@@ -176,7 +176,7 @@ contract KinoraQuest is Initializable {
         _milestone
       );
     } else {
-      revert KinoraErrors.PlayerNotEligible();
+      revert KinoraErrors.PlayerNotElegible();
     }
 
     emit PlayerCompleteQuestMilestone(_pubId, _milestone, _playerProfileId);
