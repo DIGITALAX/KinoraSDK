@@ -101,6 +101,11 @@ export interface GeneratedTxData {
 }
 
 export interface MilestoneEligibility {
+  playbackId: string;
+  criteria: MilestoneEligibilityCriteria;
+}
+
+export interface MilestoneEligibilityCriteria {
   avd:
     | {
         minValue: number;
