@@ -1187,9 +1187,53 @@ export class Sequence extends EventEmitter {
     try {
       let playerElegible = false;
 
+      const hashedCompletion =
+        await this.kinoraQuestDataContract.getQuestMilestoneCompletionConditionHash(
+          this.questInvokerProfileId,
+          parseInt(pubId, 16),
+          milestone,
+        );
+
+      const toParseCompletion: string = await axios.get(
+        `${INFURA_GATEWAY}/ipfs/${hashedCompletion?.split("ipfs://")[1]}`,
+      );
+
+      const uriParsed: MilestoneEligibility[] = await JSON.parse(
+        toParseCompletion,
+      );
+
+      playerElegible = await this.metricComparison(
+        uriParsed,
+        playerProfileId,
+        playerProfileOwnerAddress,
+        pubId,
+      );
+
+      return playerElegible;
+    } catch (err: any) {
+      this.log(
+        LogCategory.ERROR,
+        `Check Quest metrics failed.`,
+        err.message,
+        new Date().toISOString(),
+      );
+      if (this.errorHandlingModeStrict) {
+        throw new Error(`Error checking Quest metrics: ${err.message}`);
+      }
+    }
+  };
+
+  private metricComparison = async (
+    eligibilityCriteria: MilestoneEligibility[],
+    playerProfileId: string,
+    playerProfileOwnerAddress: `0x${string}`,
+    pubId: string,
+  ): Promise<boolean> => {
+    let result = true;
+    for (let i = 0; i < eligibilityCriteria.length; i++) {
       let currentMetricsHash: string =
         await this.kinoraQuestDataContract.getPlayerPlaybackIdMetricsHash(
-          playbackId,
+          eligibilityCriteria[i].playbackId,
           parseInt(playerProfileId, 16),
           this.questInvokerProfileId,
           parseInt(pubId, 16),
@@ -1203,7 +1247,7 @@ export class Sequence extends EventEmitter {
 
       const encrypted =
         await this.kinoraQuestDataContract.getPlayerPlaybackIdMetricsEncrypted(
-          playbackId,
+          eligibilityCriteria[i].playbackId,
           parseInt(playerProfileId, 16),
           this.questInvokerProfileId,
           parseInt(pubId, 16),
@@ -1240,71 +1284,43 @@ export class Sequence extends EventEmitter {
         currentMetrics,
       );
 
-      const hashedCompletion =
-        await this.kinoraQuestDataContract.getQuestMilestoneCompletionConditionHash(
-          this.questInvokerProfileId,
-          parseInt(pubId, 16),
-          milestone,
-        );
+      for (const key in eligibilityCriteria[i].criteria) {
+        const criteria =
+          eligibilityCriteria[i].criteria[key as keyof MilestoneEligibility];
 
-      const toParseCompletion: string = await axios.get(
-        `${INFURA_GATEWAY}/ipfs/${hashedCompletion?.split("ipfs://")[1]}`,
-      );
+        if (!criteria) continue;
 
-      const uriParsed: MilestoneEligibility = await JSON.parse(
-        toParseCompletion,
-      );
+        const playerValue = currentPlayerMetrics[key as keyof PlayerMetrics];
+        const conditions: boolean[] = [];
 
-      playerElegible = this.metricComparison(currentPlayerMetrics, uriParsed);
+        if ("minValue" in criteria && "maxValue" in criteria) {
+          if (typeof playerValue === "number") {
+            conditions.push(playerValue >= criteria.minValue);
+            conditions.push(playerValue <= criteria.maxValue);
+          }
+        } else if ("boolValue" in criteria) {
+          if (typeof playerValue === "boolean") {
+            conditions.push(playerValue === criteria.boolValue);
+          }
+        }
 
-      return playerElegible;
-    } catch (err: any) {
-      this.log(
-        LogCategory.ERROR,
-        `Check Quest metrics failed.`,
-        err.message,
-        new Date().toISOString(),
-      );
-      if (this.errorHandlingModeStrict) {
-        throw new Error(`Error checking Quest metrics: ${err.message}`);
+        if (criteria.operator === "and") {
+          if (!conditions.every(Boolean)) {
+            result = false;
+          }
+        } else if (criteria.operator === "or") {
+          if (!conditions.some(Boolean)) {
+            result = false;
+          }
+        }
+      }
+
+      if (!result) {
+        return false;
       }
     }
-  };
 
-  private metricComparison = (
-    playerMetrics: PlayerMetrics,
-    eligibilityCriteria: MilestoneEligibility,
-  ): boolean => {
-    for (const key in eligibilityCriteria) {
-      const criteria = eligibilityCriteria[key as keyof MilestoneEligibility];
-
-      if (!criteria) continue;
-
-      const playerValue = playerMetrics[key as keyof PlayerMetrics];
-      const conditions: boolean[] = [];
-
-      if ("minValue" in criteria && "maxValue" in criteria) {
-        if (typeof playerValue === "number") {
-          conditions.push(playerValue >= criteria.minValue);
-          conditions.push(playerValue <= criteria.maxValue);
-        }
-      } else if ("boolValue" in criteria) {
-        if (typeof playerValue === "boolean") {
-          conditions.push(playerValue === criteria.boolValue);
-        }
-      }
-
-      if (criteria.operator === "and") {
-        if (!conditions.every(Boolean)) {
-          return false;
-        }
-      } else if (criteria.operator === "or") {
-        if (!conditions.some(Boolean)) {
-          return false;
-        }
-      }
-    }
-    return true;
+    return result;
   };
 
   private cleanUpListeners = () => {
