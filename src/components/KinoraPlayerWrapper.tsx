@@ -1,4 +1,4 @@
-import { ApolloError } from "@apollo/client";
+import { ApolloClient, ApolloError } from "@apollo/client";
 import React, {
   useEffect,
   useCallback,
@@ -6,8 +6,8 @@ import React, {
   useLayoutEffect,
   memo,
 } from "react";
-import getVideoData from "./../apollo/queries/getVideoData";
-import { Mirror, Publication } from "src/@types/generated";
+import { Mirror, Post, Quote } from "./../../src/@types/generated";
+import getPublicationClient from "./../../src/graphql/queries/getPublicationClient";
 
 const isBrowser = typeof window !== "undefined";
 
@@ -36,7 +36,7 @@ type KinoraPlayerWrapperProps = {
   onWaiting?: (event: Event) => void;
   onFullScreenChange?: (event: Event) => void;
   onLensVideoData?: (
-    data: Publication | Mirror | Comment,
+    data: Post | Mirror | Comment | Quote,
     error: ApolloError | undefined,
   ) => void;
   volume?: { level: number; id: number };
@@ -77,7 +77,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       pubId: string | undefined;
       userId: string | undefined;
       onLensVideoData: (
-        data: Publication | Mirror | Comment,
+        data: Post | Mirror | Comment | Quote,
         error: ApolloError | undefined,
       ) => void | undefined;
     }>({
@@ -366,7 +366,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
         pubId: string;
         userId: string;
         onLensVideoData: (
-          data: Publication | Mirror | Comment,
+          data: Post | Mirror | Comment | Quote,
           error: ApolloError | undefined,
         ) => void;
       },
@@ -374,7 +374,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
         pubId: string;
         userId: string;
         onLensVideoData: (
-          data: Publication | Mirror | Comment,
+          data: Post | Mirror | Comment | Quote,
           error: ApolloError | undefined,
         ) => void;
       },
@@ -387,13 +387,14 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     };
 
     const handleVideoLensData = async (): Promise<void> => {
-      const { data, error } = await getVideoData(
-        {
-          publicationId: pubId,
-        },
-        userId,
+      const { data, error } = await getPublicationClient({
+        forId: pubId,
+      });
+
+      onLensVideoData(
+        data.publication as Post | Mirror | Comment | Quote,
+        error,
       );
-      onLensVideoData(data, error);
     };
 
     return <>{children(setMediaElement)}</>;

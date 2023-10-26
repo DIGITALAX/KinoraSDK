@@ -105,7 +105,8 @@ export interface MilestoneURI {
 
 export interface Milestone {
   uriDetails: MilestoneURI;
-  completionHash: Bytes;
+  completionConditionHash: string;
+  conditionHash: Bytes;
   reward: Reward;
   numberOfPoints: number;
 }

@@ -7,13 +7,8 @@ export const CHRONICLE_PKP_PERMISSIONS_CONTRACT: `0x${string}` =
   "0x4Aed2F242E806c58758677059340e29E6B5b7619";
 
 export const LIT_RPC: string = "https://chain-rpc.litprotocol.com/http";
-
 export const BASE_URL: string = "https://api.lens.dev";
-
 export const INFURA_GATEWAY: string = "https://chromadin.infura-ipfs.io/";
-
-export const IPFS_HASH_NEW_USER: string =
-  "QmaKTA1YvLapYMg1c9ARQEPW1LkS4fWamnLQjZJ923NVpb";
 
 export const CHAIN: string = "mumbai";
 

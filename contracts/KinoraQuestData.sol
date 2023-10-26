@@ -22,8 +22,7 @@ contract KinoraQuestData {
   event QuestInstantiated(
     uint256 profileId,
     uint256 pubId,
-    uint256 milestoneCount,
-    bytes32 joinHash
+    uint256 milestoneCount
   );
   event PlayerJoinedQuest(
     uint256 profileId,
@@ -100,7 +99,6 @@ contract KinoraQuestData {
 
   function newQuest(
     KinoraLibrary.Milestone[] memory _milestones,
-    bytes32 _joinHash,
     uint256 _maxPlayerCount,
     uint256 _pubId,
     uint256 _profileId
@@ -109,7 +107,6 @@ contract KinoraQuestData {
 
     _allQuests[_profileId][_pubId].pubId = _pubId;
     _allQuests[_profileId][_pubId].profileId = _profileId;
-    _allQuests[_profileId][_pubId].joinHash = _joinHash;
     _allQuests[_profileId][_pubId].players = _emptyPlayers;
     _allQuests[_profileId][_pubId].milestoneCount = _milestones.length;
     _allQuests[_profileId][_pubId].status = KinoraLibrary.Status.Open;
@@ -118,9 +115,12 @@ contract KinoraQuestData {
     for (uint256 i = 0; i < _milestones.length; i++) {
       _allQuests[_profileId][_pubId].milestones[i].reward = _milestones[i]
         .reward;
-      _allQuests[_profileId][_pubId].milestones[i].completionHash = _milestones[
+      _allQuests[_profileId][_pubId].milestones[i].conditionHash = _milestones[
         i
-      ].completionHash;
+      ].conditionHash;
+      _allQuests[_profileId][_pubId]
+        .milestones[i]
+        .completionConditionHash = _milestones[i].completionConditionHash;
       _allQuests[_profileId][_pubId].milestones[i].numberOfPoints = _milestones[
         i
       ].numberOfPoints;
@@ -130,7 +130,7 @@ contract KinoraQuestData {
 
     _questCount++;
 
-    emit QuestInstantiated(_profileId, _pubId, _milestones.length, _joinHash);
+    emit QuestInstantiated(_profileId, _pubId, _milestones.length);
   }
 
   function joinQuest(
@@ -322,13 +322,6 @@ contract KinoraQuestData {
       _allPlayers[_playerProfileId].joinedQuest[_questProfileId][_questPubId];
   }
 
-  function getQuestJoinHash(
-    uint256 _questProfileId,
-    uint256 _questPubId
-  ) public view returns (bytes32) {
-    return _allQuests[_questProfileId][_questPubId].joinHash;
-  }
-
   function getQuestPlayers(
     uint256 _questProfileId,
     uint256 _questPubId
@@ -371,7 +364,18 @@ contract KinoraQuestData {
     return _allQuests[_questProfileId][_questPubId].milestoneCount;
   }
 
-  function getQuestMilestoneCompletionHash(
+  function getQuestMilestoneCompletionConditionHash(
+    uint256 _questProfileId,
+    uint256 _questPubId,
+    uint256 _milestone
+  ) public view returns (string memory) {
+    return
+      _allQuests[_questProfileId][_questPubId]
+        .milestones[_milestone - 1]
+        .completionConditionHash;
+  }
+
+  function getQuestMilestoneConditionHash(
     uint256 _questProfileId,
     uint256 _questPubId,
     uint256 _milestone
@@ -379,7 +383,7 @@ contract KinoraQuestData {
     return
       _allQuests[_questProfileId][_questPubId]
         .milestones[_milestone - 1]
-        .completionHash;
+        .conditionHash;
   }
 
   function getQuestMilestoneNumberOfPoints(
