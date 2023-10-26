@@ -10,11 +10,6 @@ export enum RewardType {
   ERC721,
 }
 
-export enum Status {
-  Open,
-  Closed,
-}
-
 export const ChainIds: { [key: string]: number } = {
   polygon: 137,
   mumbai: 80001,
@@ -77,10 +72,11 @@ export interface PlayerMetrics {
   averagePlayPauseRatio?: number;
   averageCtr?: number;
   averageAvd?: number;
-  mirrorLens: boolean;
-  likeLens: boolean;
-  bookmarkLens: boolean;
-  notInterestedLens: boolean;
+  hasMirrored: boolean;
+  hasReacted: boolean;
+  hasBookmarked: boolean;
+  hasNotInterested: boolean;
+  hasActed: boolean;
 }
 
 export interface Reward {
@@ -90,9 +86,10 @@ export interface Reward {
 }
 
 export interface Milestone {
-  completionHash: Bytes;
   reward: Reward;
   numberOfPoints: number;
+  milestone: number;
+  eligibilityHash: string;
 }
 
 export interface GeneratedTxData {
@@ -103,7 +100,7 @@ export interface GeneratedTxData {
   data: ethers.ContractInterface;
 }
 
-export interface QuestEligibility {
+export interface MilestoneEligibility {
   avd:
     | {
         minValue: number;
@@ -234,4 +231,12 @@ export interface ILogEntry {
   message: string;
   responseObject: string;
   isoDate: string;
+}
+
+export interface LensStats {
+  hasReacted: boolean;
+  hasMirrored: boolean;
+  hasActed: boolean;
+  hasNotInterested: boolean;
+  hasBookmarked: boolean;
 }

@@ -7,13 +7,13 @@ import {
   ActOnOpenActionDocument,
   ActOnOpenActionMutation,
   ActOnOpenActionRequest,
-} from "src/@types/generated";
+} from "../../@types/generated";
 
 const actOnGrant = async (
   request: ActOnOpenActionRequest,
   playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>,
 ): Promise<FetchResult<ActOnOpenActionMutation>> => {
-  return playerAuthedApolloClient.mutate({
+  return await playerAuthedApolloClient.mutate({
     mutation: ActOnOpenActionDocument,
     variables: {
       request: request,

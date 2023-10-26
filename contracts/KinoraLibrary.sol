@@ -33,15 +33,14 @@ contract KinoraLibrary {
   }
   struct Milestone {
     Reward reward;
-    string completionCondition;
-    bytes32 completionHash;
+    string completionConditionHash;
+    bytes32 conditionHash;
     uint256 numberOfPoints;
     uint256 milestone;
   }
   struct Quest {
     Milestone[] milestones;
     uint256[] players;
-    bytes32 joinHash;
     Status status;
     uint256 profileId;
     uint256 pubId;
@@ -68,12 +67,10 @@ contract KinoraLibrary {
   struct InitializeAction {
     address questInvokerPKP;
     address questInvoker;
-    bytes32 joinHash;
     uint256 maxPlayerCount;
   }
   struct InitializeDeposit {
     Milestone[] milestones;
-    bytes32 joinHash;
     address escrowContract;
     address questContract;
     address questInvoker;

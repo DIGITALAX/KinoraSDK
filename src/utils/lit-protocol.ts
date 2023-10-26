@@ -210,7 +210,7 @@ export const hashHex = (input: string): string => {
 };
 
 export const encryptMetrics = async (
-  metrics: PlayerMetrics,
+  metrics: string,
   questInvokerPKPAddress: `0x${string}`,
   playerPKPAddress: `0x${string}`,
   playerPKPAuthSig: LitAuthSig,
@@ -249,7 +249,7 @@ export const encryptMetrics = async (
         ],
         authSig: playerPKPAuthSig,
         chain: "polygon",
-        dataToEncrypt: JSON.stringify(metrics),
+        dataToEncrypt: metrics,
       },
       litNodeClient,
     );
@@ -268,54 +268,10 @@ export const encryptMetrics = async (
   }
 };
 
-export const getSessionSig = async (
-  authMethod: any,
-  currentPKP: IRelayPKP,
-  provider: any,
-  litNodeClient: any,
-  chainId: number,
-): Promise<{
-  sessionSigs?: SessionSigs;
-  error?: boolean;
-  message?: string;
-}> => {
-  try {
-    const litResource = new LitJsSdk_authHelpers.LitPKPResource(
-      currentPKP.tokenId,
-    );
-
-    const sessionSigs = await provider.getSessionSigs({
-      pkpPublicKey: currentPKP.publicKey,
-      authMethod: {
-        authMethodType: 6,
-        accessToken: authMethod.accessToken,
-      },
-      sessionSigsParams: {
-        chain: ChainIds[chainId],
-        resourceAbilityRequests: [
-          {
-            resource: litResource,
-            ability: LitJsSdk_authHelpers.LitAbility.PKPSigning,
-          },
-        ],
-      },
-      litNodeClient,
-    });
-    return {
-      sessionSigs,
-    };
-  } catch (err: any) {
-    return {
-      error: true,
-      message: err.message,
-    };
-  }
-};
-
 export const decryptMetrics = async (
   encryptMetrics: { ciphertext: string; dataToEncryptHash: string },
   questInvokerPKPAddress: `0x${string}`,
-  playerPKPAddress: `0x${string}`,
+  playerProfileOwnerAddress: `0x${string}`,
   playerPKPAuthSig: LitAuthSig,
   litNodeClient: LitJsSdk.LitNodeClient,
 ): Promise<{ decryptedString?: string; error?: boolean; message?: string }> => {
@@ -342,7 +298,7 @@ export const decryptMetrics = async (
             parameters: [":playerAddress"],
             returnValueTest: {
               comparator: "=",
-              value: playerPKPAddress?.toLowerCase(),
+              value: playerProfileOwnerAddress?.toLowerCase(),
             },
           },
         ],
@@ -432,60 +388,7 @@ export const generateSecureRandomKey = () => {
   return crypto.randomBytes(32).toString("hex");
 };
 
-export const getLitActionCodeForJoinQuest = (
-  conditionalHash: string,
-  contractAddress: string,
-): string => {
-  return `
-  import CryptoJS from "crypto-js";
-
-  const CONDITIONAL_HASH = "${conditionalHash}";
-  
-  const hashHex = (input) => {
-    const hash = CryptoJS.SHA256(input);
-    return "0x" + hash.toString(CryptoJS.enc.Hex);
-  }; 
-
-const hashTransaction = (tx) => {
-  return ethers.utils.arrayify(
-    ethers.utils.keccak256(
-      ethers.utils.arrayify(ethers.utils.serializeTransaction(tx)),
-    ),
-  );
-};
-
-const go = async () => {
-  try {
-    const txData = {
-      to: "${contractAddress}",
-      nonce,
-      chainId: 137,
-      gasLimit,
-      maxFeePerGas,
-      maxPriorityFeePerGas,
-      from: "{{publicKey}}",
-      data,
-      value: ethers.BigNumber.from(0),
-      type: 2,
-    };
-    await Lit.Actions.signEcdsa({
-      toSign: hashTransaction(txData),
-      publicKey,
-      sigName,
-    });
-    Lit.Actions.setResponse({ response: JSON.stringify(txData) });
-  } catch (err) {
-    console.log("Error thrown: ", err);
-  }
-};
-
-if (hashHex(hashKeyItem + multihashDevKey) === CONDITIONAL_HASH) {
-  go();
-}
-`;
-};
-
-export const getLitActionCodeForMilestoneCompletion = (
+export const getLitActionCode = (
   conditionalHash: string,
   contractAddress: string,
 ): string => {
@@ -500,11 +403,7 @@ export const getLitActionCodeForMilestoneCompletion = (
   };
 
   const hashTransaction = (tx) => {
-    return ethers.utils.arrayify(
-      ethers.utils.keccak256(
-        ethers.utils.arrayify(ethers.utils.serializeTransaction(tx)),
-      ),
-    );
+    return ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.arrayify(ethers.utils.toUtf8Bytes(String(tx)))));
   };
   
   const go = async () => {
@@ -536,59 +435,6 @@ export const getLitActionCodeForMilestoneCompletion = (
     go();
   }
   `;
-};
-
-export const getLitActionCodeForAddPlayerMetrics = (
-  conditionalHash: string,
-  contractAddress: string,
-): string => {
-  return `
-    import CryptoJS from "crypto-js";
-
-    const CONDITIONAL_HASH = "${conditionalHash}";
-    
-    const hashHex = (input) => {
-      const hash = CryptoJS.SHA256(input);
-      return "0x" + hash.toString(CryptoJS.enc.Hex);
-    };    
-    
-    const hashTransaction = (tx) => {
-      return ethers.utils.arrayify(
-        ethers.utils.keccak256(
-          ethers.utils.arrayify(ethers.utils.serializeTransaction(tx)),
-        ),
-      );
-    };
-    
-    const go = async () => {
-      try {
-        const txData = {
-          to: "${contractAddress}",
-          nonce,
-          chainId: 137,
-          gasLimit,
-          maxFeePerGas,
-          maxPriorityFeePerGas,
-          from: "{{publicKey}}",
-          data,
-          value: ethers.BigNumber.from(0),
-          type: 2,
-        };
-        await Lit.Actions.signEcdsa({
-          toSign: hashTransaction(txData),
-          publicKey,
-          sigName,
-        });
-        Lit.Actions.setResponse({ response: JSON.stringify(txData) });
-      } catch (err) {
-        console.log("Error thrown: ", err);
-      }
-    };
-    
-    if (hashHex(hashKeyItem + multihashDevKey) === CONDITIONAL_HASH) {
-      go();
-    }
-    `;
 };
 
 export const bundleCodeManual = (dynamicCode: string): string => {

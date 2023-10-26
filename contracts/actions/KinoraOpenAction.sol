@@ -29,7 +29,6 @@ interface IKinoraEscrow {
 interface IKinoraQuest {
   function instantiateNewQuest(
     KinoraLibrary.Milestone[] memory milestones,
-    bytes32 joinHash,
     uint256 maxPlayerCount,
     uint256 pubId,
     uint256 profileId
@@ -62,8 +61,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
   event QuestInitialized(
     address questInvoker,
     uint256 profileId,
-    uint256 pubId,
-    bytes32 joinHash
+    uint256 pubId
   );
   event MilestoneCompleted(
     uint256 playerProfileId,
@@ -128,7 +126,6 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
     _depositMilestoneRewards(
       KinoraLibrary.InitializeDeposit({
         milestones: _milestones,
-        joinHash: _params.joinHash,
         escrowContract: _escrowContract,
         questContract: _questContract,
         questInvoker: _params.questInvoker,
@@ -141,8 +138,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
     emit QuestInitialized(
       _params.questInvoker,
       _profileId,
-      _pubId,
-      _params.joinHash
+      _pubId
     );
 
     return _data;
@@ -230,7 +226,6 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
 
     IKinoraQuest(_params.questContract).instantiateNewQuest(
       _params.milestones,
-      _params.joinHash,
       _params.maxPlayerCount,
       _params.pubId,
       _params.profileId

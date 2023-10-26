@@ -54,8 +54,7 @@ contract KinoraQuest is Initializable {
   event NewQuestCreated(
     uint256 profileId,
     uint256 pubId,
-    uint256 milestoneCount,
-    bytes32 joinHash
+    uint256 milestoneCount
   );
   event PlayerCompleteQuestMilestone(
     uint256 pubId,
@@ -79,20 +78,18 @@ contract KinoraQuest is Initializable {
 
   function instantiateNewQuest(
     KinoraLibrary.Milestone[] memory _milestones,
-    bytes32 _joinHash,
     uint256 _maxPlayerCount,
     uint256 _pubId,
     uint256 _profileId
   ) external onlyOpenAction {
     kinoraQuestData.newQuest(
       _milestones,
-      _joinHash,
       _maxPlayerCount,
       _pubId,
       _profileId
     );
 
-    emit NewQuestCreated(_profileId, _pubId, _milestones.length, _joinHash);
+    emit NewQuestCreated(_profileId, _pubId, _milestones.length);
   }
 
   function terminateQuest(
