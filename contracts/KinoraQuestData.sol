@@ -71,8 +71,8 @@ contract KinoraQuestData {
     uint256 playerProfileId,
     uint256 milestone
   );
-  // Emitted when the milestone claim elegibility of a player is updated.
-  event PlayerMilestoneElegibilityUpdated(
+  // Emitted when the milestone claim eligibility of a player is updated.
+  event PlayerMilestoneEligibilityUpdated(
     uint256 playerProfileId,
     uint256 profileId,
     uint256 pubId,
@@ -286,11 +286,11 @@ contract KinoraQuestData {
     uint256 _milestone,
     bool _eligibility
   ) external onlyValidMetricsContract(_profileId, _pubId) {
-    _allPlayers[_playerProfileId].elegibleToClaimMilestone[_profileId][_pubId][
+    _allPlayers[_playerProfileId].eligibleToClaimMilestone[_profileId][_pubId][
         _milestone
       ] = _eligibility;
 
-    emit PlayerMilestoneElegibilityUpdated(
+    emit PlayerMilestoneEligibilityUpdated(
       _playerProfileId,
       _profileId,
       _pubId,
@@ -400,14 +400,14 @@ contract KinoraQuestData {
    * @param _milestone Milestone number in the quest.
    * @return True if the player is eligible to claim the milestone, false otherwise.
    */
-  function getPlayerElegibleToClaimMilestone(
+  function getPlayerEligibleToClaimMilestone(
     uint256 _playerProfileId,
     uint256 _questProfileId,
     uint256 _pubId,
     uint256 _milestone
   ) public view returns (bool) {
     return
-      _allPlayers[_playerProfileId].elegibleToClaimMilestone[_questProfileId][
+      _allPlayers[_playerProfileId].eligibleToClaimMilestone[_questProfileId][
         _pubId
       ][_milestone];
   }

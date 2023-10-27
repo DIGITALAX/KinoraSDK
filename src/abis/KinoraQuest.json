@@ -11,7 +11,7 @@
   },
   {
     "inputs": [],
-    "name": "PlayerNotElegible",
+    "name": "PlayerNotEligible",
     "type": "error"
   },
   {

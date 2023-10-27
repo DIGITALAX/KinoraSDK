@@ -201,7 +201,7 @@ contract KinoraQuest is Initializable {
       ) +
         1 ==
         _milestone) &&
-      kinoraQuestData.getPlayerElegibleToClaimMilestone(
+      kinoraQuestData.getPlayerEligibleToClaimMilestone(
         _playerProfileId,
         _profileId,
         _pubId,
@@ -227,7 +227,7 @@ contract KinoraQuest is Initializable {
         _milestone
       );
     } else {
-      revert KinoraErrors.PlayerNotElegible();
+      revert KinoraErrors.PlayerNotEligible();
     }
 
     emit PlayerCompleteQuestMilestone(_pubId, _milestone, _playerProfileId);

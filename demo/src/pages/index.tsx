@@ -16,7 +16,7 @@ const KinoraPlayerWrapper = dynamic(
 
 const client = createReactClient({
   provider: studioProvider({
-    apiKey: process.env.REACT_APP_LIVEPEER_STUDIO_KEY!,
+    apiKey: process.env.LIVEPEER_STUDIO_KEY!,
   }),
 });
 

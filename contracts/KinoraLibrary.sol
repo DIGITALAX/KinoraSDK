@@ -52,7 +52,7 @@ contract KinoraLibrary {
     mapping(uint256 => uint256[]) questsJoined;
     mapping(uint256 => mapping(uint256 => bool)) joinedQuest;
     mapping(uint256 => mapping(uint256 => mapping(string => PlayerLivepeerMetrics))) playbackIdMetrics;
-    mapping(uint256 => mapping(uint256 => mapping(uint256 => bool))) elegibleToClaimMilestone;
+    mapping(uint256 => mapping(uint256 => mapping(uint256 => bool))) eligibleToClaimMilestone;
     address playerAddress;
     uint256 activeSince;
     uint256 totalPointCount;

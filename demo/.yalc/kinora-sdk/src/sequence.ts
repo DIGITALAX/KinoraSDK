@@ -2542,7 +2542,7 @@ export class Sequence extends EventEmitter {
     milestoneId?: number,
   ): Promise<boolean> => {
     try {
-      let userElegible = false;
+      let userEligible = false;
 
       let currentMetricsHash: string =
         await this.kinoraMetricsAddress.getUserMetricsJSONHashByPlaybackId(
@@ -2599,7 +2599,7 @@ export class Sequence extends EventEmitter {
 
         const uriParsed: QuestURI = await JSON.parse(response.data);
 
-        userElegible = this.metricComparison(
+        userEligible = this.metricComparison(
           currentUserMetrics,
           uriParsed.joinCondition,
         );
@@ -2612,13 +2612,13 @@ export class Sequence extends EventEmitter {
 
         const uriParsed: MilestoneURI = await JSON.parse(milestoneUriDetails);
 
-        userElegible = this.metricComparison(
+        userEligible = this.metricComparison(
           currentUserMetrics,
           uriParsed.completionCondition,
         );
       }
 
-      return userElegible;
+      return userEligible;
     } catch (err: any) {
       this.log(
         LogCategory.ERROR,

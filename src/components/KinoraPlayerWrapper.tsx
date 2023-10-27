@@ -15,6 +15,7 @@ const isBrowser = typeof window !== "undefined";
 /**
  * @interface KinoraPlayerWrapperProps
  * @dev Defines the shape of props accepted by KinoraPlayerWrapper component.
+ *  @param children - Function that accepts a setter for the Livepeer media element, returning React Node.
  * @param onPlay - Handler for the play event.
  * @param onPause - Handler for the pause event.
  * @param onAbort - Handler for the abort event.
@@ -48,9 +49,11 @@ const isBrowser = typeof window !== "undefined";
  * @param customControls - A boolean to control custom controls state.
  * @param pubId - The Lens Pub Id associated with the media playback Id.
  * @param playerProfileId - The Lens Profile Id of the player.
- * @param children - A function that accepts a setter for the Livepeer media element, returning React Node.
  */
 type KinoraPlayerWrapperProps = {
+  children: (
+    setMediaElement: (node: HTMLVideoElement) => void,
+  ) => React.ReactNode;
   onPlay?: (event: Event) => void;
   onPause?: (event: Event) => void;
   onAbort?: (event: Event) => void;
@@ -87,9 +90,6 @@ type KinoraPlayerWrapperProps = {
   customControls?: boolean;
   pubId?: string;
   playerProfileId?: string;
-  children: (
-    setMediaElement: (node: HTMLVideoElement) => void,
-  ) => React.ReactNode;
 };
 
 /**

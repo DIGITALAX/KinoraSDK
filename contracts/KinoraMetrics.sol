@@ -30,7 +30,7 @@ contract KinoraMetrics is Initializable {
     bool encrypted
   );
   // Event emitted when player verified to claim milestone.
-  event PlayerElegibleToClaimMilestone(
+  event PlayerEligibleToClaimMilestone(
     uint256 pubId,
     uint256 milestone,
     uint256 playerProfileId
@@ -91,7 +91,7 @@ contract KinoraMetrics is Initializable {
    @param _playerProfileId Lens Profile Id.
    @param _eligibility Boolean flag indicating eligibility status.
   */
-  function playerElegibleToClaimMilestone(
+  function playerEligibleToClaimMilestone(
     uint256 _pubId,
     uint256 _milestone,
     uint256 _playerProfileId,
@@ -107,6 +107,6 @@ contract KinoraMetrics is Initializable {
       _eligibility
     );
 
-    emit PlayerElegibleToClaimMilestone(_pubId, _milestone, _playerProfileId);
+    emit PlayerEligibleToClaimMilestone(_pubId, _milestone, _playerProfileId);
   }
 }
