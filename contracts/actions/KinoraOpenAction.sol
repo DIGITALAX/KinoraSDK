@@ -28,7 +28,7 @@ interface IKinoraEscrow {
 
 interface IKinoraQuest {
   function instantiateNewQuest(
-    KinoraLibrary.Milestone[] memory milestones,
+    bytes memory encodedMilestones,
     uint256 maxPlayerCount,
     uint256 pubId,
     uint256 profileId
@@ -135,11 +135,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
       })
     );
 
-    emit QuestInitialized(
-      _params.questInvoker,
-      _profileId,
-      _pubId
-    );
+    emit QuestInitialized(_params.questInvoker, _profileId, _pubId);
 
     return _data;
   }
@@ -203,7 +199,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
   function _depositMilestoneRewards(
     KinoraLibrary.InitializeDeposit memory _params
   ) internal {
-    for (uint256 i; i < _params.milestones.length; i++) {
+    for (uint256 i = 0; i < _params.milestones.length; i++) {
       if (
         _params.milestones[i].reward.rewardType ==
         KinoraLibrary.RewardType.ERC20
@@ -225,7 +221,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
     }
 
     IKinoraQuest(_params.questContract).instantiateNewQuest(
-      _params.milestones,
+      abi.encode(_params.milestones),
       _params.maxPlayerCount,
       _params.pubId,
       _params.profileId

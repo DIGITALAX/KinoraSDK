@@ -175,7 +175,9 @@ contract KinoraEscrow is Initializable {
       _milestone
     );
 
-    if (_questMilestoneERC20Deposit[_pubId][_milestone][_toAddress] < _amount) {
+    if (
+      _questMilestoneERC20Deposit[_pubId][_milestone][_tokenAddress] < _amount
+    ) {
       revert KinoraErrors.InsufficientBalance();
     }
 

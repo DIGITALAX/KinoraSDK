@@ -67,27 +67,28 @@ contract KinoraQuest is Initializable {
   function initialize(
     address _accessControlAddress,
     address _escrowAddress,
-    address _kinoraQuestDataAddress
+    address _kinoraQuestDataAddress,
+    address _kinoraOpenActionAddress
   ) public {
     name = "KinoraQuest";
     symbol = "KQU";
     accessControl = KinoraAccessControl(_accessControlAddress);
     escrow = KinoraEscrow(_escrowAddress);
     kinoraQuestData = KinoraQuestData(_kinoraQuestDataAddress);
+    kinoraOpenAction = _kinoraOpenActionAddress;
   }
 
   function instantiateNewQuest(
-    KinoraLibrary.Milestone[] memory _milestones,
+    bytes memory _encodedMilestones,
     uint256 _maxPlayerCount,
     uint256 _pubId,
     uint256 _profileId
   ) external onlyOpenAction {
-    kinoraQuestData.newQuest(
-      _milestones,
-      _maxPlayerCount,
-      _pubId,
-      _profileId
+    KinoraLibrary.Milestone[] memory _milestones = abi.decode(
+      _encodedMilestones,
+      (KinoraLibrary.Milestone[])
     );
+    kinoraQuestData.newQuest(_milestones, _maxPlayerCount, _pubId, _profileId);
 
     emit NewQuestCreated(_profileId, _pubId, _milestones.length);
   }
@@ -146,13 +147,19 @@ contract KinoraQuest is Initializable {
         _pubId
       ) <
       _milestone &&
-      kinoraQuestData.getPlayerMilestonesCompletedPerQuest(
+      (kinoraQuestData.getPlayerMilestonesCompletedPerQuest(
         _playerProfileId,
         _profileId,
         _pubId
       ) +
         1 ==
-      _milestone
+        _milestone) &&
+      kinoraQuestData.getPlayerElegibleToClaimMilestone(
+        _playerProfileId,
+        _profileId,
+        _pubId,
+        _milestone
+      )
     ) {
       if (
         kinoraQuestData.getQuestMilestoneRewardType(
