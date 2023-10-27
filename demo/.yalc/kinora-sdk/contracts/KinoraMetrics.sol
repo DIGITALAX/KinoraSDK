@@ -20,14 +20,14 @@ contract KinoraMetrics is Initializable {
   error pkpAccountNotActive();
   error onlyPKP();
 
-  struct UserLivePeerMetrics {
+  struct UserLivepeerMetrics {
     string _playbackId;
     string _metricJSONHash;
     bool _encrypted;
   }
 
-  mapping(address => mapping(string => UserLivePeerMetrics))
-    private _pkpToUserLivePeerMetricsByPlaybackId;
+  mapping(address => mapping(string => UserLivepeerMetrics))
+    private _pkpToUserLivepeerMetricsByPlaybackId;
 
   event AddUserPKP(address addedUserPKPAddress);
   event RemoveUserPKP(address removedUserPKPAddress);
@@ -60,16 +60,16 @@ contract KinoraMetrics is Initializable {
     if (!_pkpDB.userExists(_userPKPAddress)) {
       revert pkpAccountNotActive();
     }
-    UserLivePeerMetrics memory _newUserLivePeerMetrics;
-    _newUserLivePeerMetrics = UserLivePeerMetrics({
+    UserLivepeerMetrics memory _newUserLivepeerMetrics;
+    _newUserLivepeerMetrics = UserLivepeerMetrics({
       _playbackId: _args.playbackId,
       _metricJSONHash: _args.metricJSONHash,
       _encrypted: _args.encrypted
     });
 
-    _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][
+    _pkpToUserLivepeerMetricsByPlaybackId[_userPKPAddress][
       _args.playbackId
-    ] = _newUserLivePeerMetrics;
+    ] = _newUserLivepeerMetrics;
 
     emit AddUserMetrics(
       _args.playbackId,
@@ -84,7 +84,7 @@ contract KinoraMetrics is Initializable {
     string memory _playbackId
   ) public view returns (bool) {
     return
-      _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
+      _pkpToUserLivepeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
         ._encrypted;
   }
 
@@ -93,7 +93,7 @@ contract KinoraMetrics is Initializable {
     string memory _playbackId
   ) public view returns (string memory) {
     return
-      _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
+      _pkpToUserLivepeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
         ._metricJSONHash;
   }
 
@@ -102,7 +102,7 @@ contract KinoraMetrics is Initializable {
     string memory _playbackId
   ) public view returns (string memory) {
     return
-      _pkpToUserLivePeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
+      _pkpToUserLivepeerMetricsByPlaybackId[_userPKPAddress][_playbackId]
         ._playbackId;
   }
 

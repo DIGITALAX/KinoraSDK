@@ -11,17 +11,20 @@ import "./KinoraNFTCreator.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract KinoraFactory {
-  string public name;
-  string public symbol;
+  string public name; // Name of the factory
+  string public symbol; // Symbol of the factory
+
+  // References to other contracts within the Kinora ecosystem
   KinoraQuestData public kinoraQuestData;
   KinoraNFTCreator public kinoraNFTCreator;
   address public kinoraAccessControl;
   address public kinoraQuest;
   address public kinoraEscrow;
   address public kinoraMetrics;
-  address public factoryMaintainer;
-  address public kinoraOpenAction;
+  address public factoryMaintainer; // Address of the factory maintainer
+  address public kinoraOpenAction; // Address of the Kinora Open Action contract
 
+  // Event emitted when a new suite of contracts is deployed via the KinoraFactory
   event KinoraFactoryDeployed(
     address indexed deployerAddress,
     address accessControlAddress,
@@ -30,15 +33,27 @@ contract KinoraFactory {
     address escrowAddress
   );
 
+  // Mappings to store the relationship between deployers, PKPs, and deployed contracts
   mapping(address => address[]) private _deployerToPKPs;
   mapping(address => KinoraLibrary.Kinora) private _deployerPKPToKinora;
 
+  /**
+   * @dev Constructor initializes the contract with the name, symbol, and factory maintainer address.
+   */
   constructor() {
     name = "KinoraFactory";
     symbol = "KFAC";
     factoryMaintainer = msg.sender;
   }
 
+  /**
+   * @dev Deploys a suite of contracts from the KinoraFactory.
+   * @param _pkpAddress Address of the PKP.
+   * @param _deployerAddress Address of the deployer.
+   * @param _profileId Lens Profile Id associated with the deployment.
+   * @param _pubId Lens Pub Id associated with the deployment.
+   * @return The addresses of the deployed KinoraQuest and KinoraEscrow contracts.
+   */
   function deployFromKinoraFactory(
     address _pkpAddress,
     address _deployerAddress,
@@ -83,6 +98,17 @@ contract KinoraFactory {
     return (_newKQ, _newKE);
   }
 
+  /**
+   * @dev Internal function to handle the suite deployment logic.
+   * @param _kinoraDeployer Address of the Kinora deployer.
+   * @param _pkpAddress Address of the PKP.
+   * @param _profileId Lens Profile Id associated with the deployment.
+   * @param _pubId Lens Pub Id associated with the deployment.
+   * @return _newKACA Address of the newly deployed KinoraAccessControl contract.
+   * @return _newKMA Address of the newly deployed KinoraMetrics contract.
+   * @return _newKQA Address of the newly deployed KinoraQuest contract.
+   * @return _newKEA Address of the newly deployed KinoraEscrow contract.
+   */
   function _deploySuite(
     address _kinoraDeployer,
     address _pkpAddress,
@@ -151,46 +177,92 @@ contract KinoraFactory {
     );
   }
 
+  /**
+   * @dev Retrieves the array of PKP addresses associated with a particular deployer.
+   * @param _deployerAddress The address of the deployer.
+   * @return An array of PKP addresses.
+   */
   function getDeployerToPKPs(
     address _deployerAddress
   ) public view returns (address[] memory) {
     return _deployerToPKPs[_deployerAddress];
   }
 
+  /**
+   * @dev Retrieves the address of the KinoraAccessControl contract deployed for a particular PKP.
+   * @param _pkpAddress The address of the PKP.
+   * @return The address of the KinoraAccessControl contract.
+   */
   function getPKPToDeployedKinoraAccessControl(
     address _pkpAddress
   ) public view returns (address) {
     return _deployerPKPToKinora[_pkpAddress].contracts[0];
   }
 
+  /**
+   * @dev Retrieves the address of the KinoraMetrics contract deployed for a particular PKP.
+   * @param _pkpAddress The address of the PKP.
+   * @return The address of the KinoraMetrics contract.
+   */
   function getPKPToDeployedKinoraMetrics(
     address _pkpAddress
   ) public view returns (address) {
     return _deployerPKPToKinora[_pkpAddress].contracts[1];
   }
 
+  /**
+   * @dev Retrieves the address of the KinoraQuest contract deployed for a particular PKP.
+   * @param _pkpAddress The address of the PKP.
+   * @return The address of the KinoraQuest contract.
+   */
   function getPKPToDeployedKinoraQuest(
     address _pkpAddress
   ) public view returns (address) {
     return _deployerPKPToKinora[_pkpAddress].contracts[2];
   }
 
+  /**
+   * @dev Retrieves the address of the KinoraEscrow contract deployed for a particular PKP.
+   * @param _pkpAddress The address of the PKP.
+   * @return The address of the KinoraEscrow contract.
+   */
   function getPKPToDeployedKinoraEscrow(
     address _pkpAddress
   ) public view returns (address) {
     return _deployerPKPToKinora[_pkpAddress].contracts[3];
   }
 
+  /**
+   * @dev Retrieves the Lens Profile Id associated with a particular PKP.
+   * @param _pkpAddress The address of the PKP.
+   * @return The Lens Profile Id.
+   */
   function getPKPToProfileId(
     address _pkpAddress
   ) public view returns (uint256) {
     return _deployerPKPToKinora[_pkpAddress].profileId;
   }
 
+  /**
+   * @dev Retrieves the deployer address associated with a particular PKP.
+   * @param _pkpAddress The address of the PKP.
+   * @return The address of the deployer.
+   */
   function getPKPToDeployer(address _pkpAddress) public view returns (address) {
     return _deployerPKPToKinora[_pkpAddress].deployer;
   }
 
+  /**
+   * @dev Sets the addresses of the logic contracts and other essential contracts.
+   * Only callable by the factory maintainer.
+   * @param _logicAddressAC The address of the KinoraAccessControl logic contract.
+   * @param _logicAddressQ The address of the KinoraQuest logic contract.
+   * @param _logicAddressE The address of the KinoraEscrow logic contract.
+   * @param _logicAddressM The address of the KinoraMetrics logic contract.
+   * @param _questDataAddress The address of the KinoraQuestData contract.
+   * @param _nftCreatorAddress The address of the KinoraNFTCreator contract.
+   * @param _kinoraOpenActionAddress The address of the KinoraOpenAction contract.
+   */
   function setLogicAddresses(
     address _logicAddressAC,
     address _logicAddressQ,
