@@ -58,41 +58,213 @@ import {
 import actOnGrant from "./graphql/mutations/actOn";
 import getPublication from "./graphql/queries/getPublication";
 
+/**
+ * @class Sequence
+ * @description The Sequence class extends EventEmitter and encapsulates logic and state for a video sequence.
+ * @extends EventEmitter
+ */
 export class Sequence extends EventEmitter {
+  /**
+   * @private
+   * @type {Metrics}
+   * @description Instance of Metrics class to handle metric data.
+   */
   private metrics: Metrics;
+
+  /**
+   * @private
+   * @type {HTMLVideoElement}
+   * @description HTML element for video playback.
+   */
   private videoElement: HTMLVideoElement;
+
+  /**
+   * @private
+   * @type {JsonRpcProvider}
+   * @description JSON-RPC provider for interacting with the Polygon blockchain.
+   */
   private polygonProvider: JsonRpcProvider;
+
+  /**
+   * @private
+   * @type {JsonRpcProvider}
+   * @description JSON-RPC provider for interacting with the Chronicle blockchain.
+   */
   private chronicleProvider: JsonRpcProvider;
+
+  /**
+   * @private
+   * @type {number}
+   * @description Maximum size of the logs array.
+   */
   private logSize = 1000;
+
+  /**
+   * @private
+   * @type {number}
+   * @description Index for the next log entry.
+   */
   private logIndex = 0;
+
+  /**
+   * @private
+   * @type {ILogEntry[]}
+   * @description Array to hold log entries.
+   */
   private logs: ILogEntry[] = new Array(this.logSize);
+
+  /**
+   * @private
+   * @type {string}
+   * @description RPC URL for blockchain interactions.
+   */
   private rpcURL: string;
+
+  /**
+   * @private
+   * @type {string}
+   * @description Parent Id associated with the sequence.
+   */
   private parentId: string;
+
+  /**
+   * @private
+   * @type {string}
+   * @description Blockchain name/identifier.
+   */
   private chain: string = CHAIN;
+
+  /**
+   * @private
+   * @type {string}
+   * @description Developer key for multihash.
+   */
   private multihashDevKey: string;
+
+  /**
+   * @private
+   * @type {number}
+   * @description Quest invoker's profile Id.
+   */
   private questInvokerProfileId: number;
+
+  /**
+   * @private
+   * @type {Object}
+   * @description Quest invoker's PKP data including public key, token Id, and Ethereum address.
+   */
   private questInvokerPKPData: {
     publicKey: `0x04${string}`;
     tokenId: string;
     ethAddress: `0x${string}`;
   };
+  /**
+   * @private
+   * @type {boolean}
+   * @description Flag to determine the mode of error handling; strict or not.
+   */
   private errorHandlingModeStrict: boolean = false;
+
+  /**
+   * @private
+   * @type {ethers.Contract}
+   * @description Instance of ethers.Contract for interacting with the PKP contract.
+   */
   private pkpContract: ethers.Contract;
+
+  /**
+   * @private
+   * @type {ethers.Contract}
+   * @description Instance of ethers.Contract for interacting with the PKP Permissions contract.
+   */
   private pkpPermissionsContract: ethers.Contract;
+
+  /**
+   * @private
+   * @type {ethers.Contract}
+   * @description Instance of ethers.Contract for interacting with the Kinora Quest contract.
+   */
   private kinoraQuestContract: ethers.Contract;
+
+  /**
+   * @private
+   * @type {ethers.Contract}
+   * @description Instance of ethers.Contract for interacting with the Kinora Metrics contract.
+   */
   private kinoraMetricsContract: ethers.Contract;
+
+  /**
+   * @private
+   * @type {ethers.Contract}
+   * @description Instance of ethers.Contract for interacting with the Kinora Quest Data contract.
+   */
   private kinoraQuestDataContract: ethers.Contract;
+
+  /**
+   * @private
+   * @type {ethers.Contract}
+   * @description Instance of ethers.Contract for interacting with the Kinora Escrow contract.
+   */
   private kinoraEscrowContract: ethers.Contract;
+
+  /**
+   * @private
+   * @type {ethers.Signer}
+   * @description Instance of ethers.Signer for signing transactions.
+   */
   private signer: ethers.Signer;
+
+  /**
+   * @private
+   * @type {LitAuthSig}
+   * @description Authenticated signature object.
+   */
   private authSig: LitAuthSig;
+
+  /**
+   * @private
+   * @type {ApolloClient<NormalizedCacheObject>}
+   * @description Authenticated Apollo Client for player interactions.
+   */
   private playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>;
+
+  /**
+   * @private
+   * @type {ApolloClient<NormalizedCacheObject>}
+   * @description Authenticated Apollo Client for quest invoker interactions.
+   */
   private questInvokerAuthedApolloClient: ApolloClient<NormalizedCacheObject>;
+
+  /**
+   * @private
+   * @type {LitJsSdk.LitNodeClient}
+   * @description Instance of LitJsSdk.LitNodeClient for managing LIT network interactions.
+   */
   private litNodeClient = new LitJsSdk.LitNodeClient({
     litNetwork: "cayenne",
     debug: false,
     alertWhenUnauthorized: true,
   });
 
+  /**
+   * @constructor
+   * @param {Object} args - Constructor arguments
+   * @param {string} args.questInvokerProfileId - Quest invoker's profile Id
+   * @param {LitAuthSig} args.authSig - Authenticated signature
+   * @param {string} [args.parentId] - Parent Id (optional)
+   * @param {string} [args.redirectURL] - Redirect URL (optional)
+   * @param {string} [args.rpcURL] - RPC URL for blockchain interactions (optional)
+   * @param {boolean} [args.errorHandlingModeStrict] - Flag to set error handling mode to strict (optional)
+   * @param {`0x04${string}`} [args.questInvokerPKPPublicKey] - Quest invoker's PKP public key (optional)
+   * @param {string} [args.questInvokerPKPTokenId] - Quest invoker's PKP token Id (optional)
+   * @param {string} [args.multihashDevKey] - Multihash developer key (optional)
+   * @param {ethers.Signer} [args.signer] - Signer instance for signing transactions (optional)
+   * @param {`0x${string}`} [args.kinoraMetricsContract] - Address of the KinoraMetrics contract (optional)
+   * @param {`0x${string}`} [args.kinoraQuestContract] - Address of the KinoraQuest contract (optional)
+   * @param {`0x${string}`} [args.kinoraEscrowContract] - Address of the KinoraEscrow contract (optional)
+   * @param {ApolloClient<NormalizedCacheObject>} [args.playerAuthedApolloClient] - Authenticated Apollo client for the player (optional)
+   * @param {ApolloClient<NormalizedCacheObject>} [args.questInvokerAuthedApolloClient] - Authenticated Apollo client for the quest invoker (optional)
+   */
   constructor(args: {
     questInvokerProfileId: string;
     authSig: LitAuthSig;
@@ -177,10 +349,17 @@ export class Sequence extends EventEmitter {
     this.beforeUnloadHandler = this.beforeUnloadHandler.bind(this);
   }
 
+  /**
+   * @method
+   * @description Initializes the video element by querying the Livepeer Player element inside a specified parent div. It also binds certain event handlers to their respective contexts.
+   * @throws Will throw an error if parent div Id is not specified, or if the Livepeer Player element is not found.
+   * @returns {void}
+   */
+
   videoInit = (): void => {
     if (!this.parentId)
       throw new Error(
-        "Specify ID of parent div to Livepeer Player element in the constructor.",
+        "Specify Id of parent div to Livepeer Player element in the constructor.",
       );
     if (typeof window !== "undefined") {
       this.videoElement = document
@@ -198,6 +377,12 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method
+   * @description Binds various event listeners to the video element to track user interactions and metrics. Verifies the existence of necessary data before proceeding.
+   * @throws Will throw an error if run outside a browser environment, or if certain preconditions are not met.
+   * @returns {void}
+   */
   bindEvents = (): void => {
     if (typeof window === "undefined") {
       throw new Error(
@@ -234,6 +419,16 @@ export class Sequence extends EventEmitter {
     this.videoElement.addEventListener("playing", this.metrics.onBufferEnd);
   };
 
+  /**
+   * @method
+   * @description Constructs a URI that is compatible with the quest structure by formatting provided quest details into a specific textual and image format.
+   * @param {Object} args - The quest details including title, description, milestones, and cover image.
+   * @param {string} args.questTitle - The title of the quest.
+   * @param {string} args.questDescription - A description of the quest.
+   * @param {string[]} args.questMilestonesDetails - Details of each milestone in the quest.
+   * @param {string} args.questCoverImage - URI of the quest's cover image.
+   * @returns {ImageMetadataV3} - The formatted data compliant with ImageMetadataV3 structure.
+   */
   createQuestCompatibleURI = (args: {
     questTitle: string;
     questDescription: string;
@@ -290,6 +485,16 @@ export class Sequence extends EventEmitter {
     return data;
   };
 
+  /**
+   * @method
+   * @description Instantiates a new quest with specified inputs. It checks for necessary setups, generates random keys if needed, and interacts with contracts to set up the quest.
+   * @param {Object} questInputs - The details required for quest creation.
+   * @param {string} questInputs.ipfsQuestDetails - IPFS URI where quest details are stored.
+   * @param {number} questInputs.maxPlayerCount - Maximum number of players for the quest.
+   * @param {Milestone[]} questInputs.milestones - Array of milestone objects for the quest.
+   * @throws Will throw an error if necessary data or setups are missing.
+   * @returns {Promise<Object>} - Promise resolving to an object containing various contract addresses and other details relevant to the new quest.
+   */
   instantiateNewQuest = async (questInputs: {
     ipfsQuestDetails: string;
     maxPlayerCount: number;
@@ -460,6 +665,13 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method
+   * @description Assigns a set of Lit action code hashes to a PKP. Ensures that a PKP Token Id has been set before proceeding.
+   * @param {string[]} litActionCodeHashes - Array of Lit action code hashes to be assigned.
+   * @throws Will throw an error if PKP Token Id is not set.
+   * @returns {Promise<Object>} - Promise resolving to an object containing an array of transaction hashes for each assigned action.
+   */
   assignQuestActionsToPKP = async (
     litActionCodeHashes: string[],
   ): Promise<{
@@ -509,6 +721,16 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method
+   * @description Terminates a quest and triggers the withdrawal process for any remaining funds. Ensures necessary setups and data are present before proceeding.
+   * @param {string} pubId - The Lens Pub Id of the quest.
+   * @param {string} toAddress - Ethereum address to which remaining funds will be sent.
+   * @param {string[]} milestoneLitActionCodeHashes - Array of Lit action code hashes for each milestone.
+   * @param {string} metricsLitActionCodeHash - Lit action code hash for metrics.
+   * @throws Will throw an error if necessary setups or data are missing.
+   * @returns {Promise<Object>} - Promise resolving to an object containing transaction hashes for termination and withdrawal processes.
+   */
   terminateQuestAndWithdraw = async (
     pubId: string,
     toAddress: `0s${string}`,
@@ -576,6 +798,13 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method
+   * @description Allows a player to join a quest. Ensures a Player Authed Apollo Client is set before proceeding.
+   * @param {string} pubId - The Lens Pub Id of the quest.
+   * @throws Will throw an error if the Player Authed Apollo Client is not set.
+   * @returns {Promise<Object>} - Promise resolving to an object containing data about the action performed.
+   */
   playerJoinQuest = async (
     pubId: string,
   ): Promise<{
@@ -619,6 +848,14 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method
+   * @description Allows a player to complete a milestone in a quest. Ensures a Player Authed Apollo Client is set before proceeding.
+   * @param {string} pubId - The Lens Pub Id of the quest.
+   * @param {number} milestone - The milestone number to be completed.
+   * @throws Will throw an error if the Player Authed Apollo Client is not set.
+   * @returns {Promise<Object>} - Promise resolving to an object containing data about the action performed.
+   */
   playerCompleteQuestMilestone = async (
     pubId: string,
     milestone: number,
@@ -662,6 +899,17 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method
+   * @description Collects and potentially encrypts player metrics for a quest, based on specified parameters. Ensures function is run in a browser environment with a video element present.
+   * @param {string} playbackId - The playback Id for the quest.
+   * @param {string} pubId - The Lens Pub Id of the quest.
+   * @param {string} playerProfileId - The Lens Profile Id of the player.
+   * @param {string} playerProfileOwnerAddress - The Ethereum address of the player profile owner.
+   * @param {boolean} encrypt - A flag indicating whether to encrypt the metrics data.
+   * @throws Will throw an error if run outside a browser environment, or if the video element is not detected.
+   * @returns {Promise<string>} - Promise resolving to a JSON string containing the collected (and possibly encrypted) metrics data.
+   */
   getPlayerMetrics = async (
     playbackId: string,
     pubId: string,
@@ -726,6 +974,18 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method sendMetricsOnChain
+   * @description This function is responsible for sending player metrics to the blockchain. It performs various checks and validations before proceeding with the transaction, and logs the outcome.
+   * @param {string} playbackId - The playback Id associated with the metrics.
+   * @param {string} playerProfileId - The Lens Profile Id of the player.
+   * @param {string} playerMetricsHash - The hash of the player's metrics.
+   * @param {string} litActionHash - The hash of the LIT action.
+   * @param {string} pubId - The Lens Pub Id of the quest.
+   * @param {boolean} metricsEncrypted - Flag indicating whether the metrics are encrypted.
+   * @throws Will throw an error if required data is missing or if transaction generation or execution fails.
+   * @returns {Promise<void>} - A Promise that resolves when the operation completes.
+   */
   sendMetricsOnChain = async (
     playbackId: string,
     playerProfileId: string,
@@ -847,8 +1107,18 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method verifyPlayerMilestoneComplete
+   * @description This function is responsible for verifying if a player has completed a milestone in a quest, and updates the blockchain accordingly. It performs various checks and validations before proceeding with the transaction, and logs the outcome.
+   * @param {string} playerProfileId - The Lens Profile Id of the player.
+   * @param {string} pubId - The Lens Pub Id of the quest.
+   * @param {string} playerProfileOwnerAddress - The Ethereum address of the player profile owner.
+   * @param {number} milestone - The milestone number.
+   * @param {string} litActionMilestoneHash - The hash of the LIT action for the milestone.
+   * @throws Will throw an error if required data is missing or if transaction generation or execution fails.
+   * @returns {Promise<Object>} - A Promise that resolves to an object containing a check result indicating whether the milestone verification succeeded.
+   */
   verifyPlayerMilestoneComplete = async (
-    playbackId: string,
     playerProfileId: string,
     pubId: string,
     playerProfileOwnerAddress: `0x${string}`,
@@ -859,7 +1129,6 @@ export class Sequence extends EventEmitter {
   }> => {
     try {
       const passed = await this.checkQuestMilestoneMetrics(
-        playbackId,
         playerProfileId,
         pubId,
         playerProfileOwnerAddress,
@@ -935,16 +1204,31 @@ export class Sequence extends EventEmitter {
         if (error) {
           this.log(
             LogCategory.ERROR,
-            `Player add Metrics on-chain failed on Broadcast.`,
+            `Player Update Elegible status on-chain failed on Broadcast.`,
             message,
             new Date().toISOString(),
           );
           if (this.errorHandlingModeStrict) {
             throw new Error(
-              `Error adding Player Metrics and broadcasting: ${message}`,
+              `Error updating Player Elegibility status and broadcasting: ${message}`,
             );
           }
           return;
+        } else {
+          this.metrics.reset();
+
+          this.log(
+            LogCategory.RESPONSE,
+            `Player Elegibility status updated successfully. Lit Action Response.`,
+            litResponse,
+            new Date().toISOString(),
+          );
+          this.log(
+            LogCategory.BROADCAST,
+            `Broadcast on-chain.`,
+            txHash,
+            new Date().toISOString(),
+          );
         }
 
         return {
@@ -970,6 +1254,17 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method collectMetrics
+   * @description Collects and aggregates player metrics from both current and past interactions, integrating publication interactions.
+   * @param {string} playbackId - The playback Id related to the player metrics.
+   * @param {string} pubId - The Lens Pub Id of the quest.
+   * @param {string} playerProfileId - The player's Lens Profile Id.
+   * @param {string} playerProfileOwnerAddress - The Ethereum address of the player's profile owner.
+   * @returns {Promise<PlayerMetrics>} - A Promise resolving to an aggregated PlayerMetrics object.
+   * @throws Will throw an error if any issue occurs during metrics collection or aggregation.
+   * @private
+   */
   private collectMetrics = async (
     playbackId: string,
     pubId: string,
@@ -1177,8 +1472,18 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method checkQuestMilestoneMetrics
+   * @description Checks whether the player's metrics meet the milestone requirements.
+   * @param {string} playerProfileId - The player's Lens Profile Id.
+   * @param {string} pubId - The Lens Pub Id of the quest.
+   * @param {string} playerProfileOwnerAddress - The Ethereum address of the player's profile owner.
+   * @param {number} milestone - The milestone number.
+   * @returns {Promise<boolean>} - A Promise resolving to a boolean indicating whether the milestone requirements are met.
+   * @throws Will throw an error if any issue occurs during the milestone check.
+   * @private
+   */
   private checkQuestMilestoneMetrics = async (
-    playbackId: string,
     playerProfileId: string,
     pubId: string,
     playerProfileOwnerAddress: `0x${string}`,
@@ -1223,6 +1528,16 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method metricComparison
+   * @description Compares player metrics against eligibility criteria for quest milestone completion.
+   * @param {MilestoneEligibility[]} eligibilityCriteria - The eligibility criteria array.
+   * @param {string} playerProfileId - The player's Lens Profile Id.
+   * @param {string} playerProfileOwnerAddress - The Ethereum address of the player's profile owner.
+   * @param {string} pubId - The Lens Pub Id of the quest.
+   * @returns {Promise<boolean>} - A Promise resolving to a boolean indicating whether the player meets the eligibility criteria.
+   * @private
+   */
   private metricComparison = async (
     eligibilityCriteria: MilestoneEligibility[],
     playerProfileId: string,
@@ -1323,6 +1638,12 @@ export class Sequence extends EventEmitter {
     return result;
   };
 
+  /**
+   * @method cleanUpListeners
+   * @description Removes event listeners related to video metrics collection.
+   * @throws Will throw an error if not used in a browser environment or if the video element is not found.
+   * @private
+   */
   private cleanUpListeners = () => {
     if (typeof window === "undefined") {
       throw new Error(
@@ -1361,6 +1682,12 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method timeUpdateHandler
+   * @description Event handler for video 'timeupdate' event, updates metrics and checks for bounce condition.
+   * @param {Event} e - The event object.
+   * @private
+   */
   private timeUpdateHandler = (e: Event) => {
     const currentTime = (e.currentTarget as HTMLVideoElement).currentTime;
     this.metrics.onTimeUpdate(currentTime);
@@ -1369,16 +1696,35 @@ export class Sequence extends EventEmitter {
     }
   };
 
+  /**
+   * @method fullScreenChangeHandler
+   * @description Event handler for document 'fullscreenchange' event, updates metrics.
+   * @private
+   */
   private fullScreenChangeHandler = () => {
     if (document.fullscreenElement === this.videoElement) {
       this.metrics.onFullScreen();
     }
   };
 
+  /**
+   * @method beforeUnloadHandler
+   * @description Event handler for window 'beforeunload' event, performs cleanup.
+   * @private
+   */
   private beforeUnloadHandler = () => {
     this.cleanUpListeners();
   };
 
+  /**
+   * @method log
+   * @description Logs messages along with associated data, managing log index and emitting log events.
+   * @param {LogCategory} category - The category of the log.
+   * @param {string} message - The log message.
+   * @param {string} responseObject - The response object as a string.
+   * @param {string} isoDate - The ISO string representation of the log date.
+   * @private
+   */
   private log = (
     category: LogCategory,
     message: string,

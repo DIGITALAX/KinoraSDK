@@ -1,4 +1,4 @@
-import { ApolloClient, ApolloError } from "@apollo/client";
+import { ApolloError } from "@apollo/client";
 import React, {
   useEffect,
   useCallback,
@@ -9,8 +9,47 @@ import React, {
 import { Mirror, Post, Quote } from "./../../src/@types/generated";
 import getPublicationClient from "./../../src/graphql/queries/getPublicationClient";
 
+// Code can only be executed in a browser environment
 const isBrowser = typeof window !== "undefined";
 
+/**
+ * @interface KinoraPlayerWrapperProps
+ * @dev Defines the shape of props accepted by KinoraPlayerWrapper component.
+ * @param onPlay - Handler for the play event.
+ * @param onPause - Handler for the pause event.
+ * @param onAbort - Handler for the abort event.
+ * @param onCanPlay - Handler for the can play event.
+ * @param onCanPlayThrough - Handler for the can play through event.
+ * @param onDurationChange - Handler for the duration change event.
+ * @param onEmptied - Handler for the emptied event.
+ * @param onEnded - Handler for the ended event.
+ * @param onError - Handler for the error event.
+ * @param onLoadedData - Handler for the loaded data event.
+ * @param onLoadedMetadata - Handler for the loaded metadata event.
+ * @param onLoadStart - Handler for the load start event.
+ * @param onPlaying - Handler for the playing event.
+ * @param onProgress - Handler for the progress event.
+ * @param onRateChange - Handler for the rate change event.
+ * @param onSeeked - Handler for the seeked event.
+ * @param onSeeking - Handler for the seeking event.
+ * @param onStalled - Handler for the stalled event.
+ * @param onSuspend - Handler for the suspend event.
+ * @param onTimeUpdate - Handler for the time update event.
+ * @param onVolumeChange - Handler for the volume change event.
+ * @param onWaiting - Handler for the waiting event.
+ * @param onFullScreenChange - Handler for the full screen change event.
+ * @param onLensVideoData - Handler for the Lens video data event.
+ * @param volume - Object containing the level and id for volume setting.
+ * @param seekTo - Object containing the time and id for seeking operation.
+ * @param play - A boolean to control play state.
+ * @param pause - A boolean to control pause state.
+ * @param fullscreen - A boolean to control fullscreen state.
+ * @param fillWidthHeight - A boolean to control fill width and height state.
+ * @param customControls - A boolean to control custom controls state.
+ * @param pubId - The Lens Pub Id associated with the media playback Id.
+ * @param playerProfileId - The Lens Profile Id of the player.
+ * @param children - A function that accepts a setter for the Livepeer media element, returning React Node.
+ */
 type KinoraPlayerWrapperProps = {
   onPlay?: (event: Event) => void;
   onPause?: (event: Event) => void;
@@ -47,12 +86,19 @@ type KinoraPlayerWrapperProps = {
   fillWidthHeight?: boolean;
   customControls?: boolean;
   pubId?: string;
-  userId?: string;
+  playerProfileId?: string;
   children: (
     setMediaElement: (node: HTMLVideoElement) => void,
   ) => React.ReactNode;
 };
 
+/**
+ * @function KinoraPlayerWrapper
+ * @dev A functional React component wrapping the Livepeer media player, managing its interactions, custom controls design and responsive sizing.
+ *
+ * @param props - The props conforming to KinoraPlayerWrapperProps interface.
+ * @returns A React functional component.
+ */
 const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
   ({
     fullscreen = false,
@@ -63,28 +109,34 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     customControls = true,
     fillWidthHeight = false,
     pubId,
-    userId,
+    playerProfileId,
     children,
     onLensVideoData,
     ...props
   }) => {
     if (!isBrowser) return null;
+    // Reference to the Livepeer internal video element (HTMLVideoElement)
     const mediaElementRef = React.useRef<HTMLVideoElement>(null);
+    // State for tracking the last seek operation
     const [lastSeekId, setLastSeekId] = useState<number>(0);
+    // State for tracking the last volume change operation
     const [lastVolumeId, setLastVolumeId] = useState<number>(0);
+    // State for tracking if media is currently playing
     const [isPlaying, setIsPlaying] = useState(false);
+    // State for managing Lens related properties
     const [lensProps, setLensProps] = useState<{
       pubId: string | undefined;
-      userId: string | undefined;
+      playerProfileId: string | undefined;
       onLensVideoData: (
         data: Post | Mirror | Comment | Quote,
         error: ApolloError | undefined,
       ) => void | undefined;
     }>({
       pubId: undefined,
-      userId: undefined,
+      playerProfileId: undefined,
       onLensVideoData: undefined,
     });
+    // List of event prop keys to be registered on the media element
     const eventProps: string[] = [
       "onAbort",
       "onCanPlay",
@@ -111,6 +163,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       "onFullScreenChange",
     ];
 
+    // Callback to set media element and setup/cleanup event listeners
     const setMediaElement = useCallback(
       (node: HTMLVideoElement | null) => {
         if (node !== null) {
@@ -120,7 +173,9 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
         const mediaElement = mediaElementRef.current;
         if (!mediaElement) return;
 
+        // Function to setup event listeners on the media element
         const setupEventListeners = () => {
+          // Registering event listeners based on provided props
           eventProps.forEach((key) => {
             if (
               typeof (props as any)[key] === "function" &&
@@ -134,6 +189,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
             }
           });
 
+          // Handlers for play and pause events
           const handlePlay = (e: Event) => {
             setIsPlaying(true);
             if (typeof props.onPlay === "function") {
@@ -148,10 +204,11 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
             }
           };
 
+          // Registering play and pause event handlers
           mediaElement.addEventListener("play", handlePlay);
           mediaElement.addEventListener("pause", handlePause);
 
-          // Cleanup
+          // Cleanup function to remove event listeners
           return () => {
             eventProps.forEach((key) => {
               if (
@@ -170,6 +227,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
           };
         };
 
+        // Setting up event listeners based on media element's ready state
         if (mediaElement) {
           if (mediaElement.readyState >= 1) {
             return setupEventListeners();
@@ -189,25 +247,33 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       [children, props, mediaElementRef.current],
     );
 
+    /**
+     * @effect
+     * @description - Handling Lens pub video data and updating LensProps state
+     */
     useEffect(() => {
       if (onLensVideoData && pubId) {
         if (
           !handleIsEqual(lensProps, {
             pubId,
-            userId,
+            playerProfileId,
             onLensVideoData,
           })
         ) {
           handleVideoLensData();
           setLensProps({
             pubId,
-            userId,
+            playerProfileId,
             onLensVideoData,
           });
         }
       }
-    }, [onLensVideoData, pubId, userId]);
+    }, [onLensVideoData, pubId, playerProfileId]);
 
+    /**
+     * @effect
+     * @description - Handling play and pause of the media element
+     */
     useEffect(() => {
       const mediaElement = mediaElementRef.current;
       if (mediaElement) {
@@ -223,6 +289,10 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       }
     }, [play, pause]);
 
+    /**
+     * @effect
+     * @description - Handling volume change of the media element
+     */
     useEffect(() => {
       const mediaElement = mediaElementRef.current;
       if (
@@ -235,6 +305,10 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       }
     }, [volume]);
 
+    /**
+     * @effect
+     * @description - Handling fullscreen toggle of the media element
+     */
     useEffect(() => {
       const mediaElement = mediaElementRef.current;
       if (fullscreen && mediaElement) {
@@ -246,6 +320,10 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       }
     }, [fullscreen]);
 
+    /**
+     * @effect
+     * @description - Handling seek operations on the media element
+     */
     useEffect(() => {
       const mediaElement = mediaElementRef.current;
       if (
@@ -260,6 +338,10 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       }
     }, [seekTo]);
 
+    /**
+     * @effect
+     * @description - Handling styles for custom width and height fill of the video element container
+     */
     useEffect(() => {
       const livepeerContainer = document.querySelector(
         ".livepeer-contents-container",
@@ -321,6 +403,10 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       };
     }, [fillWidthHeight]);
 
+    /**
+     * @effect
+     * @description - Observing DOM mutations to handle custom controls display for the Livepeer media element
+     */
     useLayoutEffect(() => {
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -361,10 +447,16 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       return () => observer.disconnect();
     }, [customControls]);
 
+    /**
+     * @function handleIsEqual
+     * @description - Utility function to check equality of prevProps and nextProps for the Lens video data for determing if an update is necessary
+     * @param {Object} prevProps - Previous properties object
+     * @param {Object} nextProps - Next properties object
+     * @returns {boolean} - Returns true if the properties are equal, otherwise false */
     const handleIsEqual = (
       prevProps: {
         pubId: string;
-        userId: string;
+        playerProfileId: string;
         onLensVideoData: (
           data: Post | Mirror | Comment | Quote,
           error: ApolloError | undefined,
@@ -372,7 +464,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       },
       nextProps: {
         pubId: string;
-        userId: string;
+        playerProfileId: string;
         onLensVideoData: (
           data: Post | Mirror | Comment | Quote,
           error: ApolloError | undefined,
@@ -382,10 +474,14 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       return (
         prevProps.pubId === nextProps.pubId &&
         prevProps.onLensVideoData === nextProps.onLensVideoData &&
-        prevProps.userId === nextProps.userId
+        prevProps.playerProfileId === nextProps.playerProfileId
       );
     };
 
+    /**
+     * @function handleVideoLensData
+     * @description - Async function to handle Lens video data retrieval and callback
+     */
     const handleVideoLensData = async (): Promise<void> => {
       const { data, error } = await getPublicationClient({
         forId: pubId,
