@@ -216,13 +216,6 @@ export class Sequence extends EventEmitter {
 
   /**
    * @private
-   * @type {LitAuthSig}
-   * @description Authenticated signature object.
-   */
-  private authSig: LitAuthSig;
-
-  /**
-   * @private
    * @type {ApolloClient<NormalizedCacheObject>}
    * @description Authenticated Apollo Client for player interactions.
    */
@@ -250,7 +243,6 @@ export class Sequence extends EventEmitter {
    * @constructor
    * @param {Object} args - Constructor arguments
    * @param {string} args.questInvokerProfileId - Quest invoker's profile Id
-   * @param {LitAuthSig} args.authSig - Authenticated signature
    * @param {string} [args.parentId] - Parent Id (optional)
    * @param {string} [args.redirectURL] - Redirect URL (optional)
    * @param {string} [args.rpcURL] - RPC URL for blockchain interactions (optional)
@@ -267,7 +259,6 @@ export class Sequence extends EventEmitter {
    */
   constructor(args: {
     questInvokerProfileId: string;
-    authSig: LitAuthSig;
     parentId?: string;
     redirectURL?: string;
     rpcURL?: string;
@@ -284,7 +275,6 @@ export class Sequence extends EventEmitter {
   }) {
     super();
     this.questInvokerProfileId = parseInt(args.questInvokerProfileId, 16);
-    this.authSig = args.authSig;
     this.errorHandlingModeStrict = args.errorHandlingModeStrict || false;
     this.rpcURL = args.rpcURL;
     if (args.questInvokerPKPPublicKey)
@@ -907,6 +897,7 @@ export class Sequence extends EventEmitter {
    * @param {string} playerProfileId - The Lens Profile Id of the player.
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player profile owner.
    * @param {boolean} encrypt - A flag indicating whether to encrypt the metrics data.
+   * @param {LitAuthSig} authSig Lit authentication signature.
    * @throws Will throw an error if run outside a browser environment, or if the video element is not detected.
    * @returns {Promise<string>} - Promise resolving to a JSON string containing the collected (and possibly encrypted) metrics data.
    */
@@ -916,6 +907,7 @@ export class Sequence extends EventEmitter {
     playerProfileId: string,
     playerProfileOwnerAddress: `0x${string}`,
     encrypt: boolean,
+    authSig: LitAuthSig,
   ): Promise<string> => {
     if (typeof window === "undefined") {
       throw new Error(
@@ -933,6 +925,7 @@ export class Sequence extends EventEmitter {
         pubId,
         playerProfileId,
         playerProfileOwnerAddress,
+        authSig,
       );
       let metrics = JSON.stringify(playerMetrics);
       if (encrypt) {
@@ -940,7 +933,7 @@ export class Sequence extends EventEmitter {
           metrics,
           this.questInvokerPKPData.ethAddress,
           playerProfileOwnerAddress,
-          this.authSig,
+          authSig,
           this.litNodeClient,
         );
 
@@ -983,6 +976,7 @@ export class Sequence extends EventEmitter {
    * @param {string} litActionHash - The hash of the LIT action.
    * @param {string} pubId - The Lens Pub Id of the quest.
    * @param {boolean} metricsEncrypted - Flag indicating whether the metrics are encrypted.
+   * @param {LitAuthSig} authSig Lit authentication signature.
    * @throws Will throw an error if required data is missing or if transaction generation or execution fails.
    * @returns {Promise<void>} - A Promise that resolves when the operation completes.
    */
@@ -993,6 +987,7 @@ export class Sequence extends EventEmitter {
     litActionHash: string,
     pubId: string,
     metricsEncrypted: boolean,
+    authSig: LitAuthSig,
   ): Promise<void> => {
     if (!this.questInvokerPKPData.publicKey)
       throw new Error("Set questInvoker PKP Public Key before continuing.");
@@ -1034,31 +1029,12 @@ export class Sequence extends EventEmitter {
         return;
       }
 
-      const {
-        error: authSigError,
-        message: authSigMessage,
-        litAuthSig,
-      } = await generateAuthSig(this.signer);
-
-      if (authSigError) {
-        this.log(
-          LogCategory.ERROR,
-          `Lit Auth Sig generation failed.`,
-          authSigMessage,
-          new Date().toISOString(),
-        );
-        if (this.errorHandlingModeStrict) {
-          throw new Error(`Error generating Lit Auth Sig: ${authSigMessage}`);
-        }
-        return;
-      }
-
       const { txHash, error, message, litResponse } = await litExecute(
         this.polygonProvider,
         this.litNodeClient,
         generatedTxData,
         "addPlayerMetrics",
-        this.authSig ? this.authSig : litAuthSig,
+        authSig,
         litActionHash,
         this.questInvokerPKPData.publicKey,
         this.multihashDevKey,
@@ -1115,6 +1091,7 @@ export class Sequence extends EventEmitter {
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player profile owner.
    * @param {number} milestone - The milestone number.
    * @param {string} litActionMilestoneHash - The hash of the LIT action for the milestone.
+   * @param {LitAuthSig} authSig Lit authentication signature.
    * @throws Will throw an error if required data is missing or if transaction generation or execution fails.
    * @returns {Promise<Object>} - A Promise that resolves to an object containing a check result indicating whether the milestone verification succeeded.
    */
@@ -1124,6 +1101,7 @@ export class Sequence extends EventEmitter {
     playerProfileOwnerAddress: `0x${string}`,
     milestone: number,
     litActionMilestoneHash: string,
+    authSig: LitAuthSig,
   ): Promise<{
     checkResult: boolean;
   }> => {
@@ -1133,6 +1111,7 @@ export class Sequence extends EventEmitter {
         pubId,
         playerProfileOwnerAddress,
         milestone,
+        authSig,
       );
 
       if (passed) {
@@ -1163,25 +1142,6 @@ export class Sequence extends EventEmitter {
           return;
         }
 
-        const {
-          error: authSigError,
-          message: authSigMessage,
-          litAuthSig,
-        } = await generateAuthSig(this.signer);
-
-        if (authSigError) {
-          this.log(
-            LogCategory.ERROR,
-            `Lit Auth Sig generation failed.`,
-            authSigMessage,
-            new Date().toISOString(),
-          );
-          if (this.errorHandlingModeStrict) {
-            throw new Error(`Error generating Lit Auth Sig: ${authSigMessage}`);
-          }
-          return;
-        }
-
         const hashKeyItem =
           await this.kinoraQuestDataContract.getQuestMilestoneCompletionConditionHash(
             this.questInvokerProfileId,
@@ -1194,7 +1154,7 @@ export class Sequence extends EventEmitter {
           this.litNodeClient,
           generatedTxData,
           "playerEligibleToClaimMilestone",
-          this.authSig ? this.authSig : litAuthSig,
+          authSig,
           litActionMilestoneHash,
           this.questInvokerPKPData.publicKey,
           this.multihashDevKey,
@@ -1280,6 +1240,7 @@ export class Sequence extends EventEmitter {
    * @param {string} pubId - The Lens Pub Id of the quest.
    * @param {string} playerProfileId - The player's Lens Profile Id.
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player's profile owner.
+   * @param {LitAuthSig} authSig Lit authentication signature.
    * @returns {Promise<PlayerMetrics>} - A Promise resolving to an aggregated PlayerMetrics object.
    * @throws Will throw an error if any issue occurs during metrics collection or aggregation.
    * @private
@@ -1289,6 +1250,7 @@ export class Sequence extends EventEmitter {
     pubId: string,
     playerProfileId: string,
     playerProfileOwnerAddress: `0x${string}`,
+    authSig: LitAuthSig,
   ): Promise<PlayerMetrics> => {
     let playerMetrics: PlayerMetrics;
     try {
@@ -1340,7 +1302,7 @@ export class Sequence extends EventEmitter {
             await JSON.parse(oldMetricsValues),
             this.questInvokerPKPData.ethAddress,
             playerProfileOwnerAddress,
-            this.authSig,
+            authSig,
             this.litNodeClient,
           );
 
@@ -1498,6 +1460,7 @@ export class Sequence extends EventEmitter {
    * @param {string} pubId - The Lens Pub Id of the quest.
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player's profile owner.
    * @param {number} milestone - The milestone number.
+   * @param {LitAuthSig} authSig Lit authentication signature.
    * @returns {Promise<boolean>} - A Promise resolving to a boolean indicating whether the milestone requirements are met.
    * @throws Will throw an error if any issue occurs during the milestone check.
    * @private
@@ -1507,6 +1470,7 @@ export class Sequence extends EventEmitter {
     pubId: string,
     playerProfileOwnerAddress: `0x${string}`,
     milestone: number,
+    authSig: LitAuthSig,
   ): Promise<boolean> => {
     try {
       let playerEligible = false;
@@ -1531,6 +1495,7 @@ export class Sequence extends EventEmitter {
         playerProfileId,
         playerProfileOwnerAddress,
         pubId,
+        authSig,
       );
 
       return playerEligible;
@@ -1554,6 +1519,7 @@ export class Sequence extends EventEmitter {
    * @param {string} playerProfileId - The player's Lens Profile Id.
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player's profile owner.
    * @param {string} pubId - The Lens Pub Id of the quest.
+   * @param {LitAuthSig} authSig Lit authentication signature.
    * @returns {Promise<boolean>} - A Promise resolving to a boolean indicating whether the player meets the eligibility criteria.
    * @private
    */
@@ -1562,6 +1528,7 @@ export class Sequence extends EventEmitter {
     playerProfileId: string,
     playerProfileOwnerAddress: `0x${string}`,
     pubId: string,
+    authSig: LitAuthSig,
   ): Promise<boolean> => {
     let result = true;
     for (let i = 0; i < eligibilityCriteria.length; i++) {
@@ -1592,7 +1559,7 @@ export class Sequence extends EventEmitter {
           await JSON.parse(currentMetrics),
           this.questInvokerPKPData.ethAddress,
           playerProfileOwnerAddress,
-          this.authSig,
+          authSig,
           this.litNodeClient,
         );
 
