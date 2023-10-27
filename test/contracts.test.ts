@@ -504,7 +504,7 @@ describe("Contract Test Suite", () => {
         ).to.equal(0);
 
         expect(
-          await kinoraQuestData.getPlayerElegibleToClaimMilestone(
+          await kinoraQuestData.getPlayerEligibleToClaimMilestone(
             playerProfileId,
             profileId,
             pubId,
@@ -635,12 +635,12 @@ describe("Contract Test Suite", () => {
       it("Verify Player Milestone", async () => {
         const tx = await kinoraMetrics
           .connect(pkp)
-          .playerElegibleToClaimMilestone(pubId, 1, playerProfileId, true);
+          .playerEligibleToClaimMilestone(pubId, 1, playerProfileId, true);
 
         receipt = await tx.wait();
 
         const event = receipt.events?.find(
-          (event) => event.event === "PlayerElegibleToClaimMilestone",
+          (event) => event.event === "PlayerEligibleToClaimMilestone",
         );
         expect(event).to.not.be.undefined;
 
@@ -651,7 +651,7 @@ describe("Contract Test Suite", () => {
         }
 
         expect(
-          await kinoraQuestData.getPlayerElegibleToClaimMilestone(
+          await kinoraQuestData.getPlayerEligibleToClaimMilestone(
             playerProfileId,
             profileId,
             pubId,
@@ -659,7 +659,7 @@ describe("Contract Test Suite", () => {
           ),
         ).to.be.true;
         expect(
-          await kinoraQuestData.getPlayerElegibleToClaimMilestone(
+          await kinoraQuestData.getPlayerEligibleToClaimMilestone(
             playerProfileId,
             profileId,
             pubId,
@@ -672,7 +672,7 @@ describe("Contract Test Suite", () => {
         try {
           await kinoraMetrics
             .connect(questInvoker)
-            .playerElegibleToClaimMilestone(pubId, 1, playerProfileId, true);
+            .playerEligibleToClaimMilestone(pubId, 1, playerProfileId, true);
         } catch (error) {
           expect(error.message).to.include("OnlyPKP()");
         }
@@ -760,7 +760,7 @@ describe("Contract Test Suite", () => {
             .connect(kinoraOpenAction)
             .playerCompleteMilestone(pubId, 2, playerProfileId);
         } catch (error) {
-          expect(error.message).to.include("PlayerNotElegible()");
+          expect(error.message).to.include("PlayerNotEligible()");
         }
       });
 
@@ -785,7 +785,7 @@ describe("Contract Test Suite", () => {
       it("Player Claims Milestone Two", async () => {
         await kinoraMetrics
           .connect(pkp)
-          .playerElegibleToClaimMilestone(pubId, 2, playerProfileId, true);
+          .playerEligibleToClaimMilestone(pubId, 2, playerProfileId, true);
 
         const tx = await kinoraQuest
           .connect(kinoraOpenAction)
@@ -825,7 +825,7 @@ describe("Contract Test Suite", () => {
       it("Player Claims Milestone Three", async () => {
         await kinoraMetrics
           .connect(pkp)
-          .playerElegibleToClaimMilestone(pubId, 3, playerProfileId, true);
+          .playerEligibleToClaimMilestone(pubId, 3, playerProfileId, true);
 
         const tx = await kinoraQuest
           .connect(kinoraOpenAction)

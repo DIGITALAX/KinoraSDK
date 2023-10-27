@@ -15,7 +15,7 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
   mapping(uint256 => string) private _tokenURIs;
 
   error userNotQuestParticipant();
-  error userNotElegible();
+  error userNotEligible();
 
   modifier onlyUserQuestCompleted(
     address _userPKPAddress,
@@ -59,7 +59,7 @@ contract Kinora721QuestReward is ERC721URIStorage, Initializable {
     }
 
     if (!_questCompleted) {
-      revert userNotElegible();
+      revert userNotEligible();
     }
 
     _;

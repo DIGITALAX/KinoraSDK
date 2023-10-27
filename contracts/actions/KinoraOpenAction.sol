@@ -159,7 +159,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
         _params.publicationActedId
       ) &&
       _milestone != 0 &&
-      kinoraQuestData.getPlayerElegibleToClaimMilestone(
+      kinoraQuestData.getPlayerEligibleToClaimMilestone(
         _params.actorProfileId,
         _params.publicationActedProfileId,
         _params.publicationActedId,

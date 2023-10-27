@@ -35,14 +35,8 @@ const config: HardhatUserConfig = {
       url: "http://127.0.0.1:8545",
     },
   },
-  // settings: {
-  //   optimizer: { enabled: true, runs: 200, details: { yul: false } },
-  // },
   mocha: {
     timeout: 180000000, // Timeout value in milliseconds
-  },
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
   },
 };
 

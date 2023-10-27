@@ -1143,7 +1143,7 @@ export class Sequence extends EventEmitter {
         } = await createTxData(
           this.polygonProvider,
           KinoraMetricsAbi,
-          "playerElegibleToClaimMilestone",
+          "playerEligibleToClaimMilestone",
           [parseInt(pubId, 16), milestone, parseInt(playerProfileId, 16), true],
         );
 
@@ -1193,7 +1193,7 @@ export class Sequence extends EventEmitter {
           this.polygonProvider,
           this.litNodeClient,
           generatedTxData,
-          "playerElegibleToClaimMilestone",
+          "playerEligibleToClaimMilestone",
           this.authSig ? this.authSig : litAuthSig,
           litActionMilestoneHash,
           this.questInvokerPKPData.publicKey,
@@ -1204,13 +1204,13 @@ export class Sequence extends EventEmitter {
         if (error) {
           this.log(
             LogCategory.ERROR,
-            `Player Update Elegible status on-chain failed on Broadcast.`,
+            `Player Update Eligible status on-chain failed on Broadcast.`,
             message,
             new Date().toISOString(),
           );
           if (this.errorHandlingModeStrict) {
             throw new Error(
-              `Error updating Player Elegibility status and broadcasting: ${message}`,
+              `Error updating Player Eligibility status and broadcasting: ${message}`,
             );
           }
           return;
@@ -1219,7 +1219,7 @@ export class Sequence extends EventEmitter {
 
           this.log(
             LogCategory.RESPONSE,
-            `Player Elegibility status updated successfully. Lit Action Response.`,
+            `Player Eligibility status updated successfully. Lit Action Response.`,
             litResponse,
             new Date().toISOString(),
           );
@@ -1252,6 +1252,25 @@ export class Sequence extends EventEmitter {
         );
       }
     }
+  };
+
+  /**
+   * @method getLogs
+   * @description Retrieves the logs stored in the instance, optionally filtered by a specified category.
+   * @param {LogCategory} [category] - An optional parameter to filter logs by a specific category. If not provided, all logs are returned.
+   * @returns {ILogEntry[]} - An array of log entries, either filtered by the specified category or all logs if no category is specified.
+   */
+  getLogs = (category?: LogCategory): ILogEntry[] => {
+    const logsInOrder = [
+      ...this.logs.slice(this.logIndex),
+      ...this.logs.slice(0, this.logIndex),
+    ].filter((log) => log !== undefined);
+
+    if (!category) {
+      return logsInOrder;
+    }
+
+    return logsInOrder.filter((log) => log.category === category);
   };
 
   /**
@@ -1490,7 +1509,7 @@ export class Sequence extends EventEmitter {
     milestone: number,
   ): Promise<boolean> => {
     try {
-      let playerElegible = false;
+      let playerEligible = false;
 
       const hashedCompletion =
         await this.kinoraQuestDataContract.getQuestMilestoneCompletionConditionHash(
@@ -1507,14 +1526,14 @@ export class Sequence extends EventEmitter {
         toParseCompletion,
       );
 
-      playerElegible = await this.metricComparison(
+      playerEligible = await this.metricComparison(
         uriParsed,
         playerProfileId,
         playerProfileOwnerAddress,
         pubId,
       );
 
-      return playerElegible;
+      return playerEligible;
     } catch (err: any) {
       this.log(
         LogCategory.ERROR,

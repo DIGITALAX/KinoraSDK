@@ -1121,7 +1121,7 @@ xdescribe("Kinora Factory Contract", () => {
             .userCompleteMilestone(3, 1, userPKPTwo.address),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraQuest.interface },
-          "userNotElegible",
+          "userNotEligible",
         );
       });
 
@@ -1132,7 +1132,7 @@ xdescribe("Kinora Factory Contract", () => {
             .userJoinQuest(3, userPkp.address),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinoraQuest.interface },
-          "userNotElegible",
+          "userNotEligible",
         );
       });
 
@@ -1468,7 +1468,7 @@ xdescribe("Kinora Factory Contract", () => {
             .mintRewardNFT(userPkpThree.address, 5, 1),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinora721QuestReward.interface },
-          "userNotElegible",
+          "userNotEligible",
         );
       });
 
@@ -1479,7 +1479,7 @@ xdescribe("Kinora Factory Contract", () => {
             .mintRewardNFT(userPkpThree.address, 5, 1),
         ).to.be.revertedWithCustomError(
           { interface: initiatedKinora721QuestReward.interface },
-          "userNotElegible",
+          "userNotEligible",
         );
       });
 

@@ -17,7 +17,7 @@ contract KinoraQuest is Initializable {
   error onlyAssignedPKP();
   error questClosed();
   error questDoesntExist();
-  error userNotElegible();
+  error userNotEligible();
   error maxParticipantCountReached();
   error userDoesntExist();
   error rewardNotAvailable();
@@ -325,7 +325,7 @@ contract KinoraQuest is Initializable {
       _allUsers[_userPKPAddress]._questsJoined.push(_questId);
       _allQuests[_questId]._participants.push(_userPKPAddress);
     } else {
-      revert userNotElegible();
+      revert userNotEligible();
     }
 
     emit UserJoinQuest(_questId, _userPKPAddress);
@@ -360,7 +360,7 @@ contract KinoraQuest is Initializable {
     }
 
     if (!_questParticipant) {
-      revert userNotElegible();
+      revert userNotEligible();
     }
 
     if (
@@ -400,7 +400,7 @@ contract KinoraQuest is Initializable {
         _milestoneId
       );
     } else {
-      revert("KinoraQuest: User not elegible to complete milestone.");
+      revert("KinoraQuest: User not eligible to complete milestone.");
     }
 
     emit UserCompleteQuestMilestone(_questId, _milestoneId, _userPKPAddress);
