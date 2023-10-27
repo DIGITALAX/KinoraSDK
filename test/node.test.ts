@@ -2,7 +2,6 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Sequence } from "../src/sequence";
 import { Signer } from "ethers";
-import { SiweMessage } from "siwe";
 
 const profileId = "0x12d";
 const pubId = "0x01";
@@ -20,25 +19,8 @@ describe("Node Test Suite", () => {
     before(async () => {
       signer = new ethers.Wallet(process.env.PRIVATE_KEY!, chronicleProvider);
 
-      const siweMessage = new SiweMessage({
-        domain: "chromadin.xyz",
-        address: await signer.getAddress(),
-        statement: "This is an Auth Sig for Kinora",
-        uri: "http://localhost:3000/",
-        version: "1",
-        chainId: 31337,
-      });
-      const signedMessage = siweMessage.prepareMessage();
-      const sig = await signer.signMessage(signedMessage);
-
       newSequence = new Sequence({
         questInvokerProfileId: profileId,
-        authSig: {
-          sig,
-          derivedVia: "web3.eth.personal.sign",
-          signedMessage,
-          address: await signer.getAddress(),
-        },
         signer,
       });
     });

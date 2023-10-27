@@ -129,7 +129,7 @@ export const litExecute = async (
       },
     });
 
-    const signature = results.signatures[sigName];
+    const signature = results.signedData[sigName];
     const sig: {
       r: string;
       s: string;

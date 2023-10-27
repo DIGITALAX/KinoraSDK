@@ -257,7 +257,6 @@ export interface MilestoneEligibilityCriteria {
 export enum LogCategory {
   ERROR = 0,
   RESPONSE = 1,
-  QUEST = 2,
   METRICS = 3,
   BROADCAST = 4,
 }
