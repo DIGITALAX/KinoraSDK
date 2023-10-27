@@ -33,11 +33,10 @@ contract KinoraFactory {
   mapping(address => address[]) private _deployerToPKPs;
   mapping(address => KinoraLibrary.Kinora) private _deployerPKPToKinora;
 
-  constructor(address _openActionAddress) {
+  constructor() {
     name = "KinoraFactory";
     symbol = "KFAC";
     factoryMaintainer = msg.sender;
-    kinoraOpenAction = _openActionAddress;
   }
 
   function deployFromKinoraFactory(
@@ -124,9 +123,20 @@ contract KinoraFactory {
     );
 
     // Deploy KinoraQuestAddress
-    KinoraQuest(_newKQ).initialize(_newKAC, _newKE, address(kinoraQuestData));
+    KinoraQuest(_newKQ).initialize(
+      _newKAC,
+      _newKE,
+      address(kinoraQuestData),
+      kinoraOpenAction
+    );
 
     kinoraQuestData.setValidQuestContract(_profileId, _pubId, address(_newKQ));
+    kinoraQuestData.setValidMetricsContract(
+      _profileId,
+      _pubId,
+      address(_newKM)
+    );
+    kinoraQuestData.setValidEscrowContract(_profileId, _pubId, address(_newKE));
     kinoraNFTCreator.setValidEscrowContract(
       _profileId,
       _pubId,

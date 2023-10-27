@@ -338,7 +338,7 @@ export class Sequence extends EventEmitter {
       const encodedData = ethers.utils.defaultAbiCoder.encode(
         [
           "tuple(address questInvokerPKP, address questInvoker, uint256 maxPlayerCount)",
-          "tuple(Reward reward, string completionConditionHash, bytes32 conditionHash, uint256 numberOfPoints, uint256 milestone)[]",
+          "tuple(tuple(uint256 type, address tokenAddress, uint256 amount) reward, string completionConditionHash, bytes32 conditionHash, uint256 numberOfPoints, uint256 milestone, string uri)[]",
         ],
         [
           {

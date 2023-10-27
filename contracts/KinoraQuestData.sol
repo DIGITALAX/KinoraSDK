@@ -10,6 +10,7 @@ contract KinoraQuestData {
   string public symbol;
   address public factoryContract;
   address public kinoraOpenAction;
+  address public factoryMaintainer;
   uint256 private _questCount;
   uint256 private _playerCount;
 
@@ -17,6 +18,7 @@ contract KinoraQuestData {
   mapping(uint256 => mapping(uint256 => KinoraLibrary.Quest))
     private _allQuests;
   mapping(uint256 => mapping(uint256 => address)) private _validQuestContract;
+  mapping(uint256 => mapping(uint256 => address)) private _validEscrowContract;
   mapping(uint256 => mapping(uint256 => address)) private _validMetricsContract;
 
   event QuestInstantiated(
@@ -39,6 +41,11 @@ contract KinoraQuestData {
     uint256 profileId,
     uint256 pubId,
     address questContract
+  );
+  event EscrowContractValidated(
+    uint256 profileId,
+    uint256 pubId,
+    address escrowContract
   );
   event MetricsContractValidated(
     uint256 profileId,
@@ -66,8 +73,18 @@ contract KinoraQuestData {
     _;
   }
 
+  modifier onlyValidQuestOrEscrowContract(uint256 _profileId, uint256 _pubId) {
+    if (
+      _validQuestContract[_profileId][_pubId] != msg.sender &&
+      _validEscrowContract[_profileId][_pubId] != msg.sender
+    ) {
+      revert KinoraErrors.InvalidContract();
+    }
+    _;
+  }
+
   modifier onlyActionOrFactory() {
-    if (msg.sender != factoryContract || msg.sender != kinoraOpenAction) {
+    if (msg.sender != factoryContract && msg.sender != kinoraOpenAction) {
       revert KinoraErrors.InvalidContract();
     }
     _;
@@ -80,21 +97,13 @@ contract KinoraQuestData {
     _;
   }
 
-  constructor(address _factoryAddress, address _kinoraOpenActionAddress) {
+  constructor(address _factoryAddress) {
     name = "KinoraQuestData";
     symbol = "KQD";
     _questCount = 0;
     _playerCount = 0;
     factoryContract = _factoryAddress;
-    kinoraOpenAction = _kinoraOpenActionAddress;
-  }
-
-  function getTotalQuestCount() public view returns (uint256) {
-    return _questCount;
-  }
-
-  function getTotalPlayerCount() public view returns (uint256) {
-    return _playerCount;
+    factoryMaintainer = msg.sender;
   }
 
   function newQuest(
@@ -113,19 +122,15 @@ contract KinoraQuestData {
     _allQuests[_profileId][_pubId].maxPlayerCount = _maxPlayerCount;
 
     for (uint256 i = 0; i < _milestones.length; i++) {
-      _allQuests[_profileId][_pubId].milestones[i].reward = _milestones[i]
-        .reward;
-      _allQuests[_profileId][_pubId].milestones[i].conditionHash = _milestones[
-        i
-      ].conditionHash;
-      _allQuests[_profileId][_pubId]
-        .milestones[i]
-        .completionConditionHash = _milestones[i].completionConditionHash;
-      _allQuests[_profileId][_pubId].milestones[i].numberOfPoints = _milestones[
-        i
-      ].numberOfPoints;
-      _allQuests[_profileId][_pubId].milestones[i].milestone = _milestones[i]
-        .milestone;
+      KinoraLibrary.Milestone memory newMilestone;
+      newMilestone.reward = _milestones[i].reward;
+      newMilestone.conditionHash = _milestones[i].conditionHash;
+      newMilestone.completionConditionHash = _milestones[i]
+        .completionConditionHash;
+      newMilestone.numberOfPoints = _milestones[i].numberOfPoints;
+      newMilestone.milestone = _milestones[i].milestone;
+
+      _allQuests[_profileId][_pubId].milestones.push(newMilestone);
     }
 
     _questCount++;
@@ -195,6 +200,16 @@ contract KinoraQuestData {
     emit QuestContractValidated(_profileId, _pubId, _newQuestContract);
   }
 
+  function setValidEscrowContract(
+    uint256 _profileId,
+    uint256 _pubId,
+    address _newEscrowContract
+  ) external onlyActionOrFactory {
+    _validEscrowContract[_profileId][_pubId] = _newEscrowContract;
+
+    emit EscrowContractValidated(_profileId, _pubId, _newEscrowContract);
+  }
+
   function updatePlayerMilestoneEligibility(
     uint256 _playerProfileId,
     uint256 _profileId,
@@ -218,7 +233,7 @@ contract KinoraQuestData {
   function updateQuestStatus(
     uint256 _profileId,
     uint256 _pubId
-  ) external onlyValidQuestContract(_profileId, _pubId) {
+  ) external onlyValidQuestOrEscrowContract(_profileId, _pubId) {
     _allQuests[_profileId][_pubId].status = KinoraLibrary.Status.Closed;
 
     emit QuestStatusUpdated(
@@ -247,6 +262,21 @@ contract KinoraQuestData {
     });
 
     emit PlayerMetricsUpdated(_playerProfileId, _playbackId);
+  }
+
+  function setKinoraOpenAction(address _kinoraOpenActionAddress) public {
+    if (msg.sender != factoryMaintainer) {
+      revert KinoraErrors.OnlyAdmin();
+    }
+    kinoraOpenAction = _kinoraOpenActionAddress;
+  }
+
+  function getTotalQuestCount() public view returns (uint256) {
+    return _questCount;
+  }
+
+  function getTotalPlayerCount() public view returns (uint256) {
+    return _playerCount;
   }
 
   function getPlayerMilestonesCompletedPerQuest(
@@ -433,11 +463,30 @@ contract KinoraQuestData {
         .amount;
   }
 
+  function getQuestMilestoneRewardURI(
+    uint256 _questProfileId,
+    uint256 _questPubId,
+    uint256 _milestone
+  ) public view returns (string memory) {
+    return
+      _allQuests[_questProfileId][_questPubId]
+        .milestones[_milestone - 1]
+        .reward
+        .uri;
+  }
+
   function getValidQuestContract(
     uint256 _profileId,
     uint256 _pubId
   ) public view returns (address) {
     return _validQuestContract[_profileId][_pubId];
+  }
+
+  function getValidEscrowContract(
+    uint256 _profileId,
+    uint256 _pubId
+  ) public view returns (address) {
+    return _validEscrowContract[_profileId][_pubId];
   }
 
   function getValidMetricsContract(
