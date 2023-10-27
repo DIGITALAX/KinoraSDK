@@ -51,13 +51,13 @@ contract KinoraLibrary {
     mapping(uint256 => mapping(uint256 => uint256)) milestonesCompletedPerQuest;
     mapping(uint256 => uint256[]) questsJoined;
     mapping(uint256 => mapping(uint256 => bool)) joinedQuest;
-    mapping(uint256 => mapping(uint256 => mapping(string => PlayerLivePeerMetrics))) playbackIdMetrics;
+    mapping(uint256 => mapping(uint256 => mapping(string => PlayerLivepeerMetrics))) playbackIdMetrics;
     mapping(uint256 => mapping(uint256 => mapping(uint256 => bool))) elegibleToClaimMilestone;
     address playerAddress;
     uint256 activeSince;
     uint256 totalPointCount;
   }
-  struct PlayerLivePeerMetrics {
+  struct PlayerLivepeerMetrics {
     string playbackId;
     string metricJSONHash;
     uint256 profileId;

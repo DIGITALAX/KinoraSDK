@@ -1,26 +1,35 @@
 // SPDX-License-Identifier: UNLICENSE
+
 pragma solidity ^0.8.19;
 
 import "./KinoraAccessControl.sol";
+import "./KinoraEscrow.sol";
 import "./KinoraLibrary.sol";
 import "./KinoraQuestData.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract KinoraMetrics is Initializable {
-  string public name;
+  // Symbol of the access control contract
   string public symbol;
+  // Name of the access control contract
+  string public name;
+  // Instance of the KinoraAccessControl contract
   KinoraAccessControl public accessControl;
+  // Instance of the KinoraQuestData contract
   KinoraQuestData public kinoraQuestData;
 
-  mapping(address => mapping(string => KinoraLibrary.PlayerLivePeerMetrics))
-    private _playerLivePeerMetricsByPlaybackId;
+  // Mappings to store the relationship between Livepeer Playback Ids and player metrics
+  mapping(address => mapping(string => KinoraLibrary.PlayerLivepeerMetrics))
+    private _playerLivepeerMetricsByPlaybackId;
 
+  // Event emitted when a player metrics added.
   event AddPlayerMetrics(
     string playbackId,
     string metricJSON,
     uint256 playerProfileId,
     bool encrypted
   );
+  // Event emitted when player verified to claim milestone.
   event PlayerElegibleToClaimMilestone(
     uint256 pubId,
     uint256 milestone,
@@ -34,6 +43,11 @@ contract KinoraMetrics is Initializable {
     _;
   }
 
+  /**
+   * @dev Initializes the contract with initial values
+   * @param _accessControlAddress Address of the Kinora Access Control
+   * @param _kinoraQuestDataAddress Address of the Kinora Quest Data
+   */
   function initialize(
     address _accessControlAddress,
     address _kinoraQuestDataAddress
@@ -44,6 +58,12 @@ contract KinoraMetrics is Initializable {
     kinoraQuestData = KinoraQuestData(_kinoraQuestDataAddress);
   }
 
+  /**  @dev Function to append player metrics, bridged through a designated access control modifier.
+   @param _playbackId A unique identifier for playback sessions.
+   @param _json JSON string containing metric data.
+   @param _playerProfileId Lens Profile Id.
+   @param _pubId Lens Pub Id.
+   @param _encrypted Boolean flag indicating encryption status of the metric data. */
   function addPlayerMetrics(
     string memory _playbackId,
     string memory _json,
@@ -65,6 +85,12 @@ contract KinoraMetrics is Initializable {
     emit AddPlayerMetrics(_playbackId, _json, _playerProfileId, _encrypted);
   }
 
+  /**  @dev Function to update player's eligibility to claim milestones, access-controlled through custom modifier.
+   @param _pubId Unique identifier correlating to some public entity.
+   @param _milestone Numeric representation of milestone.
+   @param _playerProfileId Lens Profile Id.
+   @param _eligibility Boolean flag indicating eligibility status.
+  */
   function playerElegibleToClaimMilestone(
     uint256 _pubId,
     uint256 _milestone,

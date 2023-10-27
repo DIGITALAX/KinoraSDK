@@ -1,17 +1,45 @@
+/**
+ * @constant KINORA_OPEN_ACTION_CONTRACT Lens Kinora Open Action Address Matic Network.
+ */
 export const KINORA_OPEN_ACTION_CONTRACT: `0x${string}` = "0x";
+/**
+ * @constant KINORA_FACTORY_CONTRACT Kinora Factory Address Matic Network.
+ */
 export const KINORA_FACTORY_CONTRACT: `0x${string}` = "0x";
+/**
+ * @constant KINORA_QUEST_DATA_CONTRACT Kinora Quest Data Address Matic Network.
+ */
 export const KINORA_QUEST_DATA_CONTRACT: `0x${string}` = "0x";
+/**
+ * @constant CHRONICLE_PKP_CONTRACT Chronicle Network Lit PKP Address.
+ */
 export const CHRONICLE_PKP_CONTRACT: `0x${string}` =
   "0x8F75a53F65e31DD0D2e40d0827becAaE2299D111";
+/**
+ * @constant CHRONICLE_PKP_PERMISSIONS_CONTRACT Chronicle Network Lit PKP Permissions Address.
+ */
 export const CHRONICLE_PKP_PERMISSIONS_CONTRACT: `0x${string}` =
   "0x4Aed2F242E806c58758677059340e29E6B5b7619";
-
+/**
+ * @constant LIT_RPC RPC for Lit Chronicle Network.
+ */
 export const LIT_RPC: string = "https://chain-rpc.litprotocol.com/http";
+/**
+ * @constant BASE_URL Base URL for the Lens V2 API.
+ */
 export const BASE_URL: string = "https://api.lens.dev";
+/**
+ * @constant INFURA_GATEWAY IPFS Infura Gateway.
+ */
 export const INFURA_GATEWAY: string = "https://chromadin.infura-ipfs.io/";
-
+/**
+ * @constant CHAIN Active Chain.
+ */
 export const CHAIN: string = "mumbai";
 
+/**
+ * @constant DENO_BUNDLED Bundled Lit Code Compatible with Deno Lit Node Servers.
+ */
 export const DENO_BUNDLED = `function decode(b64) {
   const binString = atob(b64);
   const size = binString.length;

@@ -214,7 +214,7 @@ export class Sequence extends EventEmitter {
   videoInit = (): void => {
     if (!this.parentId)
       throw new Error(
-        "Specify ID of parent div to LivePeer Player element in the constructor.",
+        "Specify ID of parent div to Livepeer Player element in the constructor.",
       );
     if (typeof window !== "undefined") {
       this.videoElement = document
@@ -223,7 +223,7 @@ export class Sequence extends EventEmitter {
         ?.querySelector("video");
 
       if (!this.videoElement)
-        throw new Error("LivePeer Player element not found.");
+        throw new Error("Livepeer Player element not found.");
 
       this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
       this.fullScreenChangeHandler = this.fullScreenChangeHandler.bind(this);
@@ -645,7 +645,7 @@ export class Sequence extends EventEmitter {
     }
     if (!this.videoElement)
       throw new Error(
-        "Video element not detected. Make sure to set your LivePeer Player component in your app.",
+        "Video element not detected. Make sure to set your Livepeer Player component in your app.",
       );
     if (!this.questInvokerPKPData.publicKey)
       throw new Error("Set questInvoker PKP Public Key before continuing.");
@@ -2133,7 +2133,7 @@ export class Sequence extends EventEmitter {
     }
     if (!this.videoElement)
       throw new Error(
-        "Video element not detected. Make sure to set your LivePeer Player component in your app.",
+        "Video element not detected. Make sure to set your Livepeer Player component in your app.",
       );
 
     try {
@@ -2698,7 +2698,7 @@ export class Sequence extends EventEmitter {
     }
     if (!this.videoElement)
       throw new Error(
-        "Video element not detected. Make sure to set your LivePeer Player component in your app.",
+        "Video element not detected. Make sure to set your Livepeer Player component in your app.",
       );
     clearInterval(this.intervalId);
 

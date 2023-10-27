@@ -5,17 +5,26 @@ import {
   GoogleProvider,
 } from "@lit-protocol/lit-auth-client";
 
+/**
+ * @description Enumeration for the types of reward tokens.
+ */
 export enum RewardType {
   ERC20,
   ERC721,
 }
 
+/**
+ * @description Map of supported chain names to their respective IDs.
+ */
 export const ChainIds: { [key: string]: number } = {
   polygon: 137,
   mumbai: 80001,
   chronicle: 175177,
 };
 
+/**
+ * @description Type representing a contract's ABI (Application Binary Interface).
+ */
 export type ContractABI = (
   | {
       inputs: { internalType: string; name: string; type: string }[];
@@ -36,8 +45,9 @@ export type ContractABI = (
   | {}
 )[];
 
-export type LitProvider = GoogleProvider | DiscordProvider | EthWalletProvider;
-
+/**
+ * @description Lit authentication signature.
+ */
 export type LitAuthSig = {
   sig: string;
   derivedVia: string;
@@ -45,6 +55,9 @@ export type LitAuthSig = {
   address: string;
 };
 
+/**
+ * @description Interface for all Player Metrics, including raw and average rates and collected Lens data.
+ */
 export interface PlayerMetrics {
   rawTotalDuration: number;
   rawPlayCount: number;
@@ -79,32 +92,47 @@ export interface PlayerMetrics {
   hasActed: boolean;
 }
 
+/**
+ * @description Interface representing a reward.
+ */
 export interface Reward {
-  type: RewardType;
-  tokenAddress: `0x${string}`;
-  amount: number;
+  type: RewardType; // Type of reward
+  tokenAddress: `0x${string}`; // Address of the token contract
+  amount: number; // Amount of tokens to reward
 }
 
+/**
+ * @description Interface representing a milestone.
+ */
 export interface Milestone {
-  reward: Reward;
-  numberOfPoints: number;
-  milestone: number;
-  eligibilityHash: string;
+  reward: Reward; // The reward for reaching this milestone
+  numberOfPoints: number; // Number of points required to reach this milestone
+  milestone: number; // Milestone number or identifier
+  eligibilityHash: string; // Hash representing eligibility criteria for this milestone
 }
 
+/**
+ * @description Interface representing generated transaction data to be passed to the Lit Nodes.
+ */
 export interface GeneratedTxData {
-  nonce: number;
-  gasLimit: ethers.BigNumber;
-  maxFeePerGas: ethers.BigNumber;
-  maxPriorityFeePerGas: ethers.BigNumber;
-  data: ethers.ContractInterface;
+  nonce: number; // Transaction nonce
+  gasLimit: ethers.BigNumber; // Gas limit for the transaction
+  maxFeePerGas: ethers.BigNumber; // Maximum fee per gas unit
+  maxPriorityFeePerGas: ethers.BigNumber; // Maximum priority fee per gas unit
+  data: ethers.ContractInterface; // The contract interface data for the transaction
 }
 
+/**
+ * @description Interface representing milestone eligibility.
+ */
 export interface MilestoneEligibility {
-  playbackId: string;
-  criteria: MilestoneEligibilityCriteria;
+  playbackId: string; // Playback ID related to this eligibility
+  criteria: MilestoneEligibilityCriteria; // Eligibility criteria
 }
 
+/**
+ * @description Interface representing criteria for milestone eligibility.
+ */
 export interface MilestoneEligibilityCriteria {
   avd:
     | {
@@ -223,6 +251,9 @@ export interface MilestoneEligibilityCriteria {
     | undefined;
 }
 
+/**
+ * @description Enumeration defining log categories.
+ */
 export enum LogCategory {
   ERROR = 0,
   RESPONSE = 1,
@@ -231,17 +262,23 @@ export enum LogCategory {
   BROADCAST = 4,
 }
 
+/**
+ * @description Interface representing a log entry.
+ */
 export interface ILogEntry {
-  category: LogCategory;
-  message: string;
-  responseObject: string;
-  isoDate: string;
+  category: LogCategory; // Category of the log entry
+  message: string; // Message associated with the log entry
+  responseObject: string; // Response object (if any) associated with the log entry
+  isoDate: string; // ISO date string representing when the log entry was created
 }
 
+/**
+ * @description Interface representing statistics related to a lens.
+ */
 export interface LensStats {
-  hasReacted: boolean;
-  hasMirrored: boolean;
-  hasActed: boolean;
-  hasNotInterested: boolean;
-  hasBookmarked: boolean;
+  hasReacted: boolean; // Flag indicating whether the user has reacted to the video post id on Lens
+  hasMirrored: boolean; // Flag indicating whether the user has mirrored the video post id on Lens
+  hasActed: boolean; // Flag indicating whether the user has acted/collect the video post id on Lens
+  hasNotInterested: boolean; // Flag indicating whether the user has marked the post id not interested
+  hasBookmarked: boolean; // Flag indicating whether the user has bookmarked the post id
 }
