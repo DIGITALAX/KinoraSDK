@@ -13,6 +13,7 @@ contract KinoraQuestData {
   address public factoryMaintainer;
   uint256 private _questCount;
   uint256 private _playerCount;
+  uint MILESTONE_POINTS = 10;
 
   // Mapping to store the data of all players against their Profile Id.
   mapping(uint256 => KinoraLibrary.Player) private _allPlayers;
@@ -156,7 +157,6 @@ contract KinoraQuestData {
       newMilestone.conditionHash = _milestones[i].conditionHash;
       newMilestone.completionConditionHash = _milestones[i]
         .completionConditionHash;
-      newMilestone.numberOfPoints = _milestones[i].numberOfPoints;
       newMilestone.milestone = _milestones[i].milestone;
 
       _allQuests[_profileId][_pubId].milestones.push(newMilestone);
@@ -211,14 +211,20 @@ contract KinoraQuestData {
     uint256 _pubId,
     uint256 _profileId,
     uint256 _playerProfileId,
-    uint256 _milestone
+    uint256 _milestone,
+    bool _questComplete
   ) external onlyValidQuestContract(_profileId, _pubId) {
     _allPlayers[_playerProfileId].milestonesCompletedPerQuest[_profileId][
         _pubId
       ] = _milestone;
-    _allPlayers[_playerProfileId].totalPointCount += _allQuests[_profileId][
-      _pubId
-    ].milestones[_milestone - 1].numberOfPoints;
+
+      uint256 _points = 0;
+
+      if (_questComplete ) {
+        _points = MILESTONE_POINTS * _
+      }
+
+    _allPlayers[_playerProfileId].totalPointCount += MILESTONE_POINTS;
 
     emit MilestoneCompleted(_profileId, _pubId, _playerProfileId, _milestone);
   }
@@ -455,7 +461,7 @@ contract KinoraQuestData {
    * @param _playerProfileId Lens Profile Id for the player profile.
    * @return The total number of points associated with the specified player.
    */
-  function getPlayerNumberOfPoints(
+  function getPlayerTotalPointScore(
     uint256 _playerProfileId
   ) public view returns (uint256) {
     return _allPlayers[_playerProfileId].totalPointCount;
@@ -613,24 +619,6 @@ contract KinoraQuestData {
       _allQuests[_questProfileId][_questPubId]
         .milestones[_milestone - 1]
         .conditionHash;
-  }
-
-  /**
-   * @dev Retrieves the number of points associated with a specific milestone in a quest.
-   * @param _questProfileId Lens Profile Id for the quest profile.
-   * @param _questPubId Lens Pub Id for the quest.
-   * @param _milestone Milestone number in the quest.
-   * @return Number of points associated with the specified milestone.
-   */
-  function getQuestMilestoneNumberOfPoints(
-    uint256 _questProfileId,
-    uint256 _questPubId,
-    uint256 _milestone
-  ) public view returns (uint256) {
-    return
-      _allQuests[_questProfileId][_questPubId]
-        .milestones[_milestone - 1]
-        .numberOfPoints;
   }
 
   /**

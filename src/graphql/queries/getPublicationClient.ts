@@ -1,23 +1,10 @@
+import { client } from "./../client";
 import {
   PublicationDocument,
   PublicationQuery,
   PublicationRequest,
 } from "./../../@types/generated";
-import {
-  ApolloClient,
-  InMemoryCache,
-  HttpLink,
-  ApolloLink,
-  ApolloError,
-} from "@apollo/client";
-import { RetryLink } from "@apollo/client/link/retry";
-import { BASE_URL } from "./../../../src/constants";
-
-const client = new ApolloClient({
-  link: ApolloLink.from([new RetryLink(), new HttpLink({ uri: BASE_URL })]),
-  uri: BASE_URL,
-  cache: new InMemoryCache(),
-});
+import { ApolloError } from "@apollo/client";
 
 const getPublicationClient = async (
   request: PublicationRequest,

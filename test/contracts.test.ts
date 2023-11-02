@@ -6,11 +6,12 @@ import CryptoJS from "crypto-js";
 const profileId = 301;
 const pubId = 1;
 const playerProfileId = 302;
+const pointScore = 100;
 
 describe("Contract Test Suite", () => {
   let maintainer: Signer,
     pkp: Signer,
-    questInvoker: Signer,
+    questEnvoker: Signer,
     playerAddress: Signer,
     kinoraFactory: Contract,
     kinoraOpenAction: Signer,
@@ -24,7 +25,7 @@ describe("Contract Test Suite", () => {
     token: Contract;
 
   before(async () => {
-    [maintainer, pkp, questInvoker, kinoraOpenAction, playerAddress] =
+    [maintainer, pkp, questEnvoker, kinoraOpenAction, playerAddress] =
       await ethers.getSigners();
 
     const KinoraFactory = await ethers.getContractFactory("KinoraFactory");
@@ -44,7 +45,7 @@ describe("Contract Test Suite", () => {
     // );
 
     const Token = await ethers.getContractFactory("TestERC20");
-    token = await Token.connect(questInvoker).deploy();
+    token = await Token.connect(questEnvoker).deploy();
 
     const KinoraNFTCreator = await ethers.getContractFactory(
       "KinoraNFTCreator",
@@ -78,7 +79,7 @@ describe("Contract Test Suite", () => {
       it("Only Admin Can Update The Logic Addresses", async () => {
         try {
           await kinoraFactory
-            .connect(questInvoker)
+            .connect(questEnvoker)
             .setLogicAddresses(
               kinoraBaseLogicAccessControl.address,
               kinoraBaseLogicQuest.address,
@@ -142,7 +143,7 @@ describe("Contract Test Suite", () => {
           .connect(kinoraOpenAction)
           .deployFromKinoraFactory(
             await pkp.getAddress(),
-            await questInvoker.getAddress(),
+            await questEnvoker.getAddress(),
             profileId,
             pubId,
           );
@@ -157,7 +158,7 @@ describe("Contract Test Suite", () => {
         expect(event).to.not.be.undefined;
 
         if (event) {
-          expect(event.args[0]).to.equal(await questInvoker.getAddress());
+          expect(event.args[0]).to.equal(await questEnvoker.getAddress());
           expect(event.args[1]).to.equal(
             await kinoraFactory.getPKPToDeployedKinoraAccessControl(
               await pkp.getAddress(),
@@ -229,7 +230,7 @@ describe("Contract Test Suite", () => {
 
         const encodedData = ethers.utils.defaultAbiCoder.encode(
           [
-            "tuple(tuple(uint256 type, address tokenAddress, uint256 amount, string uri) reward, string completionConditionHash, bytes32 conditionHash, uint256 numberOfPoints, uint256 milestone)[]",
+            "tuple(tuple(uint256 type, address tokenAddress, uint256 amount, string uri) reward, string completionConditionHash, bytes32 conditionHash, uint256 milestone)[]",
           ],
           [
             [
@@ -244,7 +245,6 @@ describe("Contract Test Suite", () => {
                 conditionHash:
                   "0x" +
                   CryptoJS.SHA256("milestoneone").toString(CryptoJS.enc.Hex),
-                numberOfPoints: 10,
                 milestone: 1,
               },
               {
@@ -258,7 +258,6 @@ describe("Contract Test Suite", () => {
                 conditionHash:
                   "0x" +
                   CryptoJS.SHA256("milestonetwo").toString(CryptoJS.enc.Hex),
-                numberOfPoints: 30,
                 milestone: 2,
               },
               {
@@ -272,7 +271,6 @@ describe("Contract Test Suite", () => {
                 conditionHash:
                   "0x" +
                   CryptoJS.SHA256("milestonethree").toString(CryptoJS.enc.Hex),
-                numberOfPoints: 50,
                 milestone: 3,
               },
             ],
@@ -367,28 +365,6 @@ describe("Contract Test Suite", () => {
         ).to.equal(
           "0x" + CryptoJS.SHA256("milestonethree").toString(CryptoJS.enc.Hex),
         );
-
-        expect(
-          await kinoraQuestData.getQuestMilestoneNumberOfPoints(
-            profileId,
-            pubId,
-            1,
-          ),
-        ).to.equal(10);
-        expect(
-          await kinoraQuestData.getQuestMilestoneNumberOfPoints(
-            profileId,
-            pubId,
-            2,
-          ),
-        ).to.equal(30);
-        expect(
-          await kinoraQuestData.getQuestMilestoneNumberOfPoints(
-            profileId,
-            pubId,
-            3,
-          ),
-        ).to.equal(50);
 
         expect(
           await kinoraQuestData.getQuestMilestoneRewardType(
@@ -513,7 +489,7 @@ describe("Contract Test Suite", () => {
         ).to.be.false;
 
         expect(
-          await kinoraQuestData.getPlayerNumberOfPoints(playerProfileId),
+          await kinoraQuestData.getPlayerTotalPointScore(playerProfileId),
         ).to.equal(0);
 
         expect(
@@ -578,6 +554,7 @@ describe("Contract Test Suite", () => {
             "json metrics",
             playerProfileId,
             pubId,
+            pointScore,
             false,
           );
 
@@ -616,15 +593,16 @@ describe("Contract Test Suite", () => {
         ).to.equal("json metrics");
       });
 
-      it("Only Invoker PKP Can Add", async () => {
+      it("Only Envoker PKP Can Add", async () => {
         try {
           await kinoraMetrics
-            .connect(questInvoker)
+            .connect(questEnvoker)
             .addPlayerMetrics(
               "playbackId",
               "json metrics",
               playerProfileId,
               pubId,
+              pointScore,
               false,
             );
         } catch (error) {
@@ -668,10 +646,10 @@ describe("Contract Test Suite", () => {
         ).to.be.false;
       });
 
-      it("Only Invoker PKP Can Verify", async () => {
+      it("Only Envoker PKP Can Verify", async () => {
         try {
           await kinoraMetrics
-            .connect(questInvoker)
+            .connect(questEnvoker)
             .playerEligibleToClaimMilestone(pubId, 1, playerProfileId, true);
         } catch (error) {
           expect(error.message).to.include("OnlyPKP()");
@@ -694,7 +672,7 @@ describe("Contract Test Suite", () => {
         );
 
         await token
-          .connect(questInvoker)
+          .connect(questEnvoker)
           .transfer(
             await kinoraFactory.getPKPToDeployedKinoraEscrow(
               await pkp.getAddress(),
@@ -703,19 +681,19 @@ describe("Contract Test Suite", () => {
           );
 
         await token.approve(
-          await questInvoker.getAddress(),
+          await questEnvoker.getAddress(),
           BigNumber.from(40),
         );
 
         await token
-          .connect(questInvoker)
+          .connect(questEnvoker)
           .approve(kinoraEscrowAddress, BigNumber.from(40));
 
         await kinoraEscrow
           .connect(kinoraOpenAction)
           .depositERC20(
             token.address,
-            await questInvoker.getAddress(),
+            await questEnvoker.getAddress(),
             BigNumber.from(20),
             pubId,
             1,
@@ -725,7 +703,7 @@ describe("Contract Test Suite", () => {
           .connect(kinoraOpenAction)
           .depositERC20(
             token.address,
-            await questInvoker.getAddress(),
+            await questEnvoker.getAddress(),
             BigNumber.from(20),
             pubId,
             2,
@@ -774,8 +752,8 @@ describe("Contract Test Suite", () => {
         ).to.equal(1);
 
         expect(
-          await kinoraQuestData.getPlayerNumberOfPoints(playerProfileId),
-        ).to.equal(10);
+          await kinoraQuestData.getPlayerTotalPointScore(playerProfileId),
+        ).to.equal(pointScore);
 
         expect(
           await token.balanceOf(await playerAddress.getAddress()),
@@ -814,8 +792,8 @@ describe("Contract Test Suite", () => {
         ).to.equal(2);
 
         expect(
-          await kinoraQuestData.getPlayerNumberOfPoints(playerProfileId),
-        ).to.equal(40);
+          await kinoraQuestData.getPlayerTotalPointScore(playerProfileId),
+        ).to.equal(pointScore);
 
         expect(
           await token.balanceOf(await playerAddress.getAddress()),
@@ -854,8 +832,8 @@ describe("Contract Test Suite", () => {
         ).to.equal(3);
 
         expect(
-          await kinoraQuestData.getPlayerNumberOfPoints(playerProfileId),
-        ).to.equal(90);
+          await kinoraQuestData.getPlayerTotalPointScore(playerProfileId),
+        ).to.equal(pointScore);
 
         expect(await kinoraNFTCreator.getTokenSupply()).to.equal(1);
         expect(await kinoraNFTCreator.tokenURI(1)).to.equal("myuri");
@@ -863,7 +841,7 @@ describe("Contract Test Suite", () => {
 
       it("Terminates Quest & Player Can't Join Or Claim", async () => {
         const tx = await kinoraQuest
-          .connect(questInvoker)
+          .connect(questEnvoker)
           .terminateQuest(pubId);
 
         receipt = await tx.wait();
@@ -907,7 +885,7 @@ describe("Contract Test Suite", () => {
         );
 
         await token
-          .connect(questInvoker)
+          .connect(questEnvoker)
           .transfer(
             await kinoraFactory.getPKPToDeployedKinoraEscrow(
               await pkp.getAddress(),
@@ -916,19 +894,19 @@ describe("Contract Test Suite", () => {
           );
 
         await token.approve(
-          await questInvoker.getAddress(),
+          await questEnvoker.getAddress(),
           BigNumber.from(40),
         );
 
         await token
-          .connect(questInvoker)
+          .connect(questEnvoker)
           .approve(kinoraEscrowAddress, BigNumber.from(40));
 
         await kinoraEscrow
           .connect(kinoraOpenAction)
           .depositERC20(
             token.address,
-            await questInvoker.getAddress(),
+            await questEnvoker.getAddress(),
             BigNumber.from(20),
             pubId,
             1,
@@ -938,19 +916,19 @@ describe("Contract Test Suite", () => {
           .connect(kinoraOpenAction)
           .depositERC20(
             token.address,
-            await questInvoker.getAddress(),
+            await questEnvoker.getAddress(),
             BigNumber.from(20),
             pubId,
             2,
           );
 
         const tx1 = await kinoraEscrow
-          .connect(questInvoker)
-          .emergencyWithdrawERC20(await questInvoker.getAddress(), pubId, 1);
+          .connect(questEnvoker)
+          .emergencyWithdrawERC20(await questEnvoker.getAddress(), pubId, 1);
         const receipt1 = await tx1.wait();
         const tx2 = await kinoraEscrow
-          .connect(questInvoker)
-          .emergencyWithdrawERC20(await questInvoker.getAddress(), pubId, 2);
+          .connect(questEnvoker)
+          .emergencyWithdrawERC20(await questEnvoker.getAddress(), pubId, 2);
         const receipt2 = await tx2.wait();
 
         const event1 = receipt1.events?.find(
@@ -959,7 +937,7 @@ describe("Contract Test Suite", () => {
         expect(event1).to.not.be.undefined;
 
         if (event1) {
-          expect(event1.args[0]).to.equal(await questInvoker.getAddress());
+          expect(event1.args[0]).to.equal(await questEnvoker.getAddress());
           expect(event1.args[1]).to.equal(pubId);
           expect(event1.args[2]).to.equal(1);
         }
@@ -970,7 +948,7 @@ describe("Contract Test Suite", () => {
         expect(event2).to.not.be.undefined;
 
         if (event2) {
-          expect(event2.args[0]).to.equal(await questInvoker.getAddress());
+          expect(event2.args[0]).to.equal(await questEnvoker.getAddress());
           expect(event2.args[1]).to.equal(pubId);
           expect(event2.args[2]).to.equal(2);
         }

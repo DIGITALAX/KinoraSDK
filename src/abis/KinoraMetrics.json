@@ -49,6 +49,31 @@
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "milestone",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "playerProfileId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PlayerEligibleToClaimMilestone",
+    "type": "event"
+  },
+  {
     "inputs": [],
     "name": "accessControl",
     "outputs": [
@@ -81,6 +106,11 @@
       {
         "internalType": "uint256",
         "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_newPoints",
         "type": "uint256"
       },
       {
@@ -136,6 +166,34 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_eligibility",
+        "type": "bool"
+      }
+    ],
+    "name": "playerEligibleToClaimMilestone",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

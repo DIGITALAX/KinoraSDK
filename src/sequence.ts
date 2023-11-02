@@ -1,138 +1,57 @@
 import {
   ChainIds,
-  LitAuthSig,
-  Milestone,
-  PlayerMetrics,
-  MilestoneEligibility,
   ILogEntry,
-  LogCategory,
   LensStats,
+  LitAuthSig,
+  LogCategory,
+  MilestoneEligibility,
+  PlayerData,
+  PlayerMetrics,
 } from "./@types/kinora-sdk";
-import { v4 as uuidv4 } from "uuid";
 import { Metrics } from "./metrics";
-import "@lit-protocol/lit-auth-client";
-import axios from "axios";
 import { ethers } from "ethers";
+import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import {
-  KINORA_OPEN_ACTION_CONTRACT,
-  KINORA_FACTORY_CONTRACT,
-  LIT_RPC,
-  CHRONICLE_PKP_CONTRACT,
-  CHRONICLE_PKP_PERMISSIONS_CONTRACT,
-  INFURA_GATEWAY,
   CHAIN,
+  INFURA_GATEWAY,
   KINORA_QUEST_DATA_CONTRACT,
+  POINT_SCORES,
 } from "./constants";
-import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
-import KinoraQuestAbi from "./abis/KinoraQuest.json";
-import KinoraFactoryAbi from "./abis/KinoraFactory.json";
-import PKPNFTAbi from "./abis/PKPNFT.json";
-import PKPPermissionsAbi from "./abis/PKPPermissions.json";
-import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
-import KinoraEscrowAbi from "./abis/KinoraEscrow.json";
-import {
-  createTxData,
-  litExecute,
-  getBytesFromMultihash,
-  generateAuthSig,
-  encryptMetrics,
-  decryptMetrics,
-  assignLitAction,
-  removeLitAction,
-  hashHex,
-  bundleCodeManual,
-  mintNextPKP,
-  generateSecureRandomKey,
-  getLitActionCode,
-} from "./utils/lit-protocol";
 import { EventEmitter } from "events";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import * as LitJsSdk from "@lit-protocol/lit-node-client";
-import onChainPost from "./graphql/mutations/onChainPost";
-import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import {
-  ActOnOpenActionMutation,
-  ImageMetadataV3,
-  Post,
-} from "./@types/generated";
-import actOnGrant from "./graphql/mutations/actOn";
-import getPublication from "./graphql/queries/getPublication";
+  createTxData,
+  decryptMetrics,
+  encryptMetrics,
+  hashHex,
+  litExecute,
+} from "./utils/lit-protocol";
+import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
+import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
+import axios from "axios";
+import getPublicationClient from "./graphql/queries/getPublicationClient";
 
-/**
- * @class Sequence
- * @description The Sequence class extends EventEmitter and encapsulates logic and state for a video sequence.
- * @extends EventEmitter
- */
 export class Sequence extends EventEmitter {
   /**
    * @private
-   * @type {Metrics}
-   * @description Instance of Metrics class to handle metric data.
+   * @type {boolean}
+   * @description Flag to determine the mode of error handling; strict or not.
    */
-  private metrics: Metrics;
+  private errorHandlingModeStrict: boolean = false;
 
   /**
    * @private
-   * @type {HTMLVideoElement}
-   * @description HTML element for video playback.
+   * @type {{ [playerId: string]: Metrics } }
+   * @description Instance of Metrics class for each Player to handle metric data.
    */
-  private videoElement: HTMLVideoElement;
+  private metrics: { [playerId: string]: Metrics } = {};
 
   /**
    * @private
-   * @type {JsonRpcProvider}
-   * @description JSON-RPC provider for interacting with the Polygon blockchain.
+   * @type {{ [playerId: string]: PlayerData }}
+   * @description Livepeer Player mapping.
    */
-  private polygonProvider: JsonRpcProvider;
-
-  /**
-   * @private
-   * @type {JsonRpcProvider}
-   * @description JSON-RPC provider for interacting with the Chronicle blockchain.
-   */
-  private chronicleProvider: JsonRpcProvider;
-
-  /**
-   * @private
-   * @type {number}
-   * @description Maximum size of the logs array.
-   */
-  private logSize = 1000;
-
-  /**
-   * @private
-   * @type {number}
-   * @description Index for the next log entry.
-   */
-  private logIndex = 0;
-
-  /**
-   * @private
-   * @type {ILogEntry[]}
-   * @description Array to hold log entries.
-   */
-  private logs: ILogEntry[] = new Array(this.logSize);
-
-  /**
-   * @private
-   * @type {string}
-   * @description RPC URL for blockchain interactions.
-   */
-  private rpcURL: string;
-
-  /**
-   * @private
-   * @type {string}
-   * @description Parent Id associated with the sequence.
-   */
-  private parentId: string;
-
-  /**
-   * @private
-   * @type {string}
-   * @description Blockchain name/identifier.
-   */
-  private chain: string = CHAIN;
+  private playerMap: { [playerId: string]: PlayerData } = {};
 
   /**
    * @private
@@ -144,47 +63,80 @@ export class Sequence extends EventEmitter {
   /**
    * @private
    * @type {number}
-   * @description Quest invoker's profile Id.
+   * @description Maximum size of the logs array.
    */
-  private questInvokerProfileId: number;
+  private logSize: number = 1000;
+
+  /**
+   * @private
+   * @type {number}
+   * @description Index for the next log entry.
+   */
+  private logIndex: number = 0;
+
+  /**
+   * @private
+   * @type {ILogEntry[]}
+   * @description Array to hold log entries.
+   */
+  private logs: ILogEntry[] = new Array(this.logSize);
+
+  /**
+   * @private
+   * @type {LitAuthSig}
+   * @description Lit Auth Signature.
+   */
+  private litAuthSig: LitAuthSig;
+
+  /**
+   * @private
+   * @type {JsonRpcProvider}
+   * @description JSON-RPC provider for interacting with the Polygon blockchain.
+   */
+  private polygonProvider: JsonRpcProvider;
+
+  /**
+   * @private
+   * @type {string}
+   * @description RPC URL for blockchain interactions.
+   */
+  private rpcURL: string;
+
+  /**
+   * @private
+   * @type {number}
+   * @description Quest envoker's profile Id.
+   */
+  private questEnvokerProfileId: number;
+
+  /**
+   * @private
+   * @type {string}
+   * @description Blockchain name/identifier.
+   */
+  private chain: string = CHAIN;
 
   /**
    * @private
    * @type {Object}
-   * @description Quest invoker's PKP data including public key, token Id, and Ethereum address.
+   * @description Quest envoker's PKP data including public key, token Id, and Ethereum address.
    */
-  private questInvokerPKPData: {
+  private questEnvokerPKPData: {
     publicKey: `0x04${string}`;
     tokenId: string;
     ethAddress: `0x${string}`;
   };
-  /**
-   * @private
-   * @type {boolean}
-   * @description Flag to determine the mode of error handling; strict or not.
-   */
-  private errorHandlingModeStrict: boolean = false;
 
   /**
    * @private
-   * @type {ethers.Contract}
-   * @description Instance of ethers.Contract for interacting with the PKP contract.
+   * @type {LitJsSdk.LitNodeClient}
+   * @description Instance of LitJsSdk.LitNodeClient for managing LIT network interactions.
    */
-  private pkpContract: ethers.Contract;
-
-  /**
-   * @private
-   * @type {ethers.Contract}
-   * @description Instance of ethers.Contract for interacting with the PKP Permissions contract.
-   */
-  private pkpPermissionsContract: ethers.Contract;
-
-  /**
-   * @private
-   * @type {ethers.Contract}
-   * @description Instance of ethers.Contract for interacting with the Kinora Quest contract.
-   */
-  private kinoraQuestContract: ethers.Contract;
+  private litNodeClient = new LitJsSdk.LitNodeClient({
+    litNetwork: "cayenne",
+    debug: false,
+    alertWhenUnauthorized: true,
+  });
 
   /**
    * @private
@@ -200,693 +152,115 @@ export class Sequence extends EventEmitter {
    */
   private kinoraQuestDataContract: ethers.Contract;
 
-  /**
-   * @private
-   * @type {ethers.Contract}
-   * @description Instance of ethers.Contract for interacting with the Kinora Escrow contract.
-   */
-  private kinoraEscrowContract: ethers.Contract;
-
-  /**
-   * @private
-   * @type {ethers.Signer}
-   * @description Instance of ethers.Signer for signing transactions.
-   */
-  private signer: ethers.Signer;
-
-  /**
-   * @private
-   * @type {ApolloClient<NormalizedCacheObject>}
-   * @description Authenticated Apollo Client for player interactions.
-   */
-  private playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>;
-
-  /**
-   * @private
-   * @type {ApolloClient<NormalizedCacheObject>}
-   * @description Authenticated Apollo Client for quest invoker interactions.
-   */
-  private questInvokerAuthedApolloClient: ApolloClient<NormalizedCacheObject>;
-
-  /**
-   * @private
-   * @type {LitJsSdk.LitNodeClient}
-   * @description Instance of LitJsSdk.LitNodeClient for managing LIT network interactions.
-   */
-  private litNodeClient = new LitJsSdk.LitNodeClient({
-    litNetwork: "cayenne",
-    debug: false,
-    alertWhenUnauthorized: true,
-  });
-
-  /**
-   * @constructor
-   * @param {Object} args - Constructor arguments
-   * @param {string} args.questInvokerProfileId - Quest invoker's profile Id
-   * @param {string} [args.parentId] - Parent Id (optional)
-   * @param {string} [args.redirectURL] - Redirect URL (optional)
-   * @param {string} [args.rpcURL] - RPC URL for blockchain interactions (optional)
-   * @param {boolean} [args.errorHandlingModeStrict] - Flag to set error handling mode to strict (optional)
-   * @param {`0x04${string}`} [args.questInvokerPKPPublicKey] - Quest invoker's PKP public key (optional)
-   * @param {string} [args.questInvokerPKPTokenId] - Quest invoker's PKP token Id (optional)
-   * @param {string} [args.multihashDevKey] - Multihash developer key (optional)
-   * @param {ethers.Signer} [args.signer] - Signer instance for signing transactions (optional)
-   * @param {`0x${string}`} [args.kinoraMetricsContract] - Address of the KinoraMetrics contract (optional)
-   * @param {`0x${string}`} [args.kinoraQuestContract] - Address of the KinoraQuest contract (optional)
-   * @param {`0x${string}`} [args.kinoraEscrowContract] - Address of the KinoraEscrow contract (optional)
-   * @param {ApolloClient<NormalizedCacheObject>} [args.playerAuthedApolloClient] - Authenticated Apollo client for the player (optional)
-   * @param {ApolloClient<NormalizedCacheObject>} [args.questInvokerAuthedApolloClient] - Authenticated Apollo client for the quest invoker (optional)
-   */
-  constructor(args: {
-    questInvokerProfileId: string;
-    parentId?: string;
-    redirectURL?: string;
-    rpcURL?: string;
-    errorHandlingModeStrict?: boolean;
-    questInvokerPKPPublicKey?: `0x04${string}`;
-    questInvokerPKPTokenId?: string;
-    multihashDevKey?: string;
-    signer?: ethers.Signer; // chronicle signer
-    kinoraMetricsContract?: `0x${string}`;
-    kinoraQuestContract?: `0x${string}`;
-    kinoraEscrowContract?: `0x${string}`;
-    playerAuthedApolloClient?: ApolloClient<NormalizedCacheObject>;
-    questInvokerAuthedApolloClient?: ApolloClient<NormalizedCacheObject>;
-  }) {
+  constructor(
+    questEnvokerProfileId: `0x${string}`,
+    questEnvokerPKPData: {
+      publicKey: `0x04${string}`;
+      tokenId: string;
+    },
+    multihashDevKey: string,
+    rpcURL: string,
+    kinoraMetricsContract: `0x${string}`,
+    errorHandlingModeStrict?: boolean,
+  ) {
     super();
-    this.questInvokerProfileId = parseInt(args.questInvokerProfileId, 16);
-    this.errorHandlingModeStrict = args.errorHandlingModeStrict || false;
-    this.rpcURL = args.rpcURL;
-    if (args.questInvokerPKPPublicKey)
-      this.questInvokerPKPData = {
-        publicKey: args.questInvokerPKPPublicKey,
-        tokenId: args.questInvokerPKPTokenId,
-        ethAddress: ethers.utils.computeAddress(
-          args.questInvokerPKPPublicKey,
-        ) as `0x${string}`,
-      };
-    this.multihashDevKey = args.multihashDevKey;
-    this.parentId = args.parentId;
-    this.metrics = new Metrics();
+    this.multihashDevKey = multihashDevKey;
+    this.questEnvokerPKPData = {
+      publicKey: questEnvokerPKPData.publicKey,
+      tokenId: questEnvokerPKPData.tokenId,
+      ethAddress: ethers.utils.computeAddress(
+        questEnvokerPKPData.publicKey,
+      ) as `0x${string}`,
+    };
+    this.errorHandlingModeStrict = errorHandlingModeStrict;
+    this.rpcURL = rpcURL;
     this.polygonProvider = new ethers.providers.JsonRpcProvider(
       this.rpcURL,
       ChainIds[this.chain],
     );
-    this.chronicleProvider = new ethers.providers.JsonRpcProvider(
-      LIT_RPC,
-      ChainIds["chronicle"],
-    );
-    this.signer = args.signer
-      ? args.signer
-      : ethers.Wallet.createRandom().connect(this.chronicleProvider);
-
-    if (args.kinoraMetricsContract)
-      this.kinoraMetricsContract = new ethers.Contract(
-        args.kinoraMetricsContract,
-        KinoraMetricsAbi,
-      );
-    if (args.kinoraQuestContract) {
-      this.kinoraQuestContract = new ethers.Contract(
-        args.kinoraQuestContract,
-        KinoraQuestAbi,
-      );
-    }
-    if (args.kinoraEscrowContract) {
-      this.kinoraEscrowContract = new ethers.Contract(
-        args.kinoraEscrowContract,
-        KinoraEscrowAbi,
-      );
-    }
-    this.pkpContract = new ethers.Contract(
-      CHRONICLE_PKP_CONTRACT,
-      PKPNFTAbi,
-      this.signer,
-    );
-    this.pkpPermissionsContract = new ethers.Contract(
-      CHRONICLE_PKP_PERMISSIONS_CONTRACT,
-      PKPPermissionsAbi,
-      this.signer,
+    this.kinoraMetricsContract = new ethers.Contract(
+      kinoraMetricsContract,
+      KinoraMetricsAbi,
     );
     this.kinoraQuestDataContract = new ethers.Contract(
       KINORA_QUEST_DATA_CONTRACT,
       KinoraQuestDataAbi,
-      this.signer,
     );
-    this.playerAuthedApolloClient = args.playerAuthedApolloClient || undefined;
-    this.questInvokerAuthedApolloClient =
-      args.questInvokerAuthedApolloClient || undefined;
-    this.litNodeClient.connect();
-    this.beforeUnloadHandler = this.beforeUnloadHandler.bind(this);
+
+    this.questEnvokerProfileId = parseInt(questEnvokerProfileId, 16);
   }
 
-  /**
-   * @method
-   * @description Initializes the video element by querying the Livepeer Player element inside a specified parent div. It also binds certain event handlers to their respective contexts.
-   * @throws Will throw an error if parent div Id is not specified, or if the Livepeer Player element is not found.
-   * @returns {void}
-   */
+  initializePlayer = (
+    playerId: string,
+    videoElement: HTMLVideoElement,
+    litAuthSig: LitAuthSig,
+  ): void => {
+    if (!this.litAuthSig) this.litAuthSig = litAuthSig;
 
-  videoInit = (): void => {
-    if (!this.parentId)
-      throw new Error(
-        "Specify Id of parent div to Livepeer Player element in the constructor.",
-      );
-    if (typeof window !== "undefined") {
-      this.videoElement = document
-        ?.getElementById(this.parentId)
-        ?.querySelector('[class*="livepeer-contents-container"]')
-        ?.querySelector("video");
+    const playerData = this.playerMap[playerId];
+    if (!playerData) return;
 
-      if (!this.videoElement)
-        throw new Error("Livepeer Player element not found.");
+    this.metrics[playerId] = new Metrics();
 
-      this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
-      this.fullScreenChangeHandler = this.fullScreenChangeHandler.bind(this);
+    const timeUpdateHandler = this.getTimeUpdateHandler(this.metrics[playerId]);
 
-      window.addEventListener("beforeunload", this.beforeUnloadHandler);
-    }
-  };
+    this.playerMap[playerId] = {
+      videoElement,
+      eventHandlers: {
+        play: this.metrics[playerId].onPlay,
+        pause: this.metrics[playerId].onPause,
+        timeupdate: timeUpdateHandler,
+        click: this.metrics[playerId].onClick,
+        seeking: this.metrics[playerId].onSkip,
+        volumechange: this.metrics[playerId].onVolumeChange,
+        fullscreenchange: this.metrics[playerId].onFullScreen,
+        waiting: this.metrics[playerId].onBufferStart,
+        playing: this.metrics[playerId].onBufferEnd,
+      },
+    };
 
-  /**
-   * @method
-   * @description Binds various event listeners to the video element to track user interactions and metrics. Verifies the existence of necessary data before proceeding.
-   * @throws Will throw an error if run outside a browser environment, or if certain preconditions are not met.
-   * @returns {void}
-   */
-  bindEvents = (): void => {
-    if (typeof window === "undefined") {
-      throw new Error(
-        "This function can only be used in a browser environment.",
-      );
-    }
-    if (!this.videoElement)
-      throw new Error(
-        "Video element not detected. Make sure to set your Livepeer Player component in your app.",
-      );
-    if (!this.questInvokerPKPData.publicKey)
-      throw new Error("Set questInvoker PKP Public Key before continuing.");
-    if (!this.questInvokerPKPData.tokenId)
-      throw new Error("Set questInvoker PKP Token Id before continuing.");
-    if (!this.multihashDevKey)
-      throw new Error("Set multi hash dev key before continuing.");
-    if (!this.kinoraMetricsContract)
-      throw new Error("Set Kinora Metrics Address before continuing.");
-
-    this.videoElement.addEventListener("play", this.metrics.onPlay);
-    this.videoElement.addEventListener("pause", this.metrics.onPause);
-    this.videoElement.addEventListener("timeupdate", this.timeUpdateHandler);
-    this.videoElement.addEventListener("click", this.metrics.onClick);
-    this.videoElement.addEventListener("seeking", this.metrics.onSkip);
-
-    this.videoElement.addEventListener(
-      "volumechange",
-      this.metrics.onVolumeChange,
+    videoElement.addEventListener(
+      "play",
+      this.playerMap[playerId].eventHandlers.play,
     );
-    document.addEventListener("fullscreenchange", this.fullScreenChangeHandler);
-
-    this.videoElement.addEventListener("waiting", this.metrics.onBufferStart);
-
-    this.videoElement.addEventListener("playing", this.metrics.onBufferEnd);
+    videoElement.addEventListener(
+      "pause",
+      this.playerMap[playerId].eventHandlers.pause,
+    );
+    videoElement.addEventListener(
+      "timeupdate",
+      this.playerMap[playerId].eventHandlers.timeupdate,
+    );
+    videoElement.addEventListener(
+      "click",
+      this.playerMap[playerId].eventHandlers.click,
+    );
+    videoElement.addEventListener(
+      "seeking",
+      this.playerMap[playerId].eventHandlers.seeking,
+    );
+    videoElement.addEventListener(
+      "volumechange",
+      this.playerMap[playerId].eventHandlers.volumechange,
+    );
+    videoElement.addEventListener(
+      "fullscreenchange",
+      this.playerMap[playerId].eventHandlers.fullscreenchange,
+    );
+    videoElement.addEventListener(
+      "waiting",
+      this.playerMap[playerId].eventHandlers.waiting,
+    );
+    videoElement.addEventListener(
+      "playing",
+      this.playerMap[playerId].eventHandlers.playing,
+    );
   };
 
-  /**
-   * @method
-   * @description Constructs a URI that is compatible with the quest structure by formatting provided quest details into a specific textual and image format.
-   * @param {Object} args - The quest details including title, description, milestones, and cover image.
-   * @param {string} args.questTitle - The title of the quest.
-   * @param {string} args.questDescription - A description of the quest.
-   * @param {string[]} args.questMilestonesDetails - Details of each milestone in the quest.
-   * @param {string} args.questCoverImage - URI of the quest's cover image.
-   * @returns {ImageMetadataV3} - The formatted data compliant with ImageMetadataV3 structure.
-   */
-  createQuestCompatibleURI = (args: {
-    questTitle: string;
-    questDescription: string;
-    questMilestonesDetails: string[];
-    questCoverImage: string;
-  }): ImageMetadataV3 => {
-    const formattedText: string = `
-    ${args.questTitle}
-    \n\n
-    ${args.questDescription}
-    \n\n
-    ${args.questMilestonesDetails
-      .map((milestone, index) => {
-        return `Milestone ${index + 1}
-      ${milestone}`;
-      })
-      .join("\n\n")}
-    `;
-
-    const image = {
-      raw: {
-        uri: "ipfs://" + args.questCoverImage,
-      },
-    };
-
-    const data: ImageMetadataV3 = {
-      __typename: "ImageMetadataV3",
-      id: uuidv4(),
-      hideFromFeed: false,
-      locale: "en",
-      tags: ["kinora", "kinora quest", "quest"],
-      appId: "kinora",
-      attachments: [
-        {
-          image,
-          altTag: args.questTitle,
-        },
-      ],
-      content: formattedText,
-      title: args.questTitle,
-      marketplace: {
-        description: formattedText,
-        externalURL: "kinora.irrevocable.dev",
-        image,
-        name: args.questTitle,
-      },
-      asset: {
-        image,
-        altTag: args.questTitle,
-      },
-      rawURI: "",
-    };
-
-    return data;
-  };
-
-  /**
-   * @method
-   * @description Instantiates a new quest with specified inputs. It checks for necessary setups, generates random keys if needed, and interacts with contracts to set up the quest.
-   * @param {Object} questInputs - The details required for quest creation.
-   * @param {string} questInputs.ipfsQuestDetails - IPFS URI where quest details are stored.
-   * @param {number} questInputs.maxPlayerCount - Maximum number of players for the quest.
-   * @param {Milestone[]} questInputs.milestones - Array of milestone objects for the quest.
-   * @throws Will throw an error if necessary data or setups are missing.
-   * @returns {Promise<Object>} - Promise resolving to an object containing various contract addresses and other details relevant to the new quest.
-   */
-  instantiateNewQuest = async (questInputs: {
-    ipfsQuestDetails: string;
-    maxPlayerCount: number;
-    milestones: Milestone[];
-  }): Promise<{
-    kinoraAccessControl: `0x${string}`;
-    kinoraMetrics: `0x${string}`;
-    kinoraQuest: `0x${string}`;
-    kinoraEscrow: `0x${string}`;
-    pubId: string;
-    multiHashDevKey: string;
-    litActionCodesToHash: string[];
-  }> => {
-    if (!this.questInvokerAuthedApolloClient) {
-      throw new Error(
-        `Set Quest Invoker Authed Apollo Client before Continuing.`,
-      );
-    }
-    if (!this.multihashDevKey) {
-      this.multihashDevKey = generateSecureRandomKey();
-    }
-    if (!this.questInvokerPKPData.ethAddress) {
-      const { pkpTokenId, publicKey, error, message } = await mintNextPKP(
-        this.pkpContract,
-      );
-      this.questInvokerPKPData = {
-        publicKey: publicKey,
-        tokenId: pkpTokenId,
-        ethAddress: ethers.utils.computeAddress(publicKey) as `0x${string}`,
-      };
-      if (error) {
-        this.log(
-          LogCategory.ERROR,
-          `Mint questInvoker PKP failed.`,
-          message,
-          new Date().toISOString(),
-        );
-        if (this.errorHandlingModeStrict) {
-          throw new Error(`Error minting questInvoker PKP: ${message}`);
-        }
-        return;
-      }
-    }
-
-    try {
-      const encodedData = ethers.utils.defaultAbiCoder.encode(
-        [
-          "tuple(address questInvokerPKP, address questInvoker, uint256 maxPlayerCount)",
-          "tuple(tuple(uint256 type, address tokenAddress, uint256 amount) reward, string completionConditionHash, bytes32 conditionHash, uint256 numberOfPoints, uint256 milestone, string uri)[]",
-        ],
-        [
-          {
-            questInvokerPKP: this.questInvokerPKPData.ethAddress,
-            questInvoker: await this.signer.getAddress(),
-            maxPlayerCount: questInputs.maxPlayerCount,
-          },
-          questInputs.milestones.map((milestone: Milestone) => {
-            return {
-              reward: milestone.reward,
-              completionConditionHash: milestone.eligibilityHash,
-              conditionHash: hashHex(
-                milestone.eligibilityHash + this.multihashDevKey,
-              ),
-              numberOfPoints: milestone.numberOfPoints,
-              milestone: milestone.milestone,
-            };
-          }),
-        ],
-      );
-
-      const { data } = await onChainPost(
-        {
-          contentURI: "ipfs://" + questInputs.ipfsQuestDetails,
-          openActionModules: [
-            {
-              unknownOpenAction: {
-                address: KINORA_OPEN_ACTION_CONTRACT,
-                data: encodedData,
-              },
-            },
-          ],
-        },
-        this.questInvokerAuthedApolloClient,
-      );
-
-      const factoryContract = new ethers.Contract(
-        KINORA_FACTORY_CONTRACT,
-        KinoraFactoryAbi,
-        this.signer,
-      );
-
-      const kinoraMetrics = await factoryContract.getPKPToDeployedKinoraMetrics(
-        this.questInvokerPKPData.ethAddress,
-      );
-      const kinoraQuest = await factoryContract.getPKPToDeployedKinoraQuest(
-        this.questInvokerPKPData.ethAddress,
-      );
-      const kinoraEscrow = await factoryContract.getPKPToDeployedKinoraEscrow(
-        this.questInvokerPKPData.ethAddress,
-      );
-
-      this.kinoraQuestContract = new ethers.Contract(
-        kinoraQuest,
-        KinoraQuestAbi,
-        this.signer,
-      );
-      this.kinoraMetricsContract = new ethers.Contract(
-        kinoraMetrics,
-        KinoraMetricsAbi,
-        this.signer,
-      );
-      this.kinoraEscrowContract = new ethers.Contract(
-        kinoraEscrow,
-        KinoraEscrowAbi,
-        this.signer,
-      );
-
-      let litActionCodesToHash = [];
-
-      for (let i = 0; i <= questInputs.milestones.length; i++) {
-        if (i < questInputs.milestones.length) {
-          const code = getLitActionCode(
-            hashHex(
-              this.multihashDevKey +
-                JSON.stringify(questInputs.milestones[i].eligibilityHash),
-            ),
-            kinoraMetrics,
-          );
-
-          litActionCodesToHash.push(bundleCodeManual(code));
-        } else {
-          const code = getLitActionCode(
-            hashHex(
-              this.multihashDevKey +
-                hashHex(this.questInvokerProfileId.toString()),
-            ),
-            kinoraMetrics,
-          );
-
-          litActionCodesToHash.push(bundleCodeManual(code));
-        }
-      }
-
-      return {
-        kinoraAccessControl:
-          await factoryContract.getPKPToDeployedKinoraAccessControl(
-            this.questInvokerPKPData.ethAddress,
-          ),
-        kinoraMetrics,
-        kinoraQuest,
-        kinoraEscrow,
-        pubId: data.createOnchainPostTypedData.id,
-        multiHashDevKey: this.multihashDevKey,
-        litActionCodesToHash,
-      };
-    } catch (err: any) {
-      this.log(
-        LogCategory.ERROR,
-        `Instantiate New Quest failed.`,
-        err.message,
-        new Date().toISOString(),
-      );
-      if (this.errorHandlingModeStrict) {
-        throw new Error(
-          `Error minting Instantiating New Quest: ${err.message}`,
-        );
-      }
-    }
-  };
-
-  /**
-   * @method
-   * @description Assigns a set of Lit action code hashes to a PKP. Ensures that a PKP Token Id has been set before proceeding.
-   * @param {string[]} litActionCodeHashes - Array of Lit action code hashes to be assigned.
-   * @throws Will throw an error if PKP Token Id is not set.
-   * @returns {Promise<Object>} - Promise resolving to an object containing an array of transaction hashes for each assigned action.
-   */
-  assignQuestActionsToPKP = async (
-    litActionCodeHashes: string[],
-  ): Promise<{
-    assignLitActionsTxes: string[];
-  }> => {
-    if (!this.questInvokerPKPData.tokenId)
-      throw new Error("Set questInvoker PKP Token Id before continuing.");
-
-    try {
-      let assignLitActionsTxes: string[] = [];
-
-      for (let i = 0; i < litActionCodeHashes.length; i++) {
-        const { error, message, txHash } = await assignLitAction(
-          this.pkpPermissionsContract,
-          this.questInvokerPKPData.tokenId,
-          getBytesFromMultihash(litActionCodeHashes[i]),
-        );
-
-        if (error) {
-          this.log(
-            LogCategory.ERROR,
-            `Assign Quest Action To PKP failed.`,
-            message,
-            new Date().toISOString(),
-          );
-          if (this.errorHandlingModeStrict) {
-            throw new Error(`Error assigning Quest Actions to PKP: ${message}`);
-          }
-        }
-
-        assignLitActionsTxes.push(txHash);
-      }
-
-      return {
-        assignLitActionsTxes,
-      };
-    } catch (err: any) {
-      this.log(
-        LogCategory.ERROR,
-        `Quest instantiation failed.`,
-        err.message,
-        new Date().toISOString(),
-      );
-      if (this.errorHandlingModeStrict) {
-        throw new Error(`Error instantiating new Quest: ${err.message}`);
-      }
-    }
-  };
-
-  /**
-   * @method
-   * @description Terminates a quest and triggers the withdrawal process for any remaining funds. Ensures necessary setups and data are present before proceeding.
-   * @param {string} pubId - The Lens Pub Id of the quest.
-   * @param {string} toAddress - Ethereum address to which remaining funds will be sent.
-   * @param {string[]} milestoneLitActionCodeHashes - Array of Lit action code hashes for each milestone.
-   * @param {string} metricsLitActionCodeHash - Lit action code hash for metrics.
-   * @throws Will throw an error if necessary setups or data are missing.
-   * @returns {Promise<Object>} - Promise resolving to an object containing transaction hashes for termination and withdrawal processes.
-   */
-  terminateQuestAndWithdraw = async (
-    pubId: string,
-    toAddress: `0s${string}`,
-    milestoneLitActionCodeHashes: string[],
-    metricsLitActionCodeHash: string,
-  ): Promise<{ txHash: string; withdrawTxes: string[] }> => {
-    if (!this.kinoraQuestContract)
-      throw new Error("Set Kinora Quest Address before continuing.");
-    if (!this.kinoraEscrowContract)
-      throw new Error("Set Kinora Escrow Address before continuing.");
-    if (!this.questInvokerPKPData.publicKey)
-      throw new Error("Set questInvoker PKP Public Key before continuing.");
-    if (!this.multihashDevKey)
-      throw new Error("Set multi hash dev key before continuing.");
-    if (!this.questInvokerPKPData.tokenId)
-      throw new Error("Set questInvoker PKP Token Id before continuing.");
-    try {
-      const txHash = await this.kinoraQuestContract.terminateQuest(
-        parseInt(pubId, 16),
-      );
-
-      const milestoneCount =
-        this.kinoraQuestDataContract.getQuestMilestoneCount(
-          this.questInvokerProfileId,
-          parseInt(pubId, 16),
-        );
-
-      const withdrawTxes: string[] = [];
-
-      for (let i = 1; i <= milestoneCount; i++) {
-        const withdrawTx = this.kinoraEscrowContract.emergencyWithdrawERC20(
-          toAddress,
-          parseInt(pubId, 16),
-          i,
-        );
-        withdrawTxes.push(withdrawTx);
-
-        removeLitAction(
-          this.pkpPermissionsContract,
-          this.questInvokerPKPData.tokenId,
-          getBytesFromMultihash(milestoneLitActionCodeHashes[i - 1]),
-        );
-      }
-
-      removeLitAction(
-        this.pkpPermissionsContract,
-        this.questInvokerPKPData.tokenId,
-        getBytesFromMultihash(metricsLitActionCodeHash),
-      );
-
-      return {
-        txHash,
-        withdrawTxes,
-      };
-    } catch (err: any) {
-      this.log(
-        LogCategory.ERROR,
-        `Terminate Quest failed.`,
-        err.message,
-        new Date().toISOString(),
-      );
-      if (this.errorHandlingModeStrict) {
-        throw new Error(`Error terminating Quest: ${err.message}`);
-      }
-    }
-  };
-
-  /**
-   * @method
-   * @description Allows a player to join a quest. Ensures a Player Authed Apollo Client is set before proceeding.
-   * @param {string} pubId - The Lens Pub Id of the quest.
-   * @throws Will throw an error if the Player Authed Apollo Client is not set.
-   * @returns {Promise<Object>} - Promise resolving to an object containing data about the action performed.
-   */
-  playerJoinQuest = async (
-    pubId: string,
-  ): Promise<{
-    data: ActOnOpenActionMutation;
-  }> => {
-    if (!this.playerAuthedApolloClient) {
-      throw new Error(`Set Player Authed Apollo Client before Continuing.`);
-    }
-    try {
-      const encodedData = ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256"],
-        [this.questInvokerPKPData.ethAddress, 0],
-      );
-
-      const { data } = await actOnGrant(
-        {
-          actOn: {
-            unknownOpenAction: {
-              address: KINORA_OPEN_ACTION_CONTRACT,
-              data: encodedData,
-            },
-          },
-          for: pubId,
-        },
-        this.playerAuthedApolloClient,
-      );
-
-      return {
-        data: data,
-      };
-    } catch (err: any) {
-      this.log(
-        LogCategory.ERROR,
-        `Player Join Quest failed.`,
-        err.message,
-        new Date().toISOString(),
-      );
-      if (this.errorHandlingModeStrict) {
-        throw new Error(`Error Player joining new Quest: ${err.message}`);
-      }
-    }
-  };
-
-  /**
-   * @method
-   * @description Allows a player to complete a milestone in a quest. Ensures a Player Authed Apollo Client is set before proceeding.
-   * @param {string} pubId - The Lens Pub Id of the quest.
-   * @param {number} milestone - The milestone number to be completed.
-   * @throws Will throw an error if the Player Authed Apollo Client is not set.
-   * @returns {Promise<Object>} - Promise resolving to an object containing data about the action performed.
-   */
-  playerCompleteQuestMilestone = async (
-    pubId: string,
-    milestone: number,
-  ): Promise<{ data: ActOnOpenActionMutation }> => {
-    if (!this.playerAuthedApolloClient) {
-      throw new Error(`Set Player Authed Apollo Client before Continuing.`);
-    }
-
-    try {
-      const encodedData = ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256"],
-        [this.questInvokerPKPData.ethAddress, milestone],
-      );
-
-      const { data } = await actOnGrant(
-        {
-          actOn: {
-            unknownOpenAction: {
-              address: KINORA_OPEN_ACTION_CONTRACT,
-              data: encodedData,
-            },
-          },
-          for: pubId,
-        },
-        this.playerAuthedApolloClient,
-      );
-
-      return {
-        data: data,
-      };
-    } catch (err: any) {
-      this.log(
-        LogCategory.ERROR,
-        `Player completing milestone failed.`,
-        err.message,
-        new Date().toISOString(),
-      );
-      if (this.errorHandlingModeStrict) {
-        throw new Error(`Error completing player Milestone: ${err.message}`);
-      }
-    }
+  destroyPlayer = (playerId: string): void => {
+    if (!this.playerMap[playerId]) return;
+    this.cleanUpListeners(playerId);
+    delete this.playerMap[playerId];
   };
 
   /**
@@ -897,7 +271,6 @@ export class Sequence extends EventEmitter {
    * @param {string} playerProfileId - The Lens Profile Id of the player.
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player profile owner.
    * @param {boolean} encrypt - A flag indicating whether to encrypt the metrics data.
-   * @param {LitAuthSig} authSig Lit authentication signature.
    * @throws Will throw an error if run outside a browser environment, or if the video element is not detected.
    * @returns {Promise<string>} - Promise resolving to a JSON string containing the collected (and possibly encrypted) metrics data.
    */
@@ -907,14 +280,15 @@ export class Sequence extends EventEmitter {
     playerProfileId: string,
     playerProfileOwnerAddress: `0x${string}`,
     encrypt: boolean,
-    authSig: LitAuthSig,
   ): Promise<string> => {
     if (typeof window === "undefined") {
       throw new Error(
         "This function can only be used in a browser environment.",
       );
     }
-    if (!this.videoElement)
+    if (!this.litAuthSig)
+      throw new Error("Generate and Set Lit Auth Sig before continuing.");
+    if (!this.playerMap[playbackId])
       throw new Error(
         "Video element not detected. Make sure to set your Livepeer Player component in your app.",
       );
@@ -925,15 +299,14 @@ export class Sequence extends EventEmitter {
         pubId,
         playerProfileId,
         playerProfileOwnerAddress,
-        authSig,
       );
       let metrics = JSON.stringify(playerMetrics);
       if (encrypt) {
         const { error, message, encryptedString } = await encryptMetrics(
           metrics,
-          this.questInvokerPKPData.ethAddress,
+          this.questEnvokerPKPData.ethAddress,
           playerProfileOwnerAddress,
-          authSig,
+          this.litAuthSig,
           this.litNodeClient,
         );
 
@@ -976,7 +349,6 @@ export class Sequence extends EventEmitter {
    * @param {string} litActionHash - The hash of the LIT action.
    * @param {string} pubId - The Lens Pub Id of the quest.
    * @param {boolean} metricsEncrypted - Flag indicating whether the metrics are encrypted.
-   * @param {LitAuthSig} authSig Lit authentication signature.
    * @throws Will throw an error if required data is missing or if transaction generation or execution fails.
    * @returns {Promise<void>} - A Promise that resolves when the operation completes.
    */
@@ -987,15 +359,32 @@ export class Sequence extends EventEmitter {
     litActionHash: string,
     pubId: string,
     metricsEncrypted: boolean,
-    authSig: LitAuthSig,
   ): Promise<void> => {
-    if (!this.questInvokerPKPData.publicKey)
-      throw new Error("Set questInvoker PKP Public Key before continuing.");
-    if (!this.questInvokerPKPData.tokenId)
-      throw new Error("Set questInvoker PKP Token Id before continuing.");
+    if (!this.questEnvokerPKPData.publicKey)
+      throw new Error("Set questEnvoker PKP Public Key before continuing.");
+    if (!this.questEnvokerPKPData.tokenId)
+      throw new Error("Set questEnvoker PKP Token Id before continuing.");
     if (!this.kinoraMetricsContract)
       throw new Error("Set Kinora Metrics Address before continuing.");
+    if (!this.litAuthSig)
+      throw new Error("Generate and Set Lit Auth Sig before continuing.");
     try {
+      const metricsToSend = await axios.get(
+        `${INFURA_GATEWAY}/ipfs/${playerMetricsHash}`,
+      );
+
+      const parsed: PlayerMetrics = await JSON.parse(metricsToSend.data);
+
+      const pointScore =
+        parsed.totalViewDuration * POINT_SCORES.totalDuration +
+        (parsed.hasActed ? POINT_SCORES.acted : 0) +
+        (parsed.hasMirrored ? POINT_SCORES.mirrored : 0) +
+        (parsed.hasBookmarked ? POINT_SCORES.bookmarked : 0) +
+        (parsed.hasNotInterested ? POINT_SCORES.notInterested : 0) +
+        (parsed.hasReacted ? POINT_SCORES.reacted : 0) +
+        parsed.averageAvd * POINT_SCORES.avd +
+        parsed.totalFullScreenCount * POINT_SCORES.fullScreenCount;
+
       const {
         error: txError,
         message: txMessage,
@@ -1006,9 +395,10 @@ export class Sequence extends EventEmitter {
         "addPlayerMetrics",
         [
           playbackId,
-          playerMetricsHash,
+          "ipfs://" + playerMetricsHash,
           playerProfileId,
           pubId,
+          pointScore,
           metricsEncrypted,
         ],
       );
@@ -1034,11 +424,11 @@ export class Sequence extends EventEmitter {
         this.litNodeClient,
         generatedTxData,
         "addPlayerMetrics",
-        authSig,
+        this.litAuthSig,
         litActionHash,
-        this.questInvokerPKPData.publicKey,
+        this.questEnvokerPKPData.publicKey,
         this.multihashDevKey,
-        hashHex(this.questInvokerProfileId.toString()),
+        hashHex(this.questEnvokerProfileId.toString()),
       );
 
       if (error) {
@@ -1055,7 +445,7 @@ export class Sequence extends EventEmitter {
         }
         return;
       } else {
-        this.metrics.reset();
+        this.metrics[playbackId].reset();
 
         this.log(
           LogCategory.RESPONSE,
@@ -1091,27 +481,25 @@ export class Sequence extends EventEmitter {
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player profile owner.
    * @param {number} milestone - The milestone number.
    * @param {string} litActionMilestoneHash - The hash of the LIT action for the milestone.
-   * @param {LitAuthSig} authSig Lit authentication signature.
    * @throws Will throw an error if required data is missing or if transaction generation or execution fails.
    * @returns {Promise<Object>} - A Promise that resolves to an object containing a check result indicating whether the milestone verification succeeded.
    */
   verifyPlayerMilestoneComplete = async (
     playerProfileId: string,
     pubId: string,
+    playbackId: string,
     playerProfileOwnerAddress: `0x${string}`,
     milestone: number,
     litActionMilestoneHash: string,
-    authSig: LitAuthSig,
-  ): Promise<{
-    checkResult: boolean;
-  }> => {
+  ): Promise<boolean> => {
+    if (!this.litAuthSig)
+      throw new Error("Generate and Set Lit Auth Sig before continuing.");
     try {
       const passed = await this.checkQuestMilestoneMetrics(
         playerProfileId,
         pubId,
         playerProfileOwnerAddress,
         milestone,
-        authSig,
       );
 
       if (passed) {
@@ -1144,7 +532,7 @@ export class Sequence extends EventEmitter {
 
         const hashKeyItem =
           await this.kinoraQuestDataContract.getQuestMilestoneCompletionConditionHash(
-            this.questInvokerProfileId,
+            this.questEnvokerProfileId,
             parseInt(pubId, 16),
             milestone,
           );
@@ -1154,9 +542,9 @@ export class Sequence extends EventEmitter {
           this.litNodeClient,
           generatedTxData,
           "playerEligibleToClaimMilestone",
-          authSig,
+          this.litAuthSig,
           litActionMilestoneHash,
-          this.questInvokerPKPData.publicKey,
+          this.questEnvokerPKPData.publicKey,
           this.multihashDevKey,
           hashKeyItem, // GENERAL HASH!!,
         );
@@ -1175,7 +563,7 @@ export class Sequence extends EventEmitter {
           }
           return;
         } else {
-          this.metrics.reset();
+          this.metrics[playbackId].reset();
 
           this.log(
             LogCategory.RESPONSE,
@@ -1191,13 +579,9 @@ export class Sequence extends EventEmitter {
           );
         }
 
-        return {
-          checkResult: true,
-        };
+        return true;
       } else {
-        return {
-          checkResult: false,
-        };
+        return false;
       }
     } catch (err: any) {
       this.log(
@@ -1234,13 +618,107 @@ export class Sequence extends EventEmitter {
   };
 
   /**
+   * @method cleanUpListeners
+   * @description Removes event listeners related to video metrics collection.
+   * @throws Will throw an error if not used in a browser environment or if the video element is not found.
+   * @private
+   */
+  private cleanUpListeners = (playerId: string) => {
+    this.playerMap[playerId].videoElement.removeEventListener(
+      "play",
+      this.playerMap[playerId].eventHandlers.play,
+    );
+    this.playerMap[playerId].videoElement.removeEventListener(
+      "pause",
+      this.playerMap[playerId].eventHandlers.pause,
+    );
+    this.playerMap[playerId].videoElement.removeEventListener(
+      "timeupdate",
+      this.playerMap[playerId].eventHandlers.timeupdate,
+    );
+    this.playerMap[playerId].videoElement.removeEventListener(
+      "click",
+      this.playerMap[playerId].eventHandlers.click,
+    );
+    this.playerMap[playerId].videoElement.removeEventListener(
+      "seeking",
+      this.playerMap[playerId].eventHandlers.seeking,
+    );
+
+    this.playerMap[playerId].videoElement.removeEventListener(
+      "volumechange",
+      this.playerMap[playerId].eventHandlers.volumechange,
+    );
+    this.playerMap[playerId].videoElement.removeEventListener(
+      "fullscreenchange",
+      this.playerMap[playerId].eventHandlers.fullscreenchange,
+    );
+
+    this.playerMap[playerId].videoElement.removeEventListener(
+      "waiting",
+      this.playerMap[playerId].eventHandlers.waiting,
+    );
+
+    this.playerMap[playerId].videoElement.removeEventListener(
+      "playing",
+      this.playerMap[playerId].eventHandlers.playing,
+    );
+  };
+
+  /**
+   * @method getTimeUpdateHandler
+   * @description Event handler for video 'timeupdate' event, updates metrics and checks for bounce condition.
+   * @param {Metrics} metrics - The metrics object.
+   * @private
+   */
+  private getTimeUpdateHandler = (metrics: Metrics) => {
+    return (e: Event) => {
+      const currentTime = (e.currentTarget as HTMLVideoElement).currentTime;
+      metrics.onTimeUpdate(currentTime);
+      if (currentTime < 10) {
+        metrics.onBounce();
+      }
+    };
+  };
+
+  /**
+   * @method log
+   * @description Logs messages along with associated data, managing log index and emitting log events.
+   * @param {LogCategory} category - The category of the log.
+   * @param {string} message - The log message.
+   * @param {string} responseObject - The response object as a string.
+   * @param {string} isoDate - The ISO string representation of the log date.
+   * @private
+   */
+  private log = (
+    category: LogCategory,
+    message: string,
+    responseObject: string,
+    isoDate: string,
+  ) => {
+    if (typeof responseObject === "object") {
+      responseObject = JSON.stringify(responseObject);
+    }
+
+    this.logs[this.logIndex] = { category, message, responseObject, isoDate };
+    this.logIndex = (this.logIndex + 1) % this.logSize;
+    this.emit(
+      "log",
+      JSON.stringify({
+        message,
+        responseObject,
+        isoDate,
+      }),
+    );
+  };
+
+  /**
    * @method collectMetrics
    * @description Collects and aggregates player metrics from both current and past interactions, integrating publication interactions.
    * @param {string} playbackId - The playback Id related to the player metrics.
    * @param {string} pubId - The Lens Pub Id of the quest.
    * @param {string} playerProfileId - The player's Lens Profile Id.
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player's profile owner.
-   * @param {LitAuthSig} authSig Lit authentication signature.
    * @returns {Promise<PlayerMetrics>} - A Promise resolving to an aggregated PlayerMetrics object.
    * @throws Will throw an error if any issue occurs during metrics collection or aggregation.
    * @private
@@ -1250,7 +728,6 @@ export class Sequence extends EventEmitter {
     pubId: string,
     playerProfileId: string,
     playerProfileOwnerAddress: `0x${string}`,
-    authSig: LitAuthSig,
   ): Promise<PlayerMetrics> => {
     let playerMetrics: PlayerMetrics;
     try {
@@ -1258,16 +735,13 @@ export class Sequence extends EventEmitter {
         await this.kinoraMetricsContract.getPlayerPlaybackIdMetricsHash(
           playbackId,
           playerProfileId,
-          this.questInvokerProfileId,
+          this.questEnvokerProfileId,
           pubId,
         );
 
-      const { data } = await getPublication(
-        {
-          forId: pubId,
-        },
-        this.playerAuthedApolloClient,
-      );
+      const { data } = await getPublicationClient({
+        forId: pubId,
+      });
 
       const lensStats: LensStats = (data?.publication.__typename === "Post" ||
         data?.publication.__typename === "Comment") && {
@@ -1289,7 +763,7 @@ export class Sequence extends EventEmitter {
           this.kinoraMetricsContract.getPlayerPlaybackIdMetricsEncrypted(
             playbackId,
             playerProfileId,
-            this.questInvokerProfileId,
+            this.questEnvokerProfileId,
             pubId,
           );
 
@@ -1300,9 +774,9 @@ export class Sequence extends EventEmitter {
             decryptedString,
           } = await decryptMetrics(
             await JSON.parse(oldMetricsValues),
-            this.questInvokerPKPData.ethAddress,
+            this.questEnvokerPKPData.ethAddress,
             playerProfileOwnerAddress,
-            authSig,
+            this.litAuthSig,
             this.litNodeClient,
           );
 
@@ -1327,73 +801,110 @@ export class Sequence extends EventEmitter {
         const oldMetrics: PlayerMetrics = await JSON.parse(oldMetricsValues);
 
         playerMetrics = {
-          rawTotalDuration: this.metrics.getTotalDuration(),
-          rawPlayCount: this.metrics.getPlayCount(),
-          rawPauseCount: this.metrics.getPauseCount(),
-          rawSkipCount: this.metrics.getSkipCount(),
-          rawClickCount: this.metrics.getClickCount(),
-          rawImpressionCount: this.metrics.getImpressionCount(),
-          rawBounceCount: this.metrics.getBounceCount(),
-          rawBounceRate: this.metrics.getBounceRate(),
-          rawVolumeChangeCount: this.metrics.getVolumeChangeCount(),
-          rawFullScreenCount: this.metrics.getFullScreenCount(),
-          rawBufferCount: this.metrics.getBufferCount(),
-          rawBufferDuration: this.metrics.getBufferDuration(),
-          rawEngagementRate: this.metrics.getEngagementRate(
-            this.videoElement.duration,
+          rawTotalDuration: this.metrics[playbackId].getTotalDuration(),
+          rawPlayCount: this.metrics[playbackId].getPlayCount(),
+          rawPauseCount: this.metrics[playbackId].getPauseCount(),
+          rawSkipCount: this.metrics[playbackId].getSkipCount(),
+          rawClickCount: this.metrics[playbackId].getClickCount(),
+          rawImpressionCount: this.metrics[playbackId].getImpressionCount(),
+          rawBounceCount: this.metrics[playbackId].getBounceCount(),
+          rawBounceRate: this.metrics[playbackId].getBounceRate(),
+          rawVolumeChangeCount: this.metrics[playbackId].getVolumeChangeCount(),
+          rawFullScreenCount: this.metrics[playbackId].getFullScreenCount(),
+          rawBufferCount: this.metrics[playbackId].getBufferCount(),
+          rawBufferDuration: this.metrics[playbackId].getBufferDuration(),
+          rawEngagementRate: this.metrics[playbackId].getEngagementRate(
+            this.playerMap[playbackId].videoElement.duration,
           ),
-          rawPreferredTimeToWatch: this.metrics.getMostPreferredTimeToWatch(),
-          rawMostViewedSegment: this.metrics.getMostViewedSegment(),
-          rawInteractionRate: this.metrics.getInteractionRate(),
-          rawMostReplayedArea: this.metrics.getMostReplayedArea(),
-          rawPlayPauseRatio: this.metrics.getPlayPauseRatio(),
-          rawCtr: this.metrics.getCTR(),
-          rawAvd: this.metrics.getAVD(),
+          rawPreferredTimeToWatch:
+            this.metrics[playbackId].getMostPreferredTimeToWatch(),
+          rawMostViewedSegment: this.metrics[playbackId].getMostViewedSegment(),
+          rawInteractionRate: this.metrics[playbackId].getInteractionRate(),
+          rawMostReplayedArea: this.metrics[playbackId].getMostReplayedArea(),
+          rawPlayPauseRatio: this.metrics[playbackId].getPlayPauseRatio(),
+          rawCtr: this.metrics[playbackId].getCTR(),
+          rawAvd: this.metrics[playbackId].getAVD(),
+          totalViewDuration:
+            this.metrics[playbackId].getTotalDuration() +
+            oldMetrics.totalViewDuration,
+          totalFullScreenCount:
+            this.metrics[playbackId].getFullScreenCount() +
+            oldMetrics.totalFullScreenCount,
+          totalPlayCount:
+            this.metrics[playbackId].getPlayCount() + oldMetrics.totalPlayCount,
+          totalPauseCount:
+            this.metrics[playbackId].getPauseCount() +
+            oldMetrics.totalPauseCount,
+          totalSkipCount:
+            this.metrics[playbackId].getSkipCount() + oldMetrics.totalSkipCount,
+          totalClickCount:
+            this.metrics[playbackId].getClickCount() +
+            oldMetrics.totalClickCount,
+          totalVolumeChangeCount:
+            this.metrics[playbackId].getVolumeChangeCount() +
+            oldMetrics.totalVolumeChangeCount,
+          totalBufferCount:
+            this.metrics[playbackId].getBufferCount() +
+            oldMetrics.totalBufferCount,
           averageBounceRate:
             oldMetrics.rawImpressionCount +
-              this.metrics.getImpressionCount() ===
+              this.metrics[playbackId].getImpressionCount() ===
             0
               ? oldMetrics.averageBounceRate
-              : ((oldMetrics.rawBounceCount + this.metrics.getBounceCount()) /
+              : ((oldMetrics.rawBounceCount +
+                  this.metrics[playbackId].getBounceCount()) /
                   (oldMetrics.rawImpressionCount +
-                    this.metrics.getImpressionCount())) *
+                    this.metrics[playbackId].getImpressionCount())) *
                 100,
           averageBufferDuration:
-            oldMetrics.rawBufferCount + this.metrics.getBufferCount() === 0
+            oldMetrics.rawBufferCount +
+              this.metrics[playbackId].getBufferCount() ===
+            0
               ? oldMetrics.averageBufferDuration
               : (oldMetrics.rawBufferDuration +
-                  this.metrics.getBufferDuration()) /
-                (oldMetrics.rawBufferCount + this.metrics.getBufferCount()),
+                  this.metrics[playbackId].getBufferDuration()) /
+                (oldMetrics.rawBufferCount +
+                  this.metrics[playbackId].getBufferCount()),
           averageEngagementRate:
-            (oldMetrics.rawPlayCount + this.metrics.getPlayCount()) *
-              this.videoElement.duration ===
+            (oldMetrics.rawPlayCount +
+              this.metrics[playbackId].getPlayCount()) *
+              this.playerMap[playbackId].videoElement.duration ===
             0
               ? oldMetrics.averageEngagementRate
               : ((oldMetrics.rawTotalDuration +
-                  this.metrics.getTotalDuration()) /
-                  ((oldMetrics.rawPlayCount + this.metrics.getPlayCount()) *
-                    this.videoElement.duration)) *
+                  this.metrics[playbackId].getTotalDuration()) /
+                  ((oldMetrics.rawPlayCount +
+                    this.metrics[playbackId].getPlayCount()) *
+                    this.playerMap[playbackId].videoElement.duration)) *
                 100,
           averagePlayPauseRatio:
-            oldMetrics.rawPauseCount + this.metrics.getPauseCount() === 0
+            oldMetrics.rawPauseCount +
+              this.metrics[playbackId].getPauseCount() ===
+            0
               ? oldMetrics.averagePlayPauseRatio
-              : (oldMetrics.rawPlayCount + this.metrics.getPlayCount()) /
-                (oldMetrics.rawPauseCount + this.metrics.getPauseCount()),
+              : (oldMetrics.rawPlayCount +
+                  this.metrics[playbackId].getPlayCount()) /
+                (oldMetrics.rawPauseCount +
+                  this.metrics[playbackId].getPauseCount()),
           averageCtr:
             oldMetrics.rawImpressionCount +
-              this.metrics.getImpressionCount() ===
+              this.metrics[playbackId].getImpressionCount() ===
             0
               ? oldMetrics.averageCtr
-              : ((oldMetrics.rawClickCount + this.metrics.getClickCount()) /
+              : ((oldMetrics.rawClickCount +
+                  this.metrics[playbackId].getClickCount()) /
                   (oldMetrics.rawImpressionCount +
-                    this.metrics.getImpressionCount())) *
+                    this.metrics[playbackId].getImpressionCount())) *
                 100,
           averageAvd:
-            oldMetrics.rawPlayCount + this.metrics.getPlayCount() === 0
+            oldMetrics.rawPlayCount +
+              this.metrics[playbackId].getPlayCount() ===
+            0
               ? oldMetrics.averageAvd
               : (oldMetrics.rawTotalDuration +
-                  this.metrics.getTotalDuration()) /
-                (oldMetrics.rawPlayCount + this.metrics.getPlayCount()),
+                  this.metrics[playbackId].getTotalDuration()) /
+                (oldMetrics.rawPlayCount +
+                  this.metrics[playbackId].getPlayCount()),
           hasMirrored: lensStats.hasMirrored,
           hasReacted: lensStats.hasReacted,
           hasBookmarked: lensStats.hasBookmarked,
@@ -1402,28 +913,38 @@ export class Sequence extends EventEmitter {
         };
       } else {
         playerMetrics = {
-          rawTotalDuration: this.metrics.getTotalDuration(),
-          rawPlayCount: this.metrics.getPlayCount(),
-          rawPauseCount: this.metrics.getPauseCount(),
-          rawSkipCount: this.metrics.getSkipCount(),
-          rawClickCount: this.metrics.getClickCount(),
-          rawImpressionCount: this.metrics.getImpressionCount(),
-          rawBounceCount: this.metrics.getBounceCount(),
-          rawBounceRate: this.metrics.getBounceRate(),
-          rawVolumeChangeCount: this.metrics.getVolumeChangeCount(),
-          rawFullScreenCount: this.metrics.getFullScreenCount(),
-          rawPreferredTimeToWatch: this.metrics.getMostPreferredTimeToWatch(),
-          rawMostViewedSegment: this.metrics.getMostViewedSegment(),
-          rawInteractionRate: this.metrics.getInteractionRate(),
-          rawBufferCount: this.metrics.getBufferCount(),
-          rawBufferDuration: this.metrics.getBufferDuration(),
-          rawEngagementRate: this.metrics.getEngagementRate(
-            this.videoElement.duration,
+          rawTotalDuration: this.metrics[playbackId].getTotalDuration(),
+          rawPlayCount: this.metrics[playbackId].getPlayCount(),
+          rawPauseCount: this.metrics[playbackId].getPauseCount(),
+          rawSkipCount: this.metrics[playbackId].getSkipCount(),
+          rawClickCount: this.metrics[playbackId].getClickCount(),
+          rawImpressionCount: this.metrics[playbackId].getImpressionCount(),
+          rawBounceCount: this.metrics[playbackId].getBounceCount(),
+          rawBounceRate: this.metrics[playbackId].getBounceRate(),
+          rawVolumeChangeCount: this.metrics[playbackId].getVolumeChangeCount(),
+          rawFullScreenCount: this.metrics[playbackId].getFullScreenCount(),
+          rawPreferredTimeToWatch:
+            this.metrics[playbackId].getMostPreferredTimeToWatch(),
+          rawMostViewedSegment: this.metrics[playbackId].getMostViewedSegment(),
+          rawInteractionRate: this.metrics[playbackId].getInteractionRate(),
+          rawBufferCount: this.metrics[playbackId].getBufferCount(),
+          rawBufferDuration: this.metrics[playbackId].getBufferDuration(),
+          rawEngagementRate: this.metrics[playbackId].getEngagementRate(
+            this.playerMap[playbackId].videoElement.duration,
           ),
-          rawMostReplayedArea: this.metrics.getMostReplayedArea(),
-          rawPlayPauseRatio: this.metrics.getPlayPauseRatio(),
-          rawCtr: this.metrics.getCTR(),
-          rawAvd: this.metrics.getAVD(),
+          rawMostReplayedArea: this.metrics[playbackId].getMostReplayedArea(),
+          rawPlayPauseRatio: this.metrics[playbackId].getPlayPauseRatio(),
+          rawCtr: this.metrics[playbackId].getCTR(),
+          rawAvd: this.metrics[playbackId].getAVD(),
+          totalViewDuration: this.metrics[playbackId].getTotalDuration(),
+          totalFullScreenCount: this.metrics[playbackId].getFullScreenCount(),
+          totalPlayCount: this.metrics[playbackId].getPlayCount(),
+          totalPauseCount: this.metrics[playbackId].getPauseCount(),
+          totalSkipCount: this.metrics[playbackId].getSkipCount(),
+          totalClickCount: this.metrics[playbackId].getClickCount(),
+          totalVolumeChangeCount:
+            this.metrics[playbackId].getVolumeChangeCount(),
+          totalBufferCount: this.metrics[playbackId].getBufferCount(),
           hasMirrored: lensStats.hasMirrored,
           hasReacted: lensStats.hasReacted,
           hasBookmarked: lensStats.hasBookmarked,
@@ -1460,7 +981,6 @@ export class Sequence extends EventEmitter {
    * @param {string} pubId - The Lens Pub Id of the quest.
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player's profile owner.
    * @param {number} milestone - The milestone number.
-   * @param {LitAuthSig} authSig Lit authentication signature.
    * @returns {Promise<boolean>} - A Promise resolving to a boolean indicating whether the milestone requirements are met.
    * @throws Will throw an error if any issue occurs during the milestone check.
    * @private
@@ -1470,24 +990,23 @@ export class Sequence extends EventEmitter {
     pubId: string,
     playerProfileOwnerAddress: `0x${string}`,
     milestone: number,
-    authSig: LitAuthSig,
   ): Promise<boolean> => {
     try {
       let playerEligible = false;
 
       const hashedCompletion =
         await this.kinoraQuestDataContract.getQuestMilestoneCompletionConditionHash(
-          this.questInvokerProfileId,
+          this.questEnvokerProfileId,
           parseInt(pubId, 16),
           milestone,
         );
 
-      const toParseCompletion: string = await axios.get(
+      const toParseCompletion = await axios.get(
         `${INFURA_GATEWAY}/ipfs/${hashedCompletion?.split("ipfs://")[1]}`,
       );
 
       const uriParsed: MilestoneEligibility[] = await JSON.parse(
-        toParseCompletion,
+        toParseCompletion.data,
       );
 
       playerEligible = await this.metricComparison(
@@ -1495,7 +1014,6 @@ export class Sequence extends EventEmitter {
         playerProfileId,
         playerProfileOwnerAddress,
         pubId,
-        authSig,
       );
 
       return playerEligible;
@@ -1519,7 +1037,6 @@ export class Sequence extends EventEmitter {
    * @param {string} playerProfileId - The player's Lens Profile Id.
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player's profile owner.
    * @param {string} pubId - The Lens Pub Id of the quest.
-   * @param {LitAuthSig} authSig Lit authentication signature.
    * @returns {Promise<boolean>} - A Promise resolving to a boolean indicating whether the player meets the eligibility criteria.
    * @private
    */
@@ -1528,208 +1045,110 @@ export class Sequence extends EventEmitter {
     playerProfileId: string,
     playerProfileOwnerAddress: `0x${string}`,
     pubId: string,
-    authSig: LitAuthSig,
   ): Promise<boolean> => {
     let result = true;
     for (let i = 0; i < eligibilityCriteria.length; i++) {
-      let currentMetricsHash: string =
-        await this.kinoraQuestDataContract.getPlayerPlaybackIdMetricsHash(
-          eligibilityCriteria[i].playbackId,
-          parseInt(playerProfileId, 16),
-          this.questInvokerProfileId,
-          parseInt(pubId, 16),
-        );
-
-      const currentMetricsToParse = await axios.get(
-        `${INFURA_GATEWAY}/ipfs/${currentMetricsHash}`,
-      );
-
-      let currentMetrics = await JSON.parse(currentMetricsToParse.data);
-
-      const encrypted =
-        await this.kinoraQuestDataContract.getPlayerPlaybackIdMetricsEncrypted(
-          eligibilityCriteria[i].playbackId,
-          parseInt(playerProfileId, 16),
-          this.questInvokerProfileId,
-          parseInt(pubId, 16),
-        );
-
-      if (encrypted) {
-        const { error, message, decryptedString } = await decryptMetrics(
-          await JSON.parse(currentMetrics),
-          this.questInvokerPKPData.ethAddress,
-          playerProfileOwnerAddress,
-          authSig,
-          this.litNodeClient,
-        );
-
-        if (error) {
-          this.log(
-            LogCategory.ERROR,
-            `Player decrypt collected metrics failed.`,
-            message,
-            new Date().toISOString(),
+      if (eligibilityCriteria[i].playbackId) {
+        let currentMetricsHash: string =
+          await this.kinoraQuestDataContract.getPlayerPlaybackIdMetricsHash(
+            eligibilityCriteria[i].playbackId,
+            parseInt(playerProfileId, 16),
+            this.questEnvokerProfileId,
+            parseInt(pubId, 16),
           );
-          if (this.errorHandlingModeStrict) {
-            throw new Error(
-              `Error decrypting player collected metrics: ${message}`,
+
+        const currentMetricsToParse = await axios.get(
+          `${INFURA_GATEWAY}/ipfs/${currentMetricsHash}`,
+        );
+
+        let currentMetrics = await JSON.parse(currentMetricsToParse.data);
+
+        const encrypted =
+          await this.kinoraQuestDataContract.getPlayerPlaybackIdMetricsEncrypted(
+            eligibilityCriteria[i].playbackId,
+            parseInt(playerProfileId, 16),
+            this.questEnvokerProfileId,
+            parseInt(pubId, 16),
+          );
+
+        if (encrypted) {
+          const { error, message, decryptedString } = await decryptMetrics(
+            await JSON.parse(currentMetrics),
+            this.questEnvokerPKPData.ethAddress,
+            playerProfileOwnerAddress,
+            this.litAuthSig,
+            this.litNodeClient,
+          );
+
+          if (error) {
+            this.log(
+              LogCategory.ERROR,
+              `Player decrypt collected metrics failed.`,
+              message,
+              new Date().toISOString(),
             );
+            if (this.errorHandlingModeStrict) {
+              throw new Error(
+                `Error decrypting player collected metrics: ${message}`,
+              );
+            }
+            return;
+          } else {
+            currentMetrics = decryptedString;
           }
-          return;
-        } else {
-          currentMetrics = decryptedString;
+        }
+
+        const currentPlayerMetrics: PlayerMetrics = await JSON.parse(
+          currentMetrics,
+        );
+
+        for (const key in eligibilityCriteria[i].criteria) {
+          const criteria =
+            eligibilityCriteria[i].criteria[key as keyof MilestoneEligibility];
+
+          if (!criteria) continue;
+
+          const playerValue = currentPlayerMetrics[key as keyof PlayerMetrics];
+          const conditions: boolean[] = [];
+
+          if ("minValue" in criteria && "maxValue" in criteria) {
+            if (typeof playerValue === "number") {
+              conditions.push(playerValue >= criteria.minValue);
+              conditions.push(playerValue <= criteria.maxValue);
+            }
+          } else if ("boolValue" in criteria) {
+            if (typeof playerValue === "boolean") {
+              conditions.push(playerValue === criteria.boolValue);
+            }
+          }
+
+          if (criteria.operator === "and") {
+            if (!conditions.every(Boolean)) {
+              result = false;
+            }
+          } else if (criteria.operator === "or") {
+            if (!conditions.some(Boolean)) {
+              result = false;
+            }
+          }
+        }
+
+        if (!result) {
+          return false;
         }
       }
 
-      const currentPlayerMetrics: PlayerMetrics = await JSON.parse(
-        currentMetrics,
-      );
-
-      for (const key in eligibilityCriteria[i].criteria) {
-        const criteria =
-          eligibilityCriteria[i].criteria[key as keyof MilestoneEligibility];
-
-        if (!criteria) continue;
-
-        const playerValue = currentPlayerMetrics[key as keyof PlayerMetrics];
-        const conditions: boolean[] = [];
-
-        if ("minValue" in criteria && "maxValue" in criteria) {
-          if (typeof playerValue === "number") {
-            conditions.push(playerValue >= criteria.minValue);
-            conditions.push(playerValue <= criteria.maxValue);
-          }
-        } else if ("boolValue" in criteria) {
-          if (typeof playerValue === "boolean") {
-            conditions.push(playerValue === criteria.boolValue);
-          }
+      if (eligibilityCriteria[i].totalPointScore) {
+        if (
+          (await this.kinoraQuestDataContract.getPlayerTotalPointScore(
+            parseInt(playerProfileId, 16),
+          )) < eligibilityCriteria[i].totalPointScore
+        ) {
+          result = false;
         }
-
-        if (criteria.operator === "and") {
-          if (!conditions.every(Boolean)) {
-            result = false;
-          }
-        } else if (criteria.operator === "or") {
-          if (!conditions.some(Boolean)) {
-            result = false;
-          }
-        }
-      }
-
-      if (!result) {
-        return false;
       }
     }
 
     return result;
-  };
-
-  /**
-   * @method cleanUpListeners
-   * @description Removes event listeners related to video metrics collection.
-   * @throws Will throw an error if not used in a browser environment or if the video element is not found.
-   * @private
-   */
-  private cleanUpListeners = () => {
-    if (typeof window === "undefined") {
-      throw new Error(
-        "This function can only be used in a browser environment.",
-      );
-    }
-    if (!this.videoElement)
-      throw new Error(
-        "Video element not detected. Make sure to set your Livepeer Player component in your app.",
-      );
-
-    this.videoElement.removeEventListener("play", this.metrics.onPlay);
-    this.videoElement.removeEventListener("pause", this.metrics.onPause);
-    this.videoElement.removeEventListener("timeupdate", this.timeUpdateHandler);
-    this.videoElement.removeEventListener("click", this.metrics.onClick);
-    this.videoElement.removeEventListener("seeking", this.metrics.onSkip);
-
-    this.videoElement.removeEventListener(
-      "volumechange",
-      this.metrics.onVolumeChange,
-    );
-    document.removeEventListener(
-      "fullscreenchange",
-      this.fullScreenChangeHandler,
-    );
-
-    this.videoElement.removeEventListener(
-      "waiting",
-      this.metrics.onBufferStart,
-    );
-
-    this.videoElement.removeEventListener("playing", this.metrics.onBufferEnd);
-
-    if (typeof window !== "undefined") {
-      window.removeEventListener("beforeunload", this.beforeUnloadHandler);
-    }
-  };
-
-  /**
-   * @method timeUpdateHandler
-   * @description Event handler for video 'timeupdate' event, updates metrics and checks for bounce condition.
-   * @param {Event} e - The event object.
-   * @private
-   */
-  private timeUpdateHandler = (e: Event) => {
-    const currentTime = (e.currentTarget as HTMLVideoElement).currentTime;
-    this.metrics.onTimeUpdate(currentTime);
-    if (currentTime < 10) {
-      this.metrics.onBounce();
-    }
-  };
-
-  /**
-   * @method fullScreenChangeHandler
-   * @description Event handler for document 'fullscreenchange' event, updates metrics.
-   * @private
-   */
-  private fullScreenChangeHandler = () => {
-    if (document.fullscreenElement === this.videoElement) {
-      this.metrics.onFullScreen();
-    }
-  };
-
-  /**
-   * @method beforeUnloadHandler
-   * @description Event handler for window 'beforeunload' event, performs cleanup.
-   * @private
-   */
-  private beforeUnloadHandler = () => {
-    this.cleanUpListeners();
-  };
-
-  /**
-   * @method log
-   * @description Logs messages along with associated data, managing log index and emitting log events.
-   * @param {LogCategory} category - The category of the log.
-   * @param {string} message - The log message.
-   * @param {string} responseObject - The response object as a string.
-   * @param {string} isoDate - The ISO string representation of the log date.
-   * @private
-   */
-  private log = (
-    category: LogCategory,
-    message: string,
-    responseObject: string,
-    isoDate: string,
-  ) => {
-    if (typeof responseObject === "object") {
-      responseObject = JSON.stringify(responseObject);
-    }
-
-    this.logs[this.logIndex] = { category, message, responseObject, isoDate };
-    this.logIndex = (this.logIndex + 1) % this.logSize;
-    this.emit(
-      "log",
-      JSON.stringify({
-        message,
-        responseObject,
-        isoDate,
-      }),
-    );
   };
 }

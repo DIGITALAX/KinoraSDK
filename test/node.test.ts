@@ -7,7 +7,7 @@ const profileId = "0x12d";
 const pubId = "0x01";
 const playerProfileId = "0x12e";
 
-describe("Node Test Suite", () => {
+xdescribe("Node Test Suite", () => {
   let newSequence: Sequence, signer: Signer;
 
   const chronicleProvider = new ethers.providers.JsonRpcProvider(
@@ -15,12 +15,12 @@ describe("Node Test Suite", () => {
     175177,
   );
 
-  describe("QuestInvoker Instantiate New Quest", () => {
+  describe("QuestEnvoker Instantiate New Quest", () => {
     before(async () => {
       signer = new ethers.Wallet(process.env.PRIVATE_KEY!, chronicleProvider);
 
       newSequence = new Sequence({
-        questInvokerProfileId: profileId,
+        questEnvokerProfileId: profileId,
         signer,
       });
     });

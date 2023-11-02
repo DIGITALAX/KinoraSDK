@@ -17,9 +17,9 @@ contract KinoraQuest is Initializable {
   address public kinoraOpenAction;
 
   /**
-   * @dev Modifier to ensure function caller is the quest invoker PKP.
+   * @dev Modifier to ensure function caller is the quest envoker PKP.
    */
-  modifier onlyQuestInvokerPKP() {
+  modifier onlyQuestEnvokerPKP() {
     if (msg.sender != accessControl.getAssignedPKPAddress()) {
       revert KinoraErrors.OnlyPKP();
     }
@@ -27,9 +27,9 @@ contract KinoraQuest is Initializable {
   }
 
   /**
-   * @dev Modifier to ensure function caller is either the quest invoker PKP or an admin.
+   * @dev Modifier to ensure function caller is either the quest envoker PKP or an admin.
    */
-  modifier onlyQuestInvokerPKPOrAdmin() {
+  modifier onlyQuestEnvokerPKPOrAdmin() {
     if (
       msg.sender != accessControl.getAssignedPKPAddress() &&
       !accessControl.isAdmin(msg.sender)
@@ -130,7 +130,7 @@ contract KinoraQuest is Initializable {
    */
   function terminateQuest(
     uint256 _pubId
-  ) public onlyQuestInvokerPKPOrAdmin questOpen(_pubId) {
+  ) public onlyQuestEnvokerPKPOrAdmin questOpen(_pubId) {
     uint256 _profileId = accessControl.getProfileId();
 
     kinoraQuestData.updateQuestStatus(_profileId, _pubId);

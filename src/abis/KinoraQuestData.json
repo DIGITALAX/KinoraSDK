@@ -5,11 +5,6 @@
         "internalType": "address",
         "name": "_factoryAddress",
         "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_kinoraOpenActionAddress",
-        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -24,6 +19,36 @@
     "inputs": [],
     "name": "MaxPlayerCountReached",
     "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyAdmin",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "profileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "escrowContract",
+        "type": "address"
+      }
+    ],
+    "name": "EscrowContractValidated",
+    "type": "event"
   },
   {
     "anonymous": false,
@@ -131,6 +156,43 @@
       {
         "indexed": false,
         "internalType": "uint256",
+        "name": "playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "profileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "milestone",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "eligibility",
+        "type": "bool"
+      }
+    ],
+    "name": "PlayerMilestoneEligibilityUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "profileId",
         "type": "uint256"
       },
@@ -170,12 +232,6 @@
         "internalType": "uint256",
         "name": "milestoneCount",
         "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes32",
-        "name": "joinHash",
-        "type": "bytes32"
       }
     ],
     "name": "QuestInstantiated",
@@ -248,6 +304,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "factoryMaintainer",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -261,6 +330,40 @@
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPlayerEligibleToClaimMilestone",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -314,25 +417,6 @@
       }
     ],
     "name": "getPlayerMilestonesCompletedPerQuest",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_playerProfileId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getPlayerNumberOfPoints",
     "outputs": [
       {
         "internalType": "uint256",
@@ -439,21 +523,16 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_questProfileId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_questPubId",
+        "name": "_playerProfileId",
         "type": "uint256"
       }
     ],
-    "name": "getQuestJoinHash",
+    "name": "getPlayerTotalPointScore",
     "outputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "uint256",
         "name": "",
-        "type": "bytes32"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -501,7 +580,36 @@
         "type": "uint256"
       }
     ],
-    "name": "getQuestMilestoneCompletionHash",
+    "name": "getQuestMilestoneCompletionConditionHash",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestMilestoneConditionHash",
     "outputs": [
       {
         "internalType": "bytes32",
@@ -526,35 +634,6 @@
       }
     ],
     "name": "getQuestMilestoneCount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_questProfileId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_questPubId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_milestone",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuestMilestoneNumberOfPoints",
     "outputs": [
       {
         "internalType": "uint256",
@@ -647,6 +726,35 @@
         "internalType": "enum KinoraLibrary.RewardType",
         "name": "",
         "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questPubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestMilestoneRewardURI",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -787,6 +895,30 @@
         "type": "uint256"
       }
     ],
+    "name": "getValidEscrowContract",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      }
+    ],
     "name": "getValidMetricsContract",
     "outputs": [
       {
@@ -908,14 +1040,14 @@
             "type": "tuple"
           },
           {
-            "internalType": "bytes32",
-            "name": "completionHash",
-            "type": "bytes32"
+            "internalType": "string",
+            "name": "completionConditionHash",
+            "type": "string"
           },
           {
-            "internalType": "uint256",
-            "name": "numberOfPoints",
-            "type": "uint256"
+            "internalType": "bytes32",
+            "name": "conditionHash",
+            "type": "bytes32"
           },
           {
             "internalType": "uint256",
@@ -926,11 +1058,6 @@
         "internalType": "struct KinoraLibrary.Milestone[]",
         "name": "_milestones",
         "type": "tuple[]"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "_joinHash",
-        "type": "bytes32"
       },
       {
         "internalType": "uint256",
@@ -949,6 +1076,42 @@
       }
     ],
     "name": "newQuest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_kinoraOpenActionAddress",
+        "type": "address"
+      }
+    ],
+    "name": "setKinoraOpenAction",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_newEscrowContract",
+        "type": "address"
+      }
+    ],
+    "name": "setValidEscrowContract",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1040,12 +1203,50 @@
         "type": "uint256"
       },
       {
+        "internalType": "uint256",
+        "name": "_newPoints",
+        "type": "uint256"
+      },
+      {
         "internalType": "bool",
         "name": "_encrypted",
         "type": "bool"
       }
     ],
     "name": "updatePlayerMetrics",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_eligibility",
+        "type": "bool"
+      }
+    ],
+    "name": "updatePlayerMilestoneEligibility",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

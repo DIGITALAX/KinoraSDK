@@ -1,9 +1,6 @@
-import { Bytes, ethers } from "ethers";
-import {
-  DiscordProvider,
-  EthWalletProvider,
-  GoogleProvider,
-} from "@lit-protocol/lit-auth-client";
+import { ethers } from "ethers";
+import { PublicationMetadataMainFocusType } from "./generated";
+import { Metrics } from "src/metrics";
 
 /**
  * @description Enumeration for the types of reward tokens.
@@ -79,6 +76,14 @@ export interface PlayerMetrics {
   rawPlayPauseRatio: number;
   rawCtr: number;
   rawAvd: number;
+  totalViewDuration: number;
+  totalFullScreenCount: number;
+  totalPlayCount: number;
+  totalPauseCount: number;
+  totalSkipCount: number;
+  totalClickCount: number;
+  totalVolumeChangeCount: number;
+  totalBufferCount: number;
   averageBounceRate?: number;
   averageBufferDuration?: number;
   averageEngagementRate?: number;
@@ -106,7 +111,6 @@ export interface Reward {
  */
 export interface Milestone {
   reward: Reward; // The reward for reaching this milestone
-  numberOfPoints: number; // Number of points required to reach this milestone
   milestone: number; // Milestone number or identifier
   eligibilityHash: string; // Hash representing eligibility criteria for this milestone
 }
@@ -126,129 +130,31 @@ export interface GeneratedTxData {
  * @description Interface representing milestone eligibility.
  */
 export interface MilestoneEligibility {
-  playbackId: string; // Playback ID related to this eligibility
-  criteria: MilestoneEligibilityCriteria; // Eligibility criteria
+  playbackId?: string; // Playback ID related to this eligibility
+  criteria?: MilestoneEligibilityCriteria; // Eligibility criteria
+  totalPointScore?: number;
 }
 
 /**
  * @description Interface representing criteria for milestone eligibility.
  */
 export interface MilestoneEligibilityCriteria {
-  avd:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  ctr:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  playCount:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  pauseCount:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  clickCount:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  skipCount:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  totalDuration:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  impressionCount:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  volumeChangeCount:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  bufferCount:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  interactionRate:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  engagementRate:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  playPauseRation:
-    | {
-        minValue: number;
-        maxValue: number;
-        operator: "or" | "and";
-      }
-    | undefined;
-  mirrorLens:
-    | {
-        boolValue: boolean;
-        operator: "or" | "and";
-      }
-    | undefined;
-  likeLens:
-    | {
-        boolValue: boolean;
-        operator: "or" | "and";
-      }
-    | undefined;
-  bookmarkLens:
-    | {
-        boolValue: boolean;
-        operator: "or" | "and";
-      }
-    | undefined;
-  notInterestedLens:
-    | {
-        boolValue: boolean;
-        operator: "or" | "and";
-      }
-    | undefined;
+  averageAvd?: MetricCriteria;
+  averageCtr?: MetricCriteria;
+  totalPlayCount?: MetricCriteria;
+  totalPauseCount?: MetricCriteria;
+  totalClickCount?: MetricCriteria;
+  totalSkipCount?: MetricCriteria;
+  totalDuration?: MetricCriteria;
+  totalImpressionCount?: MetricCriteria;
+  totalVolumeChangeCount?: MetricCriteria;
+  totalBufferCount?: MetricCriteria;
+  averageEngagementRate?: MetricCriteria;
+  averagePlayPauseRatio?: MetricCriteria;
+  mirrorLens?: BoolLensCriteria;
+  likeLens?: BoolLensCriteria;
+  bookmarkLens?: BoolLensCriteria;
+  notInterestedLens?: BoolLensCriteria;
 }
 
 /**
@@ -280,4 +186,61 @@ export interface LensStats {
   hasActed: boolean; // Flag indicating whether the user has acted/collect the video post id on Lens
   hasNotInterested: boolean; // Flag indicating whether the user has marked the post id not interested
   hasBookmarked: boolean; // Flag indicating whether the user has bookmarked the post id
+}
+
+/** *
+ * @description Lens Protocol Publication Metadata Struct.
+ */
+export interface LensQuestMetadata {
+  $schema: "https://json-schemas.lens.dev/publications/image/3.0.0.json";
+  lens: {
+    mainContentFocus: PublicationMetadataMainFocusType.Image;
+    image: {
+      item: string;
+      type: "image/png";
+    };
+    title: string;
+    content: string;
+    attachments: {
+      item: string;
+      type: "image/png";
+    }[];
+    appId: "kinora";
+    id: string;
+    hideFromFeed: false;
+    locale: "en";
+    tags: ["kinora", "kinora quest", "vision quest"];
+  };
+}
+
+/** *
+ * @description Sub-type Metric Criteria Interface.
+ */
+export interface MetricCriteria {
+  minValue: number;
+  maxValue: number;
+  operator: "or" | "and";
+}
+
+/** *
+ * @description Sub-type Lens Bool Criteria Interface.
+ */
+export interface BoolLensCriteria {
+  boolValue: boolean;
+  operator: "or" | "and";
+}
+
+export interface PlayerData {
+  videoElement: HTMLVideoElement;
+  eventHandlers: {
+    play: (event: Event) => void;
+    pause: (event: Event) => void;
+    timeupdate: (event: Event) => void;
+    click: (event: Event) => void;
+    seeking: (event: Event) => void;
+    volumechange: (event: Event) => void;
+    fullscreenchange: (event: Event) => void;
+    waiting: (event: Event) => void;
+    playing: (event: Event) => void;
+  };
 }
