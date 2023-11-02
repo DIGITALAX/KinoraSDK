@@ -5,9 +5,12 @@ import React, {
   useState,
   useLayoutEffect,
   memo,
+  useContext,
 } from "react";
 import { Mirror, Post, Quote } from "./../../src/@types/generated";
 import getPublicationClient from "./../../src/graphql/queries/getPublicationClient";
+import { KinoraContext } from "./KinoraProvider";
+import { LitAuthSig } from "src/@types/kinora-sdk";
 
 // Code can only be executed in a browser environment
 const isBrowser = typeof window !== "undefined";
@@ -16,6 +19,7 @@ const isBrowser = typeof window !== "undefined";
  * @interface KinoraPlayerWrapperProps
  * @dev Defines the shape of props accepted by KinoraPlayerWrapper component.
  *  @param children - Function that accepts a setter for the Livepeer media element, returning React Node.
+ * @param playerId - The Player Id of the current video element.
  * @param onPlay - Handler for the play event.
  * @param onPause - Handler for the pause event.
  * @param onAbort - Handler for the abort event.
@@ -40,6 +44,7 @@ const isBrowser = typeof window !== "undefined";
  * @param onWaiting - Handler for the waiting event.
  * @param onFullScreenChange - Handler for the full screen change event.
  * @param onLensVideoData - Handler for the Lens video data event.
+ * @param litAuthSig - Lit Auth Sig.
  * @param volume - Object containing the level and id for volume setting.
  * @param seekTo - Object containing the time and id for seeking operation.
  * @param play - A boolean to control play state.
@@ -54,6 +59,7 @@ type KinoraPlayerWrapperProps = {
   children: (
     setMediaElement: (node: HTMLVideoElement) => void,
   ) => React.ReactNode;
+  playerId?: string;
   onPlay?: (event: Event) => void;
   onPause?: (event: Event) => void;
   onAbort?: (event: Event) => void;
@@ -81,6 +87,7 @@ type KinoraPlayerWrapperProps = {
     data: Post | Mirror | Comment | Quote,
     error: ApolloError | undefined,
   ) => void;
+  litAuthSig?: LitAuthSig;
   volume?: { level: number; id: number };
   seekTo?: { time: number; id: number };
   play?: boolean;
@@ -110,8 +117,10 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     fillWidthHeight = false,
     pubId,
     playerProfileId,
+    playerId,
     children,
     onLensVideoData,
+    litAuthSig,
     ...props
   }) => {
     if (!isBrowser) return null;
@@ -162,6 +171,25 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       "onWaiting",
       "onFullScreenChange",
     ];
+    // Set the SDK Context created from the Wrapper provider
+    const kinoraSDKInstance = useContext(KinoraContext);
+
+    useEffect(() => {
+      if (
+        mediaElementRef.current &&
+        kinoraSDKInstance &&
+        playerId &&
+        litAuthSig
+      ) {
+        kinoraSDKInstance
+          .getSequence()
+          .initializePlayer(playerId, mediaElementRef.current, litAuthSig);
+
+        return () => {
+          kinoraSDKInstance.getSequence().destroyPlayer(playerId);
+        };
+      }
+    }, [playerId, mediaElementRef]);
 
     // Callback to set media element and setup/cleanup event listeners
     const setMediaElement = useCallback(

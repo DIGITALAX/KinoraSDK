@@ -36,7 +36,7 @@ contract KinoraMetrics is Initializable {
     uint256 playerProfileId
   );
 
-  modifier onlyQuestInvokerPKP() {
+  modifier onlyQuestEnvokerPKP() {
     if (msg.sender != accessControl.getAssignedPKPAddress()) {
       revert KinoraErrors.OnlyPKP();
     }
@@ -70,7 +70,7 @@ contract KinoraMetrics is Initializable {
     uint256 _playerProfileId,
     uint256 _pubId,
     bool _encrypted
-  ) public onlyQuestInvokerPKP {
+  ) public onlyQuestEnvokerPKP {
     uint256 _profileId = accessControl.getProfileId();
 
     kinoraQuestData.updatePlayerMetrics(
@@ -96,7 +96,7 @@ contract KinoraMetrics is Initializable {
     uint256 _milestone,
     uint256 _playerProfileId,
     bool _eligibility
-  ) public onlyQuestInvokerPKP {
+  ) public onlyQuestEnvokerPKP {
     uint256 _profileId = accessControl.getProfileId();
 
     kinoraQuestData.updatePlayerMilestoneEligibility(

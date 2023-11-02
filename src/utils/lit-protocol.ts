@@ -263,7 +263,7 @@ export const hashHex = (input: string): string => {
  * @function encryptMetrics
  * @description Asynchronously encrypts metrics data based on specified conditions and authorization signature.
  * @param {string} metrics - The metrics data as a string.
- * @param {string} questInvokerPKPAddress - The quest invoker's PKP address.
+ * @param {string} questEnvokerPKPAddress - The quest envoker's PKP address.
  * @param {string} playerPKPAddress - The player's PKP address.
  * @param {LitAuthSig} playerPKPAuthSig - The player's PKP authorization signature.
  * @param {LitJsSdk.LitNodeClient} litNodeClient - The Lit Node Client instance.
@@ -272,7 +272,7 @@ export const hashHex = (input: string): string => {
  */
 export const encryptMetrics = async (
   metrics: string,
-  questInvokerPKPAddress: `0x${string}`,
+  questEnvokerPKPAddress: `0x${string}`,
   playerPKPAddress: `0x${string}`,
   playerPKPAuthSig: LitAuthSig,
   litNodeClient: LitJsSdk.LitNodeClient,
@@ -293,7 +293,7 @@ export const encryptMetrics = async (
             parameters: [":playerAddress"],
             returnValueTest: {
               comparator: "=",
-              value: questInvokerPKPAddress.toLowerCase(),
+              value: questEnvokerPKPAddress.toLowerCase(),
             },
           },
           {
@@ -333,7 +333,7 @@ export const encryptMetrics = async (
  * @function decryptMetrics
  * @description Asynchronously decrypts encrypted metrics data based on specified conditions and authorization signature.
  * @param {{ciphertext: string, dataToEncryptHash: string}} encryptMetrics - The encrypted metrics data.
- * @param {string} questInvokerPKPAddress - The quest invoker's PKP address.
+ * @param {string} questEnvokerPKPAddress - The quest envoker's PKP address.
  * @param {string} playerProfileOwnerAddress - The player profile owner's address.
  * @param {LitAuthSig} playerPKPAuthSig - The player's PKP authorization signature.
  * @param {LitJsSdk.LitNodeClient} litNodeClient - The Lit Node Client instance.
@@ -342,7 +342,7 @@ export const encryptMetrics = async (
  */
 export const decryptMetrics = async (
   encryptMetrics: { ciphertext: string; dataToEncryptHash: string },
-  questInvokerPKPAddress: `0x${string}`,
+  questEnvokerPKPAddress: `0x${string}`,
   playerProfileOwnerAddress: `0x${string}`,
   playerPKPAuthSig: LitAuthSig,
   litNodeClient: LitJsSdk.LitNodeClient,
@@ -359,7 +359,7 @@ export const decryptMetrics = async (
             parameters: [":playerAddress"],
             returnValueTest: {
               comparator: "=",
-              value: questInvokerPKPAddress.toLowerCase(),
+              value: questEnvokerPKPAddress.toLowerCase(),
             },
           },
           {

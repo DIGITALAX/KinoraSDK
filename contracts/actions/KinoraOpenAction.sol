@@ -59,7 +59,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
   mapping(uint256 => mapping(uint256 => address)) _granteeReceiver;
 
   event QuestInitialized(
-    address questInvoker,
+    address questEnvoker,
     uint256 profileId,
     uint256 pubId
   );
@@ -105,21 +105,21 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
     address _questContract;
     address _escrowContract;
     if (
-      _params.questInvoker !=
-      kinoraFactory.getPKPToDeployer(_params.questInvokerPKP)
+      _params.questEnvoker !=
+      kinoraFactory.getPKPToDeployer(_params.questEnvokerPKP)
     ) {
       (_questContract, _escrowContract) = kinoraFactory.deployFromKinoraFactory(
-        _params.questInvokerPKP,
-        _params.questInvoker,
+        _params.questEnvokerPKP,
+        _params.questEnvoker,
         _profileId,
         _pubId
       );
     } else {
       _questContract = kinoraFactory.getPKPToDeployedKinoraQuest(
-        _params.questInvokerPKP
+        _params.questEnvokerPKP
       );
       _escrowContract = kinoraFactory.getPKPToDeployedKinoraEscrow(
-        _params.questInvokerPKP
+        _params.questEnvokerPKP
       );
     }
 
@@ -128,14 +128,14 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
         milestones: _milestones,
         escrowContract: _escrowContract,
         questContract: _questContract,
-        questInvoker: _params.questInvoker,
+        questEnvoker: _params.questEnvoker,
         maxPlayerCount: _params.maxPlayerCount,
         profileId: _profileId,
         pubId: _pubId
       })
     );
 
-    emit QuestInitialized(_params.questInvoker, _profileId, _pubId);
+    emit QuestInitialized(_params.questEnvoker, _profileId, _pubId);
 
     return _data;
   }
@@ -143,13 +143,13 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
   function processPublicationAction(
     Types.ProcessActionParams calldata _params
   ) external override onlyHub returns (bytes memory) {
-    (address _questInvokerPKP, uint256 _milestone) = abi.decode(
+    (address _questEnvokerPKP, uint256 _milestone) = abi.decode(
       _params.actionModuleData,
       (address, uint256)
     );
 
     address _kinoraQuest = kinoraFactory.getPKPToDeployedKinoraQuest(
-      _questInvokerPKP
+      _questEnvokerPKP
     );
 
     if (
@@ -193,7 +193,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
       );
     }
 
-    return abi.encode(_questInvokerPKP, _milestone);
+    return abi.encode(_questEnvokerPKP, _milestone);
   }
 
   function _depositMilestoneRewards(
@@ -206,7 +206,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
       ) {
         IKinoraEscrow(_params.escrowContract).depositERC20(
           _params.milestones[i].reward.tokenAddress,
-          _params.questInvoker,
+          _params.questEnvoker,
           _params.milestones[i].reward.amount,
           _params.pubId,
           i + 1

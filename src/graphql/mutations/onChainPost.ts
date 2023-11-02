@@ -11,9 +11,9 @@ import {
 
 const onChainPost = async (
   request: OnchainPostRequest,
-  questInvokerAuthedClient: ApolloClient<NormalizedCacheObject>,
+  questEnvokerAuthedClient: ApolloClient<NormalizedCacheObject>,
 ): Promise<FetchResult<CreateOnchainPostTypedDataMutation>> => {
-  return await questInvokerAuthedClient.mutate({
+  return await questEnvokerAuthedClient.mutate({
     mutation: CreateOnchainPostTypedDataDocument,
     variables: {
       request: request,

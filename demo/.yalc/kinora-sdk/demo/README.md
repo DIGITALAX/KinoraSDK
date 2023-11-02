@@ -1,1 +1,0 @@
-KinoraSDK Demo
