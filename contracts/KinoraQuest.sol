@@ -7,6 +7,8 @@ import "./KinoraEscrow.sol";
 import "./KinoraLibrary.sol";
 import "./KinoraQuestData.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/interfaces/IERC721.sol";
 
 contract KinoraQuest is Initializable {
   string public name;
@@ -115,11 +117,20 @@ contract KinoraQuest is Initializable {
     uint256 _pubId,
     uint256 _profileId
   ) external onlyOpenAction {
-    KinoraLibrary.Milestone[] memory _milestones = abi.decode(
-      _encodedMilestones,
-      (KinoraLibrary.Milestone[])
+    (
+      KinoraLibrary.Milestone[] memory _milestones,
+      KinoraLibrary.GatingLogic memory _gated
+    ) = abi.decode(
+        _encodedMilestones,
+        (KinoraLibrary.Milestone[], KinoraLibrary.GatingLogic)
+      );
+    kinoraQuestData.newQuest(
+      _milestones,
+      _gated,
+      _maxPlayerCount,
+      _pubId,
+      _profileId
     );
-    kinoraQuestData.newQuest(_milestones, _maxPlayerCount, _pubId, _profileId);
 
     emit NewQuestCreated(_profileId, _pubId, _milestones.length);
   }
@@ -150,6 +161,38 @@ contract KinoraQuest is Initializable {
     uint256 _playerProfileId
   ) external onlyOpenAction questOpen(_pubId) {
     uint256 _profileId = accessControl.getProfileId();
+
+    address[] memory _erc20s = kinoraQuestData.getQuestGatedERC20Addresses(
+      _profileId,
+      _pubId
+    );
+    address[] memory _erc721s = kinoraQuestData.getQuestGatedERC721Addresses(
+      _profileId,
+      _pubId
+    );
+    uint256[] memory _thresholds = kinoraQuestData.getQuestGatedERC20Thresholds(
+      _profileId,
+      _pubId
+    );
+    uint256[] memory _tokens = kinoraQuestData.getQuestGatedERC721Tokens(
+      _profileId,
+      _pubId
+    );
+    bool _oneOf = kinoraQuestData.getQuestGatedOneOf(_profileId, _pubId);
+
+    if (
+      !_isEligible(
+        _erc721s,
+        _erc20s,
+        _tokens,
+        _thresholds,
+        _playerAddress,
+        _oneOf
+      )
+    ) {
+      revert KinoraErrors.PlayerNotEligible();
+    }
+
     kinoraQuestData.joinQuest(
       _playerAddress,
       _pubId,
@@ -186,6 +229,22 @@ contract KinoraQuest is Initializable {
       _pubId
     );
 
+    address[] memory _erc20s = kinoraQuestData.getMilestoneGatedERC20Addresses(
+      _profileId,
+      _pubId,
+      _milestone
+    );
+    address[] memory _erc721s = kinoraQuestData
+      .getMilestoneGatedERC721Addresses(_profileId, _pubId, _milestone);
+    uint256[] memory _thresholds = kinoraQuestData
+      .getMilestoneGatedERC20Thresholds(_profileId, _pubId, _milestone);
+    uint256[] memory _tokens = kinoraQuestData.getMilestoneGatedERC721Tokens(
+      _profileId,
+      _pubId,
+      _milestone
+    );
+    bool _oneOf = kinoraQuestData.getQuestGatedOneOf(_profileId, _pubId);
+
     if (
       _joined &&
       kinoraQuestData.getPlayerMilestonesCompletedPerQuest(
@@ -206,6 +265,14 @@ contract KinoraQuest is Initializable {
         _profileId,
         _pubId,
         _milestone
+      ) &&
+      _isEligible(
+        _erc721s,
+        _erc20s,
+        _tokens,
+        _thresholds,
+        _playerAddress,
+        _oneOf
       )
     ) {
       if (
@@ -231,5 +298,82 @@ contract KinoraQuest is Initializable {
     }
 
     emit PlayerCompleteQuestMilestone(_pubId, _milestone, _playerProfileId);
+  }
+
+  /**
+   * Evaluates the eligibility of a player based on the specified ERC-721 and ERC-20 conditions.
+   *
+   * @param _erc721s - An array of addresses of ERC-721 contracts.
+   * @param _erc20s - An array of addresses of ERC-20 contracts.
+   * @param _tokens - An array of token IDs for the ERC-721 contracts.
+   * @param _thresholds - An array of threshold values for the ERC-20 contracts.
+   * @param _playerAddress - The Ethereum address of the player.
+   * @param _oneOf - A boolean indicating whether the player must meet at least one of the conditions or all of them.
+   * @return A boolean indicating whether the player meets the specified conditions.
+   */
+  function _isEligible(
+    address[] memory _erc721s,
+    address[] memory _erc20s,
+    uint256[] memory _tokens,
+    uint256[] memory _thresholds,
+    address _playerAddress,
+    bool _oneOf
+  ) internal view returns (bool) {
+    bool eligible;
+
+    if (_oneOf) {
+      eligible = (_checkERC721Conditions(_erc721s, _tokens, _playerAddress) ||
+        _checkERC20Conditions(_erc20s, _thresholds, _playerAddress));
+    } else {
+      eligible = (_checkERC721Conditions(_erc721s, _tokens, _playerAddress) &&
+        _checkERC20Conditions(_erc20s, _thresholds, _playerAddress));
+    }
+
+    return eligible;
+  }
+
+  /**
+   * Checks the specified ERC-721 conditions for a player.
+   *
+   * @param _erc721Addresses - An array of addresses of ERC-721 contracts.
+   * @param _erc721TokenIds - An array of token IDs for the ERC-721 contracts.
+   * @param _playerAddress - The Ethereum address of the player.
+   * @return A boolean indicating whether the player meets any of the specified ERC-721 conditions.
+   */
+  function _checkERC721Conditions(
+    address[] memory _erc721Addresses,
+    uint256[] memory _erc721TokenIds,
+    address _playerAddress
+  ) internal view returns (bool) {
+    for (uint256 i = 0; i < _erc721Addresses.length; i++) {
+      bool condition = (_erc721TokenIds[i] != 0)
+        ? (IERC721(_erc721Addresses[i]).ownerOf(_erc721TokenIds[i]) ==
+          _playerAddress)
+        : (IERC721(_erc721Addresses[i]).balanceOf(_playerAddress) > 0);
+      if (condition) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Checks the specified ERC-20 conditions for a player.
+   *
+   * @param _erc20Addresses - An array of addresses of ERC-20 contracts.
+   * @param _erc20Thresholds - An array of threshold values for the ERC-20 contracts.
+   * @param _playerAddress - The Ethereum address of the player.
+   * @return A boolean indicating whether the player meets any of the specified ERC-20 conditions.
+   */
+  function _checkERC20Conditions(
+    address[] memory _erc20Addresses,
+    uint256[] memory _erc20Thresholds,
+    address _playerAddress
+  ) internal view returns (bool) {
+    for (uint256 i = 0; i < _erc20Addresses.length; i++) {
+      if (
+        IERC20(_erc20Addresses[i]).balanceOf(_playerAddress) >=
+        _erc20Thresholds[i]
+      ) return true;
+    }
+    return false;
   }
 }

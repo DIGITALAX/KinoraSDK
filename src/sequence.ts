@@ -1,22 +1,20 @@
 import {
   ChainIds,
   ILogEntry,
+  LensKeys,
   LensStats,
   LitAuthSig,
   LogCategory,
+  MetricKeys,
   MilestoneEligibility,
+  MilestoneEligibilityCriteria,
   PlayerData,
   PlayerMetrics,
 } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import { ethers } from "ethers";
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
-import {
-  CHAIN,
-  INFURA_GATEWAY,
-  KINORA_QUEST_DATA_CONTRACT,
-  POINT_SCORES,
-} from "./constants";
+import { CHAIN, INFURA_GATEWAY, KINORA_QUEST_DATA_CONTRACT } from "./constants";
 import { EventEmitter } from "events";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import {
@@ -41,17 +39,17 @@ export class Sequence extends EventEmitter {
 
   /**
    * @private
-   * @type {{ [playerId: string]: Metrics } }
+   * @type {{ [playbackId: string]: Metrics } }
    * @description Instance of Metrics class for each Player to handle metric data.
    */
-  private metrics: { [playerId: string]: Metrics } = {};
+  private metrics: { [playbackId: string]: Metrics } = {};
 
   /**
    * @private
-   * @type {{ [playerId: string]: PlayerData }}
+   * @type {{ [playbackId: string]: PlayerData }}
    * @description Livepeer Player mapping.
    */
-  private playerMap: { [playerId: string]: PlayerData } = {};
+  private playerMap: { [playbackId: string]: PlayerData } = {};
 
   /**
    * @private
@@ -152,6 +150,16 @@ export class Sequence extends EventEmitter {
    */
   private kinoraQuestDataContract: ethers.Contract;
 
+  /**
+   * Constructs an instance of the enclosing class, initializing necessary properties and contracts.
+   *
+   * @param questEnvokerProfileId - A string representing the quest envoker's Lens Profile Id.
+   * @param questEnvokerPKPData - An object containing public key and token ID of the quest envoker.
+   * @param multihashDevKey - A string representing the multihash developer key.
+   * @param rpcURL - A string representing the URL of the RPC server.
+   * @param kinoraMetricsContract - A string representing the address of the Kinora Metrics contract.
+   * @param errorHandlingModeStrict - A boolean indicating whether the error handling mode is strict. Optional.
+   */
   constructor(
     questEnvokerProfileId: `0x${string}`,
     questEnvokerPKPData: {
@@ -190,81 +198,95 @@ export class Sequence extends EventEmitter {
     this.questEnvokerProfileId = parseInt(questEnvokerProfileId, 16);
   }
 
+  /**
+   * Initializes a Livepeer video player with given Id and associates event handlers to the video element.
+   *
+   * @param playbackId - A string representing the Livepeer playback Id.
+   * @param videoElement - The HTML video element associated with the player.
+   * @param litAuthSig - The Lit authorization signature.
+   */
   initializePlayer = (
-    playerId: string,
+    playbackId: string,
     videoElement: HTMLVideoElement,
     litAuthSig: LitAuthSig,
   ): void => {
     if (!this.litAuthSig) this.litAuthSig = litAuthSig;
 
-    const playerData = this.playerMap[playerId];
+    const playerData = this.playerMap[playbackId];
     if (!playerData) return;
 
-    this.metrics[playerId] = new Metrics();
+    this.metrics[playbackId] = new Metrics();
 
-    const timeUpdateHandler = this.getTimeUpdateHandler(this.metrics[playerId]);
+    const timeUpdateHandler = this.getTimeUpdateHandler(
+      this.metrics[playbackId],
+    );
 
-    this.playerMap[playerId] = {
+    this.playerMap[playbackId] = {
       videoElement,
       eventHandlers: {
-        play: this.metrics[playerId].onPlay,
-        pause: this.metrics[playerId].onPause,
+        play: this.metrics[playbackId].onPlay,
+        pause: this.metrics[playbackId].onPause,
         timeupdate: timeUpdateHandler,
-        click: this.metrics[playerId].onClick,
-        seeking: this.metrics[playerId].onSkip,
-        volumechange: this.metrics[playerId].onVolumeChange,
-        fullscreenchange: this.metrics[playerId].onFullScreen,
-        waiting: this.metrics[playerId].onBufferStart,
-        playing: this.metrics[playerId].onBufferEnd,
+        click: this.metrics[playbackId].onClick,
+        seeking: this.metrics[playbackId].onSkip,
+        volumechange: this.metrics[playbackId].onVolumeChange,
+        fullscreenchange: this.metrics[playbackId].onFullScreen,
+        waiting: this.metrics[playbackId].onBufferStart,
+        playing: this.metrics[playbackId].onBufferEnd,
       },
     };
 
     videoElement.addEventListener(
       "play",
-      this.playerMap[playerId].eventHandlers.play,
+      this.playerMap[playbackId].eventHandlers.play,
     );
     videoElement.addEventListener(
       "pause",
-      this.playerMap[playerId].eventHandlers.pause,
+      this.playerMap[playbackId].eventHandlers.pause,
     );
     videoElement.addEventListener(
       "timeupdate",
-      this.playerMap[playerId].eventHandlers.timeupdate,
+      this.playerMap[playbackId].eventHandlers.timeupdate,
     );
     videoElement.addEventListener(
       "click",
-      this.playerMap[playerId].eventHandlers.click,
+      this.playerMap[playbackId].eventHandlers.click,
     );
     videoElement.addEventListener(
       "seeking",
-      this.playerMap[playerId].eventHandlers.seeking,
+      this.playerMap[playbackId].eventHandlers.seeking,
     );
     videoElement.addEventListener(
       "volumechange",
-      this.playerMap[playerId].eventHandlers.volumechange,
+      this.playerMap[playbackId].eventHandlers.volumechange,
     );
     videoElement.addEventListener(
       "fullscreenchange",
-      this.playerMap[playerId].eventHandlers.fullscreenchange,
+      this.playerMap[playbackId].eventHandlers.fullscreenchange,
     );
     videoElement.addEventListener(
       "waiting",
-      this.playerMap[playerId].eventHandlers.waiting,
+      this.playerMap[playbackId].eventHandlers.waiting,
     );
     videoElement.addEventListener(
       "playing",
-      this.playerMap[playerId].eventHandlers.playing,
+      this.playerMap[playbackId].eventHandlers.playing,
     );
   };
 
-  destroyPlayer = (playerId: string): void => {
-    if (!this.playerMap[playerId]) return;
-    this.cleanUpListeners(playerId);
-    delete this.playerMap[playerId];
+  /**
+   * Destroys a player with given playback Id, cleaning up event listeners and removing video data.
+   *
+   * @param playbackId - A string representing the Livepeer playback Id.
+   */
+  destroyPlayer = (playbackId: string): void => {
+    if (!this.playerMap[playbackId]) return;
+    this.cleanUpListeners(playbackId);
+    delete this.playerMap[playbackId];
   };
 
   /**
-   * @method
+   * @method getPlayerMetrics
    * @description Collects and potentially encrypts player metrics for a quest, based on specified parameters. Ensures function is run in a browser environment with a video element present.
    * @param {string} playbackId - The playback Id for the quest.
    * @param {string} pubId - The Lens Pub Id of the quest.
@@ -344,6 +366,7 @@ export class Sequence extends EventEmitter {
    * @method sendMetricsOnChain
    * @description This function is responsible for sending player metrics to the blockchain. It performs various checks and validations before proceeding with the transaction, and logs the outcome.
    * @param {string} playbackId - The playback Id associated with the metrics.
+   * @param {string} playerAddress - The Address of the player associated with their Lens profile.
    * @param {string} playerProfileId - The Lens Profile Id of the player.
    * @param {string} playerMetricsHash - The hash of the player's metrics.
    * @param {string} litActionHash - The hash of the LIT action.
@@ -354,6 +377,7 @@ export class Sequence extends EventEmitter {
    */
   sendMetricsOnChain = async (
     playbackId: string,
+    playerAddress: string,
     playerProfileId: string,
     playerMetricsHash: string,
     litActionHash: string,
@@ -375,16 +399,6 @@ export class Sequence extends EventEmitter {
 
       const parsed: PlayerMetrics = await JSON.parse(metricsToSend.data);
 
-      const pointScore =
-        parsed.totalViewDuration * POINT_SCORES.totalDuration +
-        (parsed.hasActed ? POINT_SCORES.acted : 0) +
-        (parsed.hasMirrored ? POINT_SCORES.mirrored : 0) +
-        (parsed.hasBookmarked ? POINT_SCORES.bookmarked : 0) +
-        (parsed.hasNotInterested ? POINT_SCORES.notInterested : 0) +
-        (parsed.hasReacted ? POINT_SCORES.reacted : 0) +
-        parsed.averageAvd * POINT_SCORES.avd +
-        parsed.totalFullScreenCount * POINT_SCORES.fullScreenCount;
-
       const {
         error: txError,
         message: txMessage,
@@ -396,9 +410,10 @@ export class Sequence extends EventEmitter {
         [
           playbackId,
           "ipfs://" + playerMetricsHash,
+          playerAddress,
           playerProfileId,
           pubId,
-          pointScore,
+          ,
           metricsEncrypted,
         ],
       );
@@ -487,7 +502,6 @@ export class Sequence extends EventEmitter {
   verifyPlayerMilestoneComplete = async (
     playerProfileId: string,
     pubId: string,
-    playbackId: string,
     playerProfileOwnerAddress: `0x${string}`,
     milestone: number,
     litActionMilestoneHash: string,
@@ -531,7 +545,7 @@ export class Sequence extends EventEmitter {
         }
 
         const hashKeyItem =
-          await this.kinoraQuestDataContract.getQuestMilestoneCompletionConditionHash(
+          await this.kinoraQuestDataContract.getQuestMilestoneCompletionCriteria(
             this.questEnvokerProfileId,
             parseInt(pubId, 16),
             milestone,
@@ -546,7 +560,7 @@ export class Sequence extends EventEmitter {
           litActionMilestoneHash,
           this.questEnvokerPKPData.publicKey,
           this.multihashDevKey,
-          hashKeyItem, // GENERAL HASH!!,
+          hashKeyItem,
         );
 
         if (error) {
@@ -563,7 +577,9 @@ export class Sequence extends EventEmitter {
           }
           return;
         } else {
-          this.metrics[playbackId].reset();
+          Object.keys(this.playerMap).forEach((playbackId) => {
+            this.metrics[playbackId].reset();
+          });
 
           this.log(
             LogCategory.RESPONSE,
@@ -620,48 +636,49 @@ export class Sequence extends EventEmitter {
   /**
    * @method cleanUpListeners
    * @description Removes event listeners related to video metrics collection.
+   * @param {string} playbackId - The player's playback Id.
    * @throws Will throw an error if not used in a browser environment or if the video element is not found.
    * @private
    */
-  private cleanUpListeners = (playerId: string) => {
-    this.playerMap[playerId].videoElement.removeEventListener(
+  private cleanUpListeners = (playbackId: string) => {
+    this.playerMap[playbackId].videoElement.removeEventListener(
       "play",
-      this.playerMap[playerId].eventHandlers.play,
+      this.playerMap[playbackId].eventHandlers.play,
     );
-    this.playerMap[playerId].videoElement.removeEventListener(
+    this.playerMap[playbackId].videoElement.removeEventListener(
       "pause",
-      this.playerMap[playerId].eventHandlers.pause,
+      this.playerMap[playbackId].eventHandlers.pause,
     );
-    this.playerMap[playerId].videoElement.removeEventListener(
+    this.playerMap[playbackId].videoElement.removeEventListener(
       "timeupdate",
-      this.playerMap[playerId].eventHandlers.timeupdate,
+      this.playerMap[playbackId].eventHandlers.timeupdate,
     );
-    this.playerMap[playerId].videoElement.removeEventListener(
+    this.playerMap[playbackId].videoElement.removeEventListener(
       "click",
-      this.playerMap[playerId].eventHandlers.click,
+      this.playerMap[playbackId].eventHandlers.click,
     );
-    this.playerMap[playerId].videoElement.removeEventListener(
+    this.playerMap[playbackId].videoElement.removeEventListener(
       "seeking",
-      this.playerMap[playerId].eventHandlers.seeking,
+      this.playerMap[playbackId].eventHandlers.seeking,
     );
 
-    this.playerMap[playerId].videoElement.removeEventListener(
+    this.playerMap[playbackId].videoElement.removeEventListener(
       "volumechange",
-      this.playerMap[playerId].eventHandlers.volumechange,
+      this.playerMap[playbackId].eventHandlers.volumechange,
     );
-    this.playerMap[playerId].videoElement.removeEventListener(
+    this.playerMap[playbackId].videoElement.removeEventListener(
       "fullscreenchange",
-      this.playerMap[playerId].eventHandlers.fullscreenchange,
+      this.playerMap[playbackId].eventHandlers.fullscreenchange,
     );
 
-    this.playerMap[playerId].videoElement.removeEventListener(
+    this.playerMap[playbackId].videoElement.removeEventListener(
       "waiting",
-      this.playerMap[playerId].eventHandlers.waiting,
+      this.playerMap[playbackId].eventHandlers.waiting,
     );
 
-    this.playerMap[playerId].videoElement.removeEventListener(
+    this.playerMap[playbackId].videoElement.removeEventListener(
       "playing",
-      this.playerMap[playerId].eventHandlers.playing,
+      this.playerMap[playbackId].eventHandlers.playing,
     );
   };
 
@@ -995,7 +1012,7 @@ export class Sequence extends EventEmitter {
       let playerEligible = false;
 
       const hashedCompletion =
-        await this.kinoraQuestDataContract.getQuestMilestoneCompletionConditionHash(
+        await this.kinoraQuestDataContract.getQuestMilestoneCompletionCriteria(
           this.questEnvokerProfileId,
           parseInt(pubId, 16),
           milestone,
@@ -1005,7 +1022,7 @@ export class Sequence extends EventEmitter {
         `${INFURA_GATEWAY}/ipfs/${hashedCompletion?.split("ipfs://")[1]}`,
       );
 
-      const uriParsed: MilestoneEligibility[] = await JSON.parse(
+      const uriParsed: MilestoneEligibility = await JSON.parse(
         toParseCompletion.data,
       );
 
@@ -1041,17 +1058,22 @@ export class Sequence extends EventEmitter {
    * @private
    */
   private metricComparison = async (
-    eligibilityCriteria: MilestoneEligibility[],
+    eligibilityCriteria: MilestoneEligibility,
     playerProfileId: string,
     playerProfileOwnerAddress: `0x${string}`,
     pubId: string,
   ): Promise<boolean> => {
     let result = true;
-    for (let i = 0; i < eligibilityCriteria.length; i++) {
-      if (eligibilityCriteria[i].playbackId) {
+
+    if (eligibilityCriteria.internalPlaybackCriteria) {
+      for (
+        let i = 0;
+        i < eligibilityCriteria.internalPlaybackCriteria.length;
+        i++
+      ) {
         let currentMetricsHash: string =
           await this.kinoraQuestDataContract.getPlayerPlaybackIdMetricsHash(
-            eligibilityCriteria[i].playbackId,
+            eligibilityCriteria.internalPlaybackCriteria[i].playbackId,
             parseInt(playerProfileId, 16),
             this.questEnvokerProfileId,
             parseInt(pubId, 16),
@@ -1061,11 +1083,11 @@ export class Sequence extends EventEmitter {
           `${INFURA_GATEWAY}/ipfs/${currentMetricsHash}`,
         );
 
-        let currentMetrics = await JSON.parse(currentMetricsToParse.data);
+        let currentMetrics: string = currentMetricsToParse.data;
 
         const encrypted =
           await this.kinoraQuestDataContract.getPlayerPlaybackIdMetricsEncrypted(
-            eligibilityCriteria[i].playbackId,
+            eligibilityCriteria.internalPlaybackCriteria[i].playbackId,
             parseInt(playerProfileId, 16),
             this.questEnvokerProfileId,
             parseInt(pubId, 16),
@@ -1102,53 +1124,195 @@ export class Sequence extends EventEmitter {
           currentMetrics,
         );
 
-        for (const key in eligibilityCriteria[i].criteria) {
-          const criteria =
-            eligibilityCriteria[i].criteria[key as keyof MilestoneEligibility];
-
-          if (!criteria) continue;
-
-          const playerValue = currentPlayerMetrics[key as keyof PlayerMetrics];
-          const conditions: boolean[] = [];
-
-          if ("minValue" in criteria && "maxValue" in criteria) {
-            if (typeof playerValue === "number") {
-              conditions.push(playerValue >= criteria.minValue);
-              conditions.push(playerValue <= criteria.maxValue);
-            }
-          } else if ("boolValue" in criteria) {
-            if (typeof playerValue === "boolean") {
-              conditions.push(playerValue === criteria.boolValue);
-            }
-          }
-
-          if (criteria.operator === "and") {
-            if (!conditions.every(Boolean)) {
-              result = false;
-            }
-          } else if (criteria.operator === "or") {
-            if (!conditions.some(Boolean)) {
-              result = false;
-            }
-          }
-        }
+        result = await this.checkValues(
+          eligibilityCriteria.internalPlaybackCriteria[i].playbackCriteria,
+          currentPlayerMetrics,
+        );
 
         if (!result) {
           return false;
         }
       }
 
-      if (eligibilityCriteria[i].totalPointScore) {
-        if (
-          (await this.kinoraQuestDataContract.getPlayerTotalPointScore(
+      if (!result) {
+        return false;
+      }
+    }
+
+    if (eligibilityCriteria.globalPlaybackCriteria) {
+      for (
+        let i = 0;
+        i < eligibilityCriteria.globalPlaybackCriteria.length;
+        i++
+      ) {
+        let currentMetricsHash: string =
+          await this.kinoraQuestDataContract.getPlayerGlobalPlaybackIdMetrics(
+            eligibilityCriteria.globalPlaybackCriteria[i].playbackId,
             parseInt(playerProfileId, 16),
-          )) < eligibilityCriteria[i].totalPointScore
-        ) {
-          result = false;
+          );
+
+        const currentMetricsToParse = await axios.get(
+          `${INFURA_GATEWAY}/ipfs/${currentMetricsHash}`,
+        );
+
+        let currentMetrics: string = currentMetricsToParse.data;
+
+        const currentPlayerMetrics: PlayerMetrics = await JSON.parse(
+          currentMetrics,
+        );
+
+        result = await this.checkValues(
+          eligibilityCriteria.globalPlaybackCriteria[i].playbackCriteria,
+          currentPlayerMetrics,
+        );
+
+        if (!result) {
+          return false;
         }
+      }
+
+      if (!result) {
+        return false;
+      }
+    }
+
+    if (eligibilityCriteria.totalAverageCriteriaStats) {
+      const allPlayerMetrics: PlayerMetrics[] = [];
+      for (
+        let i = 0;
+        i < eligibilityCriteria.globalPlaybackCriteria.length;
+        i++
+      ) {
+        let currentMetricsHash: string =
+          await this.kinoraQuestDataContract.getPlayerGlobalPlaybackIdMetrics(
+            eligibilityCriteria.globalPlaybackCriteria[i].playbackId,
+            parseInt(playerProfileId, 16),
+          );
+
+        const currentMetricsToParse = await axios.get(
+          `${INFURA_GATEWAY}/ipfs/${currentMetricsHash}`,
+        );
+
+        let currentMetrics: string = currentMetricsToParse.data;
+
+        const currentPlayerMetrics: PlayerMetrics = await JSON.parse(
+          currentMetrics,
+        );
+        allPlayerMetrics.push(currentPlayerMetrics);
+      }
+
+      const averagePlayerMetrics: PlayerMetrics = {} as PlayerMetrics;
+      for (const key in allPlayerMetrics[0]) {
+        if (Object.prototype.hasOwnProperty.call(allPlayerMetrics[0], key)) {
+          const firstValue = allPlayerMetrics[0][key];
+          if (typeof firstValue === "boolean") {
+            averagePlayerMetrics[key as LensKeys] =
+              this.calculateBooleanAverage(allPlayerMetrics, key as LensKeys);
+          } else if (typeof firstValue === "number") {
+            averagePlayerMetrics[key as MetricKeys] = this.calculateAverage(
+              allPlayerMetrics,
+              key as MetricKeys,
+            );
+          }
+        }
+      }
+
+      result = await this.checkValues(
+        eligibilityCriteria.totalAverageCriteriaStats,
+        averagePlayerMetrics,
+      );
+
+      if (!result) {
+        return false;
       }
     }
 
     return result;
+  };
+
+  /**
+   * Evaluates whether the player metrics adhere to the defined eligibility criteria.
+   *
+   * @param eligibilityCriteria - The criteria against which player metrics are to be evaluated.
+   * @param currentPlayerMetrics - The metrics pertaining to a player that are to be evaluated.
+   * @returns A promise that resolves to a boolean indicating whether the player metrics meet the eligibility criteria.
+   */
+  private checkValues = async (
+    eligibilityCriteria: MilestoneEligibilityCriteria,
+    currentPlayerMetrics: PlayerMetrics,
+  ): Promise<boolean> => {
+    for (const key in eligibilityCriteria) {
+      const criteria = eligibilityCriteria[key as keyof MilestoneEligibility];
+
+      if (!criteria) continue;
+
+      const playerValue = currentPlayerMetrics[key as keyof PlayerMetrics];
+      const conditions: boolean[] = [];
+
+      if ("minValue" in criteria && "maxValue" in criteria) {
+        if (typeof playerValue === "number") {
+          conditions.push(playerValue >= criteria.minValue);
+          conditions.push(playerValue <= criteria.maxValue);
+        }
+      } else if ("boolValue" in criteria) {
+        if (typeof playerValue === "boolean") {
+          conditions.push(playerValue === criteria.boolValue);
+        }
+      }
+
+      if (criteria.operator === "and") {
+        if (!conditions.every(Boolean)) {
+          return false;
+        }
+      } else if (criteria.operator === "or") {
+        if (!conditions.some(Boolean)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  };
+
+  /**
+   * Calculates the average of a specific numeric metric across all player metrics.
+   *
+   * @param allPlayerMetrics - An array of PlayerMetrics objects, each representing the metrics for a different player.
+   * @param key - The key representing the metric for which the average is to be calculated.
+   * @returns The average value of the specified metric across all player metrics.
+   */
+  private calculateAverage = (
+    allPlayerMetrics: PlayerMetrics[],
+    key: MetricKeys,
+  ): number => {
+    let sum = 0;
+    for (let i = 0; i < allPlayerMetrics.length; i++) {
+      const value = allPlayerMetrics[i][key];
+      if (typeof value === "number") {
+        sum += value;
+      }
+    }
+    return sum / allPlayerMetrics.length;
+  };
+
+  /**
+   * Determines the collective boolean value for a specific boolean metric across all player metrics.
+   * A true collective value is returned only if all individual values are true, otherwise false.
+   *
+   * @param allPlayerMetrics - An array of PlayerMetrics objects, each representing the metrics for a different player.
+   * @param key - The key representing the boolean metric for which the collective value is to be determined.
+   * @returns The collective boolean value for the specified metric across all player metrics.
+   */
+  private calculateBooleanAverage = (
+    allPlayerMetrics: PlayerMetrics[],
+    key: LensKeys,
+  ): boolean => {
+    for (let i = 0; i < allPlayerMetrics.length; i++) {
+      const value = allPlayerMetrics[i][key];
+      if (typeof value === "boolean" && !value) {
+        return false;
+      }
+    }
+    return true;
   };
 }

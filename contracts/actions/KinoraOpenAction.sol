@@ -126,6 +126,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
     _depositMilestoneRewards(
       KinoraLibrary.InitializeDeposit({
         milestones: _milestones,
+        gated: _params.gated,
         escrowContract: _escrowContract,
         questContract: _questContract,
         questEnvoker: _params.questEnvoker,
@@ -221,7 +222,7 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
     }
 
     IKinoraQuest(_params.questContract).instantiateNewQuest(
-      abi.encode(_params.milestones),
+      abi.encode(_params.milestones, _params.gated),
       _params.maxPlayerCount,
       _params.pubId,
       _params.profileId

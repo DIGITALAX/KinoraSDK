@@ -17,6 +17,8 @@ contract KinoraMetrics is Initializable {
   KinoraAccessControl public accessControl;
   // Instance of the KinoraQuestData contract
   KinoraQuestData public kinoraQuestData;
+  // Lens Hub address
+  address public lensHub;
 
   // Mappings to store the relationship between Livepeer Playback Ids and player metrics
   mapping(address => mapping(string => KinoraLibrary.PlayerLivepeerMetrics))
@@ -47,30 +49,39 @@ contract KinoraMetrics is Initializable {
    * @dev Initializes the contract with initial values
    * @param _accessControlAddress Address of the Kinora Access Control
    * @param _kinoraQuestDataAddress Address of the Kinora Quest Data
+   * @param _lensHub Address of the Lens Hub
    */
   function initialize(
     address _accessControlAddress,
-    address _kinoraQuestDataAddress
+    address _kinoraQuestDataAddress,
+    address _lensHub
   ) public {
     name = "KinoraMetrics";
     symbol = "KME";
     accessControl = KinoraAccessControl(_accessControlAddress);
     kinoraQuestData = KinoraQuestData(_kinoraQuestDataAddress);
+    lensHub = _lensHub;
   }
 
   /**  @dev Function to append player metrics, bridged through a designated access control modifier.
    @param _playbackId A unique identifier for playback sessions.
    @param _json JSON string containing metric data.
+   @param _playerAddress Address of the Player associated with their Lens Profile.
    @param _playerProfileId Lens Profile Id.
    @param _pubId Lens Pub Id.
    @param _encrypted Boolean flag indicating encryption status of the metric data. */
   function addPlayerMetrics(
     string memory _playbackId,
     string memory _json,
+    address _playerAddress,
     uint256 _playerProfileId,
     uint256 _pubId,
     bool _encrypted
   ) public onlyQuestEnvokerPKP {
+    if (IERC721(lensHub).ownerOf(_playerProfileId) != _playerAddress) {
+      revert KinoraErrors.InvalidAddress();
+    }
+
     uint256 _profileId = accessControl.getProfileId();
 
     kinoraQuestData.updatePlayerMetrics(

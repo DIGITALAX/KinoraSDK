@@ -13,7 +13,6 @@ contract KinoraQuestData {
   address public factoryMaintainer;
   uint256 private _questCount;
   uint256 private _playerCount;
-  uint MILESTONE_POINTS = 10;
 
   // Mapping to store the data of all players against their Profile Id.
   mapping(uint256 => KinoraLibrary.Player) private _allPlayers;
@@ -132,12 +131,14 @@ contract KinoraQuestData {
   /**
    * @dev Function to create a new quest.
    * @param _milestones Array of Milestone structs defining the quest milestones.
+   * @param _gated Join quest token gated logic.
    * @param _maxPlayerCount Maximum number of players allowed for the quest.
    * @param _pubId Lens Pub Id for the quest.
    * @param _profileId Lens Profile Id for the quest.
    */
   function newQuest(
     KinoraLibrary.Milestone[] memory _milestones,
+    KinoraLibrary.GatingLogic memory _gated,
     uint256 _maxPlayerCount,
     uint256 _pubId,
     uint256 _profileId
@@ -150,14 +151,15 @@ contract KinoraQuestData {
     _allQuests[_profileId][_pubId].milestoneCount = _milestones.length;
     _allQuests[_profileId][_pubId].status = KinoraLibrary.Status.Open;
     _allQuests[_profileId][_pubId].maxPlayerCount = _maxPlayerCount;
+    _allQuests[_profileId][_pubId].gated = _gated;
 
     for (uint256 i = 0; i < _milestones.length; i++) {
       KinoraLibrary.Milestone memory newMilestone;
       newMilestone.reward = _milestones[i].reward;
       newMilestone.conditionHash = _milestones[i].conditionHash;
-      newMilestone.completionConditionHash = _milestones[i]
-        .completionConditionHash;
+      newMilestone.completionCriteria = _milestones[i].completionCriteria;
       newMilestone.milestone = _milestones[i].milestone;
+      newMilestone.gated = _milestones[i].gated;
 
       _allQuests[_profileId][_pubId].milestones.push(newMilestone);
     }
@@ -211,20 +213,11 @@ contract KinoraQuestData {
     uint256 _pubId,
     uint256 _profileId,
     uint256 _playerProfileId,
-    uint256 _milestone,
-    bool _questComplete
+    uint256 _milestone
   ) external onlyValidQuestContract(_profileId, _pubId) {
     _allPlayers[_playerProfileId].milestonesCompletedPerQuest[_profileId][
         _pubId
       ] = _milestone;
-
-      uint256 _points = 0;
-
-      if (_questComplete ) {
-        _points = MILESTONE_POINTS * _
-      }
-
-    _allPlayers[_playerProfileId].totalPointCount += MILESTONE_POINTS;
 
     emit MilestoneCompleted(_profileId, _pubId, _playerProfileId, _milestone);
   }
@@ -350,6 +343,12 @@ contract KinoraQuestData {
       encrypted: _encrypted
     });
 
+    if (!_encrypted) {
+      _allPlayers[_playerProfileId].globalPlaybackIdMetrics[_playbackId].push(
+        _json
+      );
+    }
+
     emit PlayerMetricsUpdated(_playerProfileId, _playbackId);
   }
 
@@ -419,6 +418,30 @@ contract KinoraQuestData {
   }
 
   /**
+   * @dev Retrieves every metric associated with the particular playback Id.
+   * @param _playbackId Playback Id of the Livepeer player.
+   * @param _playerProfileId Lens Profile Id for the player profile.
+   * @return All metrics associated with the playback Id from all global quests.
+   */
+  function getPlayerGlobalPlaybackIdMetrics(
+    string memory _playbackId,
+    uint256 _playerProfileId
+  ) public view returns (string[] memory) {
+    return _allPlayers[_playerProfileId].globalPlaybackIdMetrics[_playbackId];
+  }
+
+  /**
+   * @dev Retrieves the blocktimestamp the player was added.
+   * @param _playerProfileId Lens Profile Id for the player profile.
+   * @return The blocktimestamp that the player joined.
+   */
+  function getPlayerActiveSince(
+    uint256 _playerProfileId
+  ) public view returns (uint256) {
+    return _allPlayers[_playerProfileId].activeSince;
+  }
+
+  /**
    * @dev Determines whether the metrics associated with a playback ID are encrypted.
    * @param _playbackId The playback ID related to the metrics.
    * @param _playerProfileId Lens Profile Id for the player profile.
@@ -454,17 +477,6 @@ contract KinoraQuestData {
     return
       _allPlayers[_playerProfileId]
       .playbackIdMetrics[_profileId][_pubId][_playbackId].metricJSONHash;
-  }
-
-  /**
-   * @dev Retrieves the total number of points associated with a player.
-   * @param _playerProfileId Lens Profile Id for the player profile.
-   * @return The total number of points associated with the specified player.
-   */
-  function getPlayerTotalPointScore(
-    uint256 _playerProfileId
-  ) public view returns (uint256) {
-    return _allPlayers[_playerProfileId].totalPointCount;
   }
 
   /**
@@ -573,6 +585,71 @@ contract KinoraQuestData {
   }
 
   /**
+   * @dev Retrieves erc721 contract address gated requirements for the Quest.
+   * @param _questProfileId Lens Profile Id for the quest profile.
+   * @param _questPubId Lens Pub Id for the quest.
+   * @return All erc721 contracts associated with the quest for token gating.
+   */
+  function getQuestGatedERC721Addresses(
+    uint256 _questProfileId,
+    uint256 _questPubId
+  ) public view returns (address[] memory) {
+    return _allQuests[_questProfileId][_questPubId].gated.erc721Addresses;
+  }
+
+  /**
+   * @dev Retrieves erc721 token Id gated requirements for the Quest.
+   * @param _questProfileId Lens Profile Id for the quest profile.
+   * @param _questPubId Lens Pub Id for the quest.
+   * @return All erc721 tokenIds associated with the quest for token gating.
+   */
+  function getQuestGatedERC721Tokens(
+    uint256 _questProfileId,
+    uint256 _questPubId
+  ) public view returns (uint256[] memory) {
+    return _allQuests[_questProfileId][_questPubId].gated.erc721TokenIds;
+  }
+
+  /**
+   * @dev Retrieves whether all gated conditions must be matched or only oneOf.
+   * @param _questProfileId Lens Profile Id for the quest profile.
+   * @param _questPubId Lens Pub Id for the quest.
+   * @return Boolean for oneOf or All.
+   */
+  function getQuestGatedOneOf(
+    uint256 _questProfileId,
+    uint256 _questPubId
+  ) public view returns (bool) {
+    return _allQuests[_questProfileId][_questPubId].gated.oneOf;
+  }
+
+  /**
+   * @dev Retrieves erc20 contract address gated requirements for the Quest.
+   * @param _questProfileId Lens Profile Id for the quest profile.
+   * @param _questPubId Lens Pub Id for the quest.
+   * @return All erc20 contracts associated with the quest for token gating.
+   */
+  function getQuestGatedERC20Addresses(
+    uint256 _questProfileId,
+    uint256 _questPubId
+  ) public view returns (address[] memory) {
+    return _allQuests[_questProfileId][_questPubId].gated.erc20Addresses;
+  }
+
+  /**
+   * @dev Retrieves erc20 token thresholds gated requirements for the Quest.
+   * @param _questProfileId Lens Profile Id for the quest profile.
+   * @param _questPubId Lens Pub Id for the quest.
+   * @return All erc20 token thresholds associated with the quest for token gating.
+   */
+  function getQuestGatedERC20Thresholds(
+    uint256 _questProfileId,
+    uint256 _questPubId
+  ) public view returns (uint256[] memory) {
+    return _allQuests[_questProfileId][_questPubId].gated.erc20Thresholds;
+  }
+
+  /**
    * @dev Retrieves the milestone count of a specific quest.
    * @param _questProfileId Lens Profile Id for the quest profile.
    * @param _questPubId Lens Pub Id for the quest.
@@ -586,13 +663,108 @@ contract KinoraQuestData {
   }
 
   /**
+   * @dev Retrieves erc721 contract address gated requirements for the Quest Milestone.
+   * @param _questProfileId Lens Profile Id for the quest profile.
+   * @param _questPubId Lens Pub Id for the quest.
+   * @param _milestone Milestone number in the quest.
+   * @return All erc721 contracts associated with the milestone for token gating.
+   */
+  function getMilestoneGatedERC721Addresses(
+    uint256 _questProfileId,
+    uint256 _questPubId,
+    uint256 _milestone
+  ) public view returns (address[] memory) {
+    return
+      _allQuests[_questProfileId][_questPubId]
+        .milestones[_milestone]
+        .gated
+        .erc721Addresses;
+  }
+
+  /**
+   * @dev Retrieves erc721 token Id gated requirements for the Quest Milestone.
+   * @param _questProfileId Lens Profile Id for the quest profile.
+   * @param _questPubId Lens Pub Id for the quest.
+   * @param _milestone Milestone number in the quest.
+   * @return All erc721 tokenIds associated with the milestone for token gating.
+   */
+  function getMilestoneGatedERC721Tokens(
+    uint256 _questProfileId,
+    uint256 _questPubId,
+    uint256 _milestone
+  ) public view returns (uint256[] memory) {
+    return
+      _allQuests[_questProfileId][_questPubId]
+        .milestones[_milestone]
+        .gated
+        .erc721TokenIds;
+  }
+
+  /**
+   * @dev Retrieves whether all gated conditions must be matched or only oneOf.
+   * @param _questProfileId Lens Profile Id for the quest profile.
+   * @param _questPubId Lens Pub Id for the quest.
+   * @param _milestone Milestone number in the quest.
+   * @return Boolean for oneOf or All.
+   */
+  function getMilestoneGatedOneOf(
+    uint256 _questProfileId,
+    uint256 _questPubId,
+    uint256 _milestone
+  ) public view returns (bool) {
+    return
+      _allQuests[_questProfileId][_questPubId]
+        .milestones[_milestone]
+        .gated
+        .oneOf;
+  }
+
+  /**
+   * @dev Retrieves erc20 contract address gated requirements for the Quest Milestone.
+   * @param _questProfileId Lens Profile Id for the quest profile.
+   * @param _questPubId Lens Pub Id for the quest.
+   * @param _milestone Milestone number in the quest.
+   * @return All erc20 contracts associated with the milestone for token gating.
+   */
+  function getMilestoneGatedERC20Addresses(
+    uint256 _questProfileId,
+    uint256 _questPubId,
+    uint256 _milestone
+  ) public view returns (address[] memory) {
+    return
+      _allQuests[_questProfileId][_questPubId]
+        .milestones[_milestone]
+        .gated
+        .erc20Addresses;
+  }
+
+  /**
+   * @dev Retrieves erc20 token thresholds gated requirements for the Quest Milestone.
+   * @param _questProfileId Lens Profile Id for the quest profile.
+   * @param _questPubId Lens Pub Id for the quest.
+   * @param _milestone Milestone number in the quest.
+   * @return All erc20 token thresholds associated with the milestone for token gating.
+   */
+  function getMilestoneGatedERC20Thresholds(
+    uint256 _questProfileId,
+    uint256 _questPubId,
+    uint256 _milestone
+  ) public view returns (uint256[] memory) {
+    return
+      _allQuests[_questProfileId][_questPubId]
+        .milestones[_milestone]
+        .gated
+        .erc20Thresholds;
+  }
+
+  /**
    * @dev Retrieves the completion condition hash of a specific milestone in a quest.
    * @param _questProfileId Lens Profile Id for the quest profile.
    * @param _questPubId Lens Pub Id for the quest.
    * @param _milestone Milestone number in the quest.
    * @return Completion condition hash of the specified milestone.
    */
-  function getQuestMilestoneCompletionConditionHash(
+  function getQuestMilestoneCompletionCriteria(
     uint256 _questProfileId,
     uint256 _questPubId,
     uint256 _milestone
@@ -600,7 +772,7 @@ contract KinoraQuestData {
     return
       _allQuests[_questProfileId][_questPubId]
         .milestones[_milestone - 1]
-        .completionConditionHash;
+        .completionCriteria;
   }
 
   /**
