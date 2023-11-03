@@ -37,27 +37,6 @@ export const INFURA_GATEWAY: string = "https://chromadin.infura-ipfs.io/";
  */
 export const CHAIN: string = "mumbai";
 
-/** @constant POINT_SCORES Point Score Per Metric */
-export const POINT_SCORES: {
-  totalDuration: number;
-  avd: number;
-  fullScreenCount: number;
-  mirrored: number;
-  reacted: number;
-  bookmarked: number;
-  notInterested: number;
-  acted: number;
-} = {
-  totalDuration: 3,
-  avd: 6,
-  fullScreenCount: 1,
-  mirrored: 10,
-  reacted: 5,
-  bookmarked: 15,
-  notInterested: 5,
-  acted: 25,
-};
-
 /**
  * @constant DENO_BUNDLED Bundled Lit Code Compatible with Deno Lit Node Servers.
  */

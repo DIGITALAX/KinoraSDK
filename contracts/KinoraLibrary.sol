@@ -32,13 +32,15 @@ contract KinoraLibrary {
     string uri;
   }
   struct Milestone {
+    GatingLogic gated;
     Reward reward;
-    string completionConditionHash;
+    string completionCriteria;
     bytes32 conditionHash;
     uint256 milestone;
   }
   struct Quest {
     Milestone[] milestones;
+    GatingLogic gated;
     uint256[] players;
     Status status;
     uint256 profileId;
@@ -46,15 +48,22 @@ contract KinoraLibrary {
     uint256 milestoneCount;
     uint256 maxPlayerCount;
   }
+  struct GatingLogic {
+    address[] erc721Addresses;
+    uint256[] erc721TokenIds;
+    address[] erc20Addresses;
+    uint256[] erc20Thresholds;
+    bool oneOf;
+  }
   struct Player {
     mapping(uint256 => mapping(uint256 => uint256)) milestonesCompletedPerQuest;
     mapping(uint256 => uint256[]) questsJoined;
     mapping(uint256 => mapping(uint256 => bool)) joinedQuest;
     mapping(uint256 => mapping(uint256 => mapping(string => PlayerLivepeerMetrics))) playbackIdMetrics;
     mapping(uint256 => mapping(uint256 => mapping(uint256 => bool))) eligibleToClaimMilestone;
+    mapping(string => string[]) globalPlaybackIdMetrics;
     address playerAddress;
     uint256 activeSince;
-    uint256 totalPointCount;
   }
   struct PlayerLivepeerMetrics {
     string playbackId;
@@ -64,12 +73,14 @@ contract KinoraLibrary {
     bool encrypted;
   }
   struct InitializeAction {
+    GatingLogic gated;
     address questEnvokerPKP;
     address questEnvoker;
     uint256 maxPlayerCount;
   }
   struct InitializeDeposit {
     Milestone[] milestones;
+    GatingLogic gated;
     address escrowContract;
     address questContract;
     address questEnvoker;

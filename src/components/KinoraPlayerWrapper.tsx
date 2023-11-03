@@ -19,7 +19,7 @@ const isBrowser = typeof window !== "undefined";
  * @interface KinoraPlayerWrapperProps
  * @dev Defines the shape of props accepted by KinoraPlayerWrapper component.
  *  @param children - Function that accepts a setter for the Livepeer media element, returning React Node.
- * @param playerId - The Player Id of the current video element.
+ * @param playbackId - The Playback Id of the current video element.
  * @param onPlay - Handler for the play event.
  * @param onPause - Handler for the pause event.
  * @param onAbort - Handler for the abort event.
@@ -59,7 +59,7 @@ type KinoraPlayerWrapperProps = {
   children: (
     setMediaElement: (node: HTMLVideoElement) => void,
   ) => React.ReactNode;
-  playerId?: string;
+  playbackId?: string;
   onPlay?: (event: Event) => void;
   onPause?: (event: Event) => void;
   onAbort?: (event: Event) => void;
@@ -117,7 +117,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     fillWidthHeight = false,
     pubId,
     playerProfileId,
-    playerId,
+    playbackId,
     children,
     onLensVideoData,
     litAuthSig,
@@ -174,22 +174,25 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     // Set the SDK Context created from the Wrapper provider
     const kinoraSDKInstance = useContext(KinoraContext);
 
+    // Initialize a new Livepeer Player for recording metrics
     useEffect(() => {
       if (
         mediaElementRef.current &&
         kinoraSDKInstance &&
-        playerId &&
+        playbackId &&
         litAuthSig
       ) {
-        kinoraSDKInstance
-          .getSequence()
-          .initializePlayer(playerId, mediaElementRef.current, litAuthSig);
+        kinoraSDKInstance.livepeerAdd(
+          playbackId,
+          mediaElementRef.current,
+          litAuthSig,
+        );
 
         return () => {
-          kinoraSDKInstance.getSequence().destroyPlayer(playerId);
+          kinoraSDKInstance.livepeerDestroy(playbackId);
         };
       }
-    }, [playerId, mediaElementRef]);
+    }, [playbackId, mediaElementRef]);
 
     // Callback to set media element and setup/cleanup event listeners
     const setMediaElement = useCallback(
@@ -481,45 +484,41 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
      * @param {Object} prevProps - Previous properties object
      * @param {Object} nextProps - Next properties object
      * @returns {boolean} - Returns true if the properties are equal, otherwise false */
-    const handleIsEqual = (
-      prevProps: {
-        pubId: string;
-        playerProfileId: string;
-        onLensVideoData: (
-          data: Post | Mirror | Comment | Quote,
-          error: ApolloError | undefined,
-        ) => void;
+    const handleIsEqual = useCallback(
+      (
+        prevProps: {
+          pubId: string;
+          playerProfileId: string;
+          onLensVideoData: Function;
+        },
+        nextProps: {
+          pubId: string;
+          playerProfileId: string;
+          onLensVideoData: Function;
+        },
+      ): boolean => {
+        return (
+          prevProps.pubId === nextProps.pubId &&
+          prevProps.onLensVideoData === nextProps.onLensVideoData &&
+          prevProps.playerProfileId === nextProps.playerProfileId
+        );
       },
-      nextProps: {
-        pubId: string;
-        playerProfileId: string;
-        onLensVideoData: (
-          data: Post | Mirror | Comment | Quote,
-          error: ApolloError | undefined,
-        ) => void;
-      },
-    ): boolean => {
-      return (
-        prevProps.pubId === nextProps.pubId &&
-        prevProps.onLensVideoData === nextProps.onLensVideoData &&
-        prevProps.playerProfileId === nextProps.playerProfileId
-      );
-    };
+      [],
+    );
 
     /**
      * @function handleVideoLensData
      * @description - Async function to handle Lens video data retrieval and callback
      */
-    const handleVideoLensData = async (): Promise<void> => {
+    const handleVideoLensData = useCallback(async (): Promise<void> => {
       const { data, error } = await getPublicationClient({
         forId: pubId,
       });
-
       onLensVideoData(
         data.publication as Post | Mirror | Comment | Quote,
         error,
       );
-    };
+    }, [pubId, onLensVideoData]);
 
     return <>{children(setMediaElement)}</>;
   },

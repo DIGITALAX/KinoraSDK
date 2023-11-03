@@ -1,8 +1,10 @@
 import axios from "axios";
 import {
   ChainIds,
+  GatingLogic,
   LensQuestMetadata,
   Milestone,
+  MilestoneEligibility,
   MilestoneEligibilityCriteria,
 } from "./@types/kinora-sdk";
 import { isValidBoolLensCriteria, isValidMetricCriteria } from "./utils/misc";
@@ -121,6 +123,21 @@ export class Creator {
    */
   private kinoraQuestDataContract: ethers.Contract;
 
+  /**
+   * Constructs an instance of the enclosing class, initializing necessary properties
+   * and contracts based on the provided arguments.
+   *
+   * @param args - An object encompassing the necessary parameters for constructor invocation.
+   * @param args.questEnvokerProfileId - A string representing the quest envoker's Lens Profile Id.
+   * @param args.authedApolloClient - An authenticated Apollo client for interacting with the GraphQL API with Lens Protocol.
+   * @param args.signer - (Optional) A signer instance for authorizing transactions. If omitted, a random signer is generated.
+   * @param args.multihashDevKey - (Optional) A string representing the developer's multihash key.
+   * @param args.pkp - (Optional) An object containing the public key and token ID for the quest envoker's PKP data.
+   * @param args.pkp.tokenId - A string representing the PKP token ID.
+   * @param args.pkp.publicKey - A string representing the PKP public key.
+   * @param args.kinoraQuestContract - (Optional) A string representing the address of the Kinora Quest contract deployed by the envoker.
+   * @param args.kinoraEscrowContract - (Optional) A string representing the address of the Kinora Escrow contract deployed by the envoker.
+   */
   constructor(args: {
     questEnvokerProfileId: `0x${string}`;
     authedApolloClient: ApolloClient<NormalizedCacheObject>;
@@ -244,6 +261,7 @@ export class Creator {
    * @param {string} questInputs.ipfsQuestDetailsCID - IPFS URI where quest details are stored.
    * @param {number} questInputs.maxPlayerCount - Maximum number of players for the quest.
    * @param {Milestone[]} questInputs.milestones - Array of milestone objects for the quest.
+   * @param {GatingLogic} questInputs.joinQuestTokenGatedLogic - The token gated logic for joining the quest.
    * @throws Will throw an error if necessary data or setups are missing.
    * @returns {Promise<Object>} - Promise resolving to an object containing various contract addresses and other details relevant to the new quest.
    */
@@ -251,6 +269,7 @@ export class Creator {
     ipfsQuestDetailsCID: string;
     maxPlayerCount: number;
     milestones: Milestone[];
+    joinQuestTokenGatedLogic: GatingLogic;
   }): Promise<{
     kinoraAccessControl?: `0x${string}`;
     kinoraMetrics?: `0x${string}`;
@@ -310,19 +329,21 @@ export class Creator {
       }
       const encodedData = ethers.utils.defaultAbiCoder.encode(
         [
-          "tuple(address questEnvokerPKP, address questEnvoker, uint256 maxPlayerCount)",
-          "tuple(tuple(uint256 type, address tokenAddress, uint256 amount) reward, string completionConditionHash, bytes32 conditionHash, uint256 milestone, string uri)[]",
+          "tuple(tuple(address[] erc721Addresses, uint256[] erc721TokenIds, address[] erc20Addresses, address[] erc20Thresholds, bool oneOf), address questEnvokerPKP, address questEnvoker, uint256 maxPlayerCount)",
+          "tuple(tuple(uint256 type, address tokenAddress, uint256 amount) reward, string completionCriteria, bytes32 conditionHash, uint256 milestone, string uri)[]",
         ],
         [
           {
+            gated: questInputs.joinQuestTokenGatedLogic,
             questEnvokerPKP: this.questEnvokerPKPData.ethAddress,
             questEnvoker: await this.signer.getAddress(),
             maxPlayerCount: questInputs.maxPlayerCount,
           },
           questInputs.milestones.map((milestone: Milestone) => {
             return {
+              gated: milestone.gated,
               reward: milestone.reward,
-              completionConditionHash: milestone.eligibilityHash,
+              completionCriteria: milestone.eligibilityHash,
               conditionHash: hashHex(
                 milestone.eligibilityHash + this.multihashDevKey,
               ),
@@ -547,32 +568,207 @@ export class Creator {
     }
   };
 
+  /**
+   * Validates the milestone eligibility criteria contained within a specified hash. The hash content is fetched and parsed to a MilestoneEligibility object, which is then scrutinized to ensure all criteria adhere to the defined validation rules.
+   *
+   * @param hash - A string representing the hash of the eligibility criteria.
+   * @returns A promise that resolves to a boolean indicating whether the eligibility criteria within the hash are valid.
+   *
+   * @throws Will throw an error if the axios.get or JSON.parse operation fails.
+   */
   private validateMilestoneEligibilityHash = async (
     hash: string,
   ): Promise<boolean> => {
+    let valid = true;
     const eligibility = await axios.get(`${INFURA_GATEWAY}/ipfs/${hash}`);
 
-    const parsed: MilestoneEligibilityCriteria = await JSON.parse(
-      eligibility.data,
-    );
+    const parsed: MilestoneEligibility = await JSON.parse(eligibility.data);
 
-    return (
-      isValidMetricCriteria(parsed.averageAvd) &&
-      isValidMetricCriteria(parsed.averageCtr) &&
-      isValidMetricCriteria(parsed.totalPlayCount) &&
-      isValidMetricCriteria(parsed.totalPauseCount) &&
-      isValidMetricCriteria(parsed.totalClickCount) &&
-      isValidMetricCriteria(parsed.totalSkipCount) &&
-      isValidMetricCriteria(parsed.totalDuration) &&
-      isValidMetricCriteria(parsed.totalImpressionCount) &&
-      isValidMetricCriteria(parsed.totalVolumeChangeCount) &&
-      isValidMetricCriteria(parsed.totalBufferCount) &&
-      isValidMetricCriteria(parsed.averageEngagementRate) &&
-      isValidMetricCriteria(parsed.averagePlayPauseRatio) &&
-      isValidBoolLensCriteria(parsed.mirrorLens) &&
-      isValidBoolLensCriteria(parsed.likeLens) &&
-      isValidBoolLensCriteria(parsed.bookmarkLens) &&
-      isValidBoolLensCriteria(parsed.notInterestedLens)
-    );
+    if (parsed?.internalPlaybackCriteria) {
+      for (let i = 0; i < parsed?.internalPlaybackCriteria?.length; i++) {
+        valid =
+          isValidMetricCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria.averageAvd,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria.averageCtr,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria.totalPlayCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria
+              .totalPauseCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria
+              .totalClickCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria.totalSkipCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria.totalDuration,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria
+              .totalImpressionCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria
+              .totalVolumeChangeCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria
+              .totalBufferCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria
+              .averageEngagementRate,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria
+              .averagePlayPauseRatio,
+          ) &&
+          isValidBoolLensCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria.mirrorLens,
+          ) &&
+          isValidBoolLensCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria.likeLens,
+          ) &&
+          isValidBoolLensCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria.bookmarkLens,
+          ) &&
+          isValidBoolLensCriteria(
+            parsed?.internalPlaybackCriteria[i].playbackCriteria
+              .notInterestedLens,
+          );
+
+        if (!valid) {
+          return valid;
+        }
+      }
+
+      if (!valid) {
+        return;
+      }
+    }
+
+    if (parsed?.globalPlaybackCriteria) {
+      for (let i = 0; i < parsed?.globalPlaybackCriteria?.length; i++) {
+        valid =
+          isValidMetricCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria.averageAvd,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria.averageCtr,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria.totalPlayCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria.totalPauseCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria.totalClickCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria.totalSkipCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria.totalDuration,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria
+              .totalImpressionCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria
+              .totalVolumeChangeCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria.totalBufferCount,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria
+              .averageEngagementRate,
+          ) &&
+          isValidMetricCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria
+              .averagePlayPauseRatio,
+          ) &&
+          isValidBoolLensCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria.mirrorLens,
+          ) &&
+          isValidBoolLensCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria.likeLens,
+          ) &&
+          isValidBoolLensCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria.bookmarkLens,
+          ) &&
+          isValidBoolLensCriteria(
+            parsed?.globalPlaybackCriteria[i].playbackCriteria
+              .notInterestedLens,
+          );
+
+        if (!valid) {
+          return valid;
+        }
+      }
+
+      if (!valid) {
+        return;
+      }
+    }
+
+    if (parsed?.totalAverageCriteriaStats) {
+      valid =
+        isValidMetricCriteria(parsed?.totalAverageCriteriaStats.averageAvd) &&
+        isValidMetricCriteria(parsed?.totalAverageCriteriaStats.averageCtr) &&
+        isValidMetricCriteria(
+          parsed?.totalAverageCriteriaStats.totalPlayCount,
+        ) &&
+        isValidMetricCriteria(
+          parsed?.totalAverageCriteriaStats.totalPauseCount,
+        ) &&
+        isValidMetricCriteria(
+          parsed?.totalAverageCriteriaStats.totalClickCount,
+        ) &&
+        isValidMetricCriteria(
+          parsed?.totalAverageCriteriaStats.totalSkipCount,
+        ) &&
+        isValidMetricCriteria(
+          parsed?.totalAverageCriteriaStats.totalDuration,
+        ) &&
+        isValidMetricCriteria(
+          parsed?.totalAverageCriteriaStats.totalImpressionCount,
+        ) &&
+        isValidMetricCriteria(
+          parsed?.totalAverageCriteriaStats.totalVolumeChangeCount,
+        ) &&
+        isValidMetricCriteria(
+          parsed?.totalAverageCriteriaStats.totalBufferCount,
+        ) &&
+        isValidMetricCriteria(
+          parsed?.totalAverageCriteriaStats.averageEngagementRate,
+        ) &&
+        isValidMetricCriteria(
+          parsed?.totalAverageCriteriaStats.averagePlayPauseRatio,
+        ) &&
+        isValidBoolLensCriteria(parsed?.totalAverageCriteriaStats.mirrorLens) &&
+        isValidBoolLensCriteria(parsed?.totalAverageCriteriaStats.likeLens) &&
+        isValidBoolLensCriteria(
+          parsed?.totalAverageCriteriaStats.bookmarkLens,
+        ) &&
+        isValidBoolLensCriteria(
+          parsed?.totalAverageCriteriaStats.notInterestedLens,
+        );
+
+      if (!valid) {
+        return valid;
+      }
+    }
+
+    return valid;
   };
 }

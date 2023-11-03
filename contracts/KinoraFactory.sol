@@ -17,12 +17,13 @@ contract KinoraFactory {
   // References to other contracts within the Kinora ecosystem
   KinoraQuestData public kinoraQuestData;
   KinoraNFTCreator public kinoraNFTCreator;
+  address public lensHub;
   address public kinoraAccessControl;
   address public kinoraQuest;
   address public kinoraEscrow;
   address public kinoraMetrics;
-  address public factoryMaintainer; // Address of the factory maintainer
-  address public kinoraOpenAction; // Address of the Kinora Open Action contract
+  address public factoryMaintainer;
+  address public kinoraOpenAction; 
 
   // Event emitted when a new suite of contracts is deployed via the KinoraFactory
   event KinoraFactoryDeployed(
@@ -137,7 +138,11 @@ contract KinoraFactory {
     );
 
     // Deploy KinoraMetricsAddress
-    KinoraMetrics(_newKM).initialize(_newKAC, address(kinoraQuestData));
+    KinoraMetrics(_newKM).initialize(
+      _newKAC,
+      address(kinoraQuestData),
+      lensHub
+    );
 
     // Deploy KinoraEscrowAddress
     KinoraEscrow(_newKE).initialize(
@@ -262,6 +267,7 @@ contract KinoraFactory {
    * @param _questDataAddress The address of the KinoraQuestData contract.
    * @param _nftCreatorAddress The address of the KinoraNFTCreator contract.
    * @param _kinoraOpenActionAddress The address of the KinoraOpenAction contract.
+   * @param _lensHub The address of Lens Hub contract
    */
   function setLogicAddresses(
     address _logicAddressAC,
@@ -270,7 +276,8 @@ contract KinoraFactory {
     address _logicAddressM,
     address _questDataAddress,
     address _nftCreatorAddress,
-    address _kinoraOpenActionAddress
+    address _kinoraOpenActionAddress,
+    address _lensHub
   ) external {
     if (msg.sender != factoryMaintainer) {
       revert KinoraErrors.OnlyAdmin();
@@ -283,5 +290,6 @@ contract KinoraFactory {
     kinoraQuestData = KinoraQuestData(_questDataAddress);
     kinoraNFTCreator = KinoraNFTCreator(_nftCreatorAddress);
     kinoraOpenAction = _kinoraOpenActionAddress;
+    lensHub = _lensHub;
   }
 }

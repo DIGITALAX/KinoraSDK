@@ -1,6 +1,5 @@
 import { ethers } from "ethers";
 import { PublicationMetadataMainFocusType } from "./generated";
-import { Metrics } from "src/metrics";
 
 /**
  * @description Enumeration for the types of reward tokens.
@@ -107,9 +106,21 @@ export interface Reward {
 }
 
 /**
+ * @description Represents the gating logic for eligibility in the system. It encapsulates various on-chain assets and their associated thresholds that are evaluated to determine eligibility for a particular operation or access.
+ */
+export interface GatingLogic {
+  erc721Addresses: `0x${string}`[];
+  erc721TokenIds: number[];
+  erc20Addresses: `0x${string}`[];
+  erc20Thresholds: number[];
+  oneOf: boolean;
+}
+
+/**
  * @description Interface representing a milestone.
  */
 export interface Milestone {
+  gated: GatingLogic; // The logic for token gated milestones
   reward: Reward; // The reward for reaching this milestone
   milestone: number; // Milestone number or identifier
   eligibilityHash: string; // Hash representing eligibility criteria for this milestone
@@ -130,9 +141,15 @@ export interface GeneratedTxData {
  * @description Interface representing milestone eligibility.
  */
 export interface MilestoneEligibility {
-  playbackId?: string; // Playback ID related to this eligibility
-  criteria?: MilestoneEligibilityCriteria; // Eligibility criteria
-  totalPointScore?: number;
+  internalPlaybackCriteria?: {
+    playbackId: string;
+    playbackCriteria: MilestoneEligibilityCriteria;
+  }[];
+  globalPlaybackCriteria?: {
+    playbackId: string;
+    playbackCriteria: MilestoneEligibilityCriteria;
+  }[];
+  totalAverageCriteriaStats?: MilestoneEligibilityCriteria;
 }
 
 /**
@@ -156,6 +173,36 @@ export interface MilestoneEligibilityCriteria {
   bookmarkLens?: BoolLensCriteria;
   notInterestedLens?: BoolLensCriteria;
 }
+
+/**
+ * Enumerates the keys associated with boolean Lens reactions in the player metrics.
+ *
+ * @typedef LensKeys
+ */
+export type LensKeys =
+  | "mirrorLens"
+  | "likeLens"
+  | "bookmarkLens"
+  | "notInterestedLens";
+
+/**
+ * Enumerates the keys associated with video metric data in the player metrics. These metrics represent various quantitative measurements within the playback environment.
+ *
+ * @typedef MetricKeys
+ */
+export type MetricKeys =
+  | "averageAvd"
+  | "averageCtr"
+  | "totalPlayCount"
+  | "totalPauseCount"
+  | "totalClickCount"
+  | "totalSkipCount"
+  | "totalDuration"
+  | "totalImpressionCount"
+  | "totalVolumeChangeCount"
+  | "totalBufferCount"
+  | "averageEngagementRate"
+  | "averagePlayPauseRatio";
 
 /**
  * @description Enumeration defining log categories.
@@ -230,6 +277,13 @@ export interface BoolLensCriteria {
   operator: "or" | "and";
 }
 
+/**
+ * Represents the data structure for a instantiated Livepeer player.
+ * It encapsulates the video element associated with the player and a collection of event handlers that are invoked in response to various media events.
+ *
+ * @property videoElement - The HTMLVideoElement associated with the player.
+ * @property eventHandlers - A collection of functions that handle various media events.
+ */
 export interface PlayerData {
   videoElement: HTMLVideoElement;
   eventHandlers: {
