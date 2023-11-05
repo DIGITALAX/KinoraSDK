@@ -1,6 +1,6 @@
 ![Kinora](https://chromadin.infura-ipfs.io/ipfs/QmVXUT5Ki2exwtCLgk8HXGEx4Pp51kZSGJpVv8zx2LmaaY)
 
-An open source typescript SDK, with an easy interface to combine on-chain Livepeer video metric recording with decentralized social quests on Lens Protocol.
+An open source typescript SDK, with an easy interface to combine on-chain Livepeer videometric recording with decentralized social quests on Lens Protocol.
 
 ### The Kinora SDK delineates three principle segments: **Envoker**, **Dispatch** and the **Kinora Player Wrapper**. Each segment can be used in isolation for greater flexibility in programming Quest deployment and player interaction.
 
@@ -86,7 +86,7 @@ await newDispatch.playerJoinQuest("0x0106")
 
 ## Kinora Player Wrapper
 
-The Kinora Player Wrapper, a React Function Component, extends the functionality of the Livepeer Player Component to facilitate optionally encrypted video metric logging for a connected Lens Profile.
+The Kinora Player Wrapper, a React Function Component, extends the functionality of the Livepeer Player Component to facilitate optionally encrypted videometric logging for a connected Lens Profile.
 
 It empowers personalized on-chain video feeds, links to quest milestone criteria, and grants meticulous control over style properties, callback properties, and instance methods.
 
