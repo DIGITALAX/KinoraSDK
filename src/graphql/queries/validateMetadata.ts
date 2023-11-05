@@ -4,12 +4,12 @@ import {
   ValidatePublicationMetadataQuery,
   ValidatePublicationMetadataRequest,
 } from "./../../@types/generated";
-import { client } from "./../client";
+import { lensClient } from "./../client";
 
 const validateMetadata = async (
   request: ValidatePublicationMetadataRequest,
 ): Promise<FetchResult<ValidatePublicationMetadataQuery>> => {
-  return await client.query({
+  return await lensClient.query({
     query: ValidatePublicationMetadataDocument,
     variables: {
       request: request,

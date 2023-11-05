@@ -1,4 +1,4 @@
-import { client } from "./../client";
+import { lensClient } from "./../client";
 import {
   PublicationDocument,
   PublicationQuery,
@@ -13,7 +13,7 @@ const getPublicationClient = async (
   error: ApolloError | undefined;
 }> => {
   try {
-    const result = await client.query({
+    const result = await lensClient.query({
       query: PublicationDocument,
       variables: {
         request: request,

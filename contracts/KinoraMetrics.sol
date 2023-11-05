@@ -26,6 +26,7 @@ contract KinoraMetrics is Initializable {
 
   // Event emitted when a player metrics added.
   event AddPlayerMetrics(
+    uint256 questEnvokerProfileId,
     string playbackId,
     string metricJSON,
     uint256 playerProfileId,
@@ -68,14 +69,12 @@ contract KinoraMetrics is Initializable {
    @param _json JSON string containing metric data.
    @param _playerAddress Address of the Player associated with their Lens Profile.
    @param _playerProfileId Lens Profile Id.
-   @param _pubId Lens Pub Id.
    @param _encrypted Boolean flag indicating encryption status of the metric data. */
   function addPlayerMetrics(
     string memory _playbackId,
     string memory _json,
     address _playerAddress,
     uint256 _playerProfileId,
-    uint256 _pubId,
     bool _encrypted
   ) public onlyQuestEnvokerPKP {
     if (IERC721(lensHub).ownerOf(_playerProfileId) != _playerAddress) {
@@ -89,11 +88,16 @@ contract KinoraMetrics is Initializable {
       _json,
       _playerProfileId,
       _profileId,
-      _pubId,
       _encrypted
     );
 
-    emit AddPlayerMetrics(_playbackId, _json, _playerProfileId, _encrypted);
+    emit AddPlayerMetrics(
+      _profileId,
+      _playbackId,
+      _json,
+      _playerProfileId,
+      _encrypted
+    );
   }
 
   /**  @dev Function to update player's eligibility to claim milestones, access-controlled through custom modifier.

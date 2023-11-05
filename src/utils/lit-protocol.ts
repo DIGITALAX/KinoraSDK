@@ -193,7 +193,7 @@ export const litExecute = async (
  * @function generateAuthSig
  * @description Asynchronously generates an authentication signature for KinoraSDK.
  * @param {ethers.Signer} signer - The signer instance for signing the message.
- * @param {number} [chainId=1] - The chain ID, defaults to 1.
+ * @param {number} [chainId=1] - The chain ID, defaults to 137.
  * @param {string} [uri="https://localhost/login"] - The URI, defaults to "https://localhost/login".
  * @param {string} [version="1"] - The version, defaults to "1".
  * @returns {Promise<{error?: boolean, message?: string, litAuthSig?: LitAuthSig}>} -
@@ -201,7 +201,7 @@ export const litExecute = async (
  */
 export const generateAuthSig = async (
   signer: ethers.Signer,
-  chainId = 1,
+  chainId = 137,
   uri = "https://localhost/login",
   version = "1",
 ): Promise<{
@@ -503,8 +503,6 @@ export const getLitActionCode = (
   contractAddress: string,
 ): string => {
   return `
-  import CryptoJS from "crypto-js";
-
   const CONDITIONAL_HASH = "${conditionalHash}";
   
   const hashHex = (input) => {

@@ -25,9 +25,12 @@ import {
   litExecute,
 } from "./utils/lit-protocol";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
+import KinoraQuestAbi from "./abis/KinoraMetrics.json";
 import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
 import axios from "axios";
 import getPublicationClient from "./graphql/queries/getPublicationClient";
+import { Post } from "./@types/generated";
+import getMetrics from "./graphql/queries/getMetrics";
 
 export class Sequence extends EventEmitter {
   /**
@@ -78,6 +81,27 @@ export class Sequence extends EventEmitter {
    * @description Array to hold log entries.
    */
   private logs: ILogEntry[] = new Array(this.logSize);
+
+  /**
+   * @private
+   * @type {boolean}
+   * @description Player metric data encrypted.
+   */
+  private encrypted: boolean = false;
+
+  /**
+   * @private
+   * @type {string}
+   * @description Player Lens profile Id.
+   */
+  private playerProfileId: string;
+
+  /**
+   * @private
+   * @type {`0x${string}`}
+   * @description Player profile address.
+   */
+  private playerProfileOwnerAddress: `0x${string}`;
 
   /**
    * @private
@@ -151,6 +175,13 @@ export class Sequence extends EventEmitter {
   private kinoraQuestDataContract: ethers.Contract;
 
   /**
+   * @private
+   * @type {ethers.Contract}
+   * @description Instance of ethers.Contract for interacting with the Kinora Quest contract.
+   */
+  private kinoraQuestContract: ethers.Contract;
+
+  /**
    * Constructs an instance of the enclosing class, initializing necessary properties and contracts.
    *
    * @param questEnvokerProfileId - A string representing the quest envoker's Lens Profile Id.
@@ -158,6 +189,7 @@ export class Sequence extends EventEmitter {
    * @param multihashDevKey - A string representing the multihash developer key.
    * @param rpcURL - A string representing the URL of the RPC server.
    * @param kinoraMetricsContract - A string representing the address of the Kinora Metrics contract.
+   * @param kinoraQuestContract - A string representing the address of the Kinora Metrics contract.
    * @param errorHandlingModeStrict - A boolean indicating whether the error handling mode is strict. Optional.
    */
   constructor(
@@ -169,6 +201,7 @@ export class Sequence extends EventEmitter {
     multihashDevKey: string,
     rpcURL: string,
     kinoraMetricsContract: `0x${string}`,
+    kinoraQuestContract: `0x${string}`,
     errorHandlingModeStrict?: boolean,
   ) {
     super();
@@ -190,6 +223,10 @@ export class Sequence extends EventEmitter {
       kinoraMetricsContract,
       KinoraMetricsAbi,
     );
+    this.kinoraQuestContract = new ethers.Contract(
+      kinoraQuestContract,
+      KinoraQuestAbi,
+    );
     this.kinoraQuestDataContract = new ethers.Contract(
       KINORA_QUEST_DATA_CONTRACT,
       KinoraQuestDataAbi,
@@ -202,11 +239,13 @@ export class Sequence extends EventEmitter {
    * Initializes a Livepeer video player with given Id and associates event handlers to the video element.
    *
    * @param playbackId - A string representing the Livepeer playback Id.
+   * @param pubId - Lens publication Id associated with the video.
    * @param videoElement - The HTML video element associated with the player.
    * @param litAuthSig - The Lit authorization signature.
    */
   initializePlayer = (
     playbackId: string,
+    pubId: string,
     videoElement: HTMLVideoElement,
     litAuthSig: LitAuthSig,
   ): void => {
@@ -223,6 +262,7 @@ export class Sequence extends EventEmitter {
 
     this.playerMap[playbackId] = {
       videoElement,
+      pubId,
       eventHandlers: {
         play: this.metrics[playbackId].onPlay,
         pause: this.metrics[playbackId].onPause,
@@ -288,21 +328,17 @@ export class Sequence extends EventEmitter {
   /**
    * @method getPlayerMetrics
    * @description Collects and potentially encrypts player metrics for a quest, based on specified parameters. Ensures function is run in a browser environment with a video element present.
-   * @param {string} playbackId - The playback Id for the quest.
-   * @param {string} pubId - The Lens Pub Id of the quest.
    * @param {string} playerProfileId - The Lens Profile Id of the player.
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player profile owner.
    * @param {boolean} encrypt - A flag indicating whether to encrypt the metrics data.
    * @throws Will throw an error if run outside a browser environment, or if the video element is not detected.
-   * @returns {Promise<string>} - Promise resolving to a JSON string containing the collected (and possibly encrypted) metrics data.
+   * @returns {Promise<string>} - Promise resolving to an array of JSON strings containing the collected (and possibly encrypted) metrics data.
    */
   getPlayerMetrics = async (
-    playbackId: string,
-    pubId: string,
     playerProfileId: string,
     playerProfileOwnerAddress: `0x${string}`,
     encrypt: boolean,
-  ): Promise<string> => {
+  ): Promise<string[]> => {
     if (typeof window === "undefined") {
       throw new Error(
         "This function can only be used in a browser environment.",
@@ -310,45 +346,52 @@ export class Sequence extends EventEmitter {
     }
     if (!this.litAuthSig)
       throw new Error("Generate and Set Lit Auth Sig before continuing.");
-    if (!this.playerMap[playbackId])
+    if (Object.keys(this.playerMap).length === 0)
       throw new Error(
-        "Video element not detected. Make sure to set your Livepeer Player component in your app.",
+        "No video elements detected. Make sure to set your Livepeer Player component in your app.",
       );
 
     try {
-      const playerMetrics = await this.collectMetrics(
-        playbackId,
-        pubId,
-        playerProfileId,
-        playerProfileOwnerAddress,
-      );
-      let metrics = JSON.stringify(playerMetrics);
-      if (encrypt) {
-        const { error, message, encryptedString } = await encryptMetrics(
-          metrics,
-          this.questEnvokerPKPData.ethAddress,
+      let metricsArray: string[] = [];
+      for (let playbackId in this.playerMap) {
+        const playerMetrics = await this.collectMetrics(
+          playbackId,
+          playerProfileId,
           playerProfileOwnerAddress,
-          this.litAuthSig,
-          this.litNodeClient,
         );
-
-        if (error) {
-          this.log(
-            LogCategory.ERROR,
-            `Player encrypt metrics failed.`,
-            message,
-            new Date().toISOString(),
+        let metrics = JSON.stringify(playerMetrics);
+        metricsArray.push(metrics);
+        if (encrypt) {
+          const { error, message, encryptedString } = await encryptMetrics(
+            metrics,
+            this.questEnvokerPKPData.ethAddress,
+            playerProfileOwnerAddress,
+            this.litAuthSig,
+            this.litNodeClient,
           );
-          if (this.errorHandlingModeStrict) {
-            throw new Error(`Error encrypting player metrics: ${message}`);
+
+          if (error) {
+            this.log(
+              LogCategory.ERROR,
+              `Player encrypt metrics failed.`,
+              message,
+              new Date().toISOString(),
+            );
+            if (this.errorHandlingModeStrict) {
+              throw new Error(`Error encrypting player metrics: ${message}`);
+            }
+            return;
+          } else {
+            metricsArray.push(encryptedString);
           }
-          return;
-        } else {
-          metrics = encryptedString;
         }
       }
 
-      return metrics;
+      this.encrypted = encrypt;
+      this.playerProfileId = playerProfileId;
+      this.playerProfileOwnerAddress = playerProfileOwnerAddress;
+
+      return metricsArray;
     } catch (err: any) {
       this.log(
         LogCategory.ERROR,
@@ -365,115 +408,115 @@ export class Sequence extends EventEmitter {
   /**
    * @method sendMetricsOnChain
    * @description This function is responsible for sending player metrics to the blockchain. It performs various checks and validations before proceeding with the transaction, and logs the outcome.
-   * @param {string} playbackId - The playback Id associated with the metrics.
-   * @param {string} playerAddress - The Address of the player associated with their Lens profile.
-   * @param {string} playerProfileId - The Lens Profile Id of the player.
-   * @param {string} playerMetricsHash - The hash of the player's metrics.
-   * @param {string} litActionHash - The hash of the LIT action.
-   * @param {string} pubId - The Lens Pub Id of the quest.
-   * @param {boolean} metricsEncrypted - Flag indicating whether the metrics are encrypted.
+   * @param {string[]} playerMetricsHashes - The hashes of the player's metrics.
    * @throws Will throw an error if required data is missing or if transaction generation or execution fails.
    * @returns {Promise<void>} - A Promise that resolves when the operation completes.
    */
-  sendMetricsOnChain = async (
-    playbackId: string,
-    playerAddress: string,
-    playerProfileId: string,
-    playerMetricsHash: string,
-    litActionHash: string,
-    pubId: string,
-    metricsEncrypted: boolean,
-  ): Promise<void> => {
+  sendMetricsOnChain = async (playerMetricsHashes: string[]): Promise<void> => {
     if (!this.questEnvokerPKPData.publicKey)
       throw new Error("Set questEnvoker PKP Public Key before continuing.");
     if (!this.questEnvokerPKPData.tokenId)
       throw new Error("Set questEnvoker PKP Token Id before continuing.");
-    if (!this.kinoraMetricsContract)
-      throw new Error("Set Kinora Metrics Address before continuing.");
+    if (!this.kinoraMetricsContract || !this.kinoraQuestContract)
+      throw new Error(
+        "Set Kinora Metrics and Quest Address before continuing.",
+      );
+    if (
+      !this.encrypted ||
+      !this.playerProfileId ||
+      this.playerProfileOwnerAddress
+    )
+      throw new Error(
+        "Set the player profile, encrypt and address details before calling this function.",
+      );
     if (!this.litAuthSig)
       throw new Error("Generate and Set Lit Auth Sig before continuing.");
+    if (Object.keys(this.playerMap).length === 0)
+      throw new Error(
+        "No video elements detected. Make sure to set your Livepeer Player component in your app.",
+      );
+
+    const litActionHash = await this.kinoraQuestContract.metricsHash();
+
     try {
-      const metricsToSend = await axios.get(
-        `${INFURA_GATEWAY}/ipfs/${playerMetricsHash}`,
-      );
-
-      const parsed: PlayerMetrics = await JSON.parse(metricsToSend.data);
-
-      const {
-        error: txError,
-        message: txMessage,
-        generatedTxData,
-      } = await createTxData(
-        this.polygonProvider,
-        KinoraMetricsAbi,
-        "addPlayerMetrics",
-        [
-          playbackId,
-          "ipfs://" + playerMetricsHash,
-          playerAddress,
-          playerProfileId,
-          pubId,
-          ,
-          metricsEncrypted,
-        ],
-      );
-
-      if (txError) {
-        this.log(
-          LogCategory.ERROR,
-          `Generate Tx data error on Add Player Metrics.`,
-          txMessage,
-          new Date().toISOString(),
+      let i = 0;
+      for (let playbackId in this.playerMap) {
+        const {
+          error: txError,
+          message: txMessage,
+          generatedTxData,
+        } = await createTxData(
+          this.polygonProvider,
+          KinoraMetricsAbi,
+          "addPlayerMetrics",
+          [
+            playbackId,
+            "ipfs://" + playerMetricsHashes[i],
+            this.playerProfileId,
+            this.playerProfileId,
+            this.encrypted,
+          ],
         );
-        if (this.errorHandlingModeStrict) {
-          throw new Error(
-            `Error generating Tx data on Add Player Metrics: ${txMessage}`,
+
+        if (txError) {
+          this.log(
+            LogCategory.ERROR,
+            `Generate Tx data error on Add Player Metrics.`,
+            txMessage,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error generating Tx data on Add Player Metrics: ${txMessage}`,
+            );
+          }
+
+          return;
+        }
+
+        const { txHash, error, message, litResponse } = await litExecute(
+          this.polygonProvider,
+          this.litNodeClient,
+          generatedTxData,
+          "addPlayerMetrics",
+          this.litAuthSig,
+          litActionHash,
+          this.questEnvokerPKPData.publicKey,
+          this.multihashDevKey,
+          hashHex(this.questEnvokerProfileId.toString()),
+        );
+
+        if (error) {
+          this.log(
+            LogCategory.ERROR,
+            `Player add Metrics on-chain failed on Broadcast.`,
+            message,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error adding Player Metrics and broadcasting: ${message}`,
+            );
+          }
+          return;
+        } else {
+          this.metrics[playbackId].reset();
+
+          this.log(
+            LogCategory.RESPONSE,
+            `Player Metrics added successfully. Lit Action Response.`,
+            litResponse,
+            new Date().toISOString(),
+          );
+          this.log(
+            LogCategory.BROADCAST,
+            `Broadcast on-chain.`,
+            txHash,
+            new Date().toISOString(),
           );
         }
 
-        return;
-      }
-
-      const { txHash, error, message, litResponse } = await litExecute(
-        this.polygonProvider,
-        this.litNodeClient,
-        generatedTxData,
-        "addPlayerMetrics",
-        this.litAuthSig,
-        litActionHash,
-        this.questEnvokerPKPData.publicKey,
-        this.multihashDevKey,
-        hashHex(this.questEnvokerProfileId.toString()),
-      );
-
-      if (error) {
-        this.log(
-          LogCategory.ERROR,
-          `Player add Metrics on-chain failed on Broadcast.`,
-          message,
-          new Date().toISOString(),
-        );
-        if (this.errorHandlingModeStrict) {
-          throw new Error(
-            `Error adding Player Metrics and broadcasting: ${message}`,
-          );
-        }
-        return;
-      } else {
-        this.metrics[playbackId].reset();
-
-        this.log(
-          LogCategory.RESPONSE,
-          `Player Metrics added successfully. Lit Action Response.`,
-          litResponse,
-          new Date().toISOString(),
-        );
-        this.log(
-          LogCategory.BROADCAST,
-          `Broadcast on-chain.`,
-          txHash,
-          new Date().toISOString(),
-        );
+        i++;
       }
     } catch (err: any) {
       this.log(
@@ -495,7 +538,6 @@ export class Sequence extends EventEmitter {
    * @param {string} pubId - The Lens Pub Id of the quest.
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player profile owner.
    * @param {number} milestone - The milestone number.
-   * @param {string} litActionMilestoneHash - The hash of the LIT action for the milestone.
    * @throws Will throw an error if required data is missing or if transaction generation or execution fails.
    * @returns {Promise<Object>} - A Promise that resolves to an object containing a check result indicating whether the milestone verification succeeded.
    */
@@ -504,7 +546,6 @@ export class Sequence extends EventEmitter {
     pubId: string,
     playerProfileOwnerAddress: `0x${string}`,
     milestone: number,
-    litActionMilestoneHash: string,
   ): Promise<boolean> => {
     if (!this.litAuthSig)
       throw new Error("Generate and Set Lit Auth Sig before continuing.");
@@ -551,13 +592,20 @@ export class Sequence extends EventEmitter {
             milestone,
           );
 
+        const litActionHash =
+          await this.kinoraQuestDataContract.getQuestMilestonesLitActionHash(
+            this.questEnvokerProfileId,
+            parseInt(pubId, 16),
+            milestone,
+          );
+
         const { txHash, error, message, litResponse } = await litExecute(
           this.polygonProvider,
           this.litNodeClient,
           generatedTxData,
           "playerEligibleToClaimMilestone",
           this.litAuthSig,
-          litActionMilestoneHash,
+          litActionHash,
           this.questEnvokerPKPData.publicKey,
           this.multihashDevKey,
           hashKeyItem,
@@ -733,7 +781,6 @@ export class Sequence extends EventEmitter {
    * @method collectMetrics
    * @description Collects and aggregates player metrics from both current and past interactions, integrating publication interactions.
    * @param {string} playbackId - The playback Id related to the player metrics.
-   * @param {string} pubId - The Lens Pub Id of the quest.
    * @param {string} playerProfileId - The player's Lens Profile Id.
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player's profile owner.
    * @returns {Promise<PlayerMetrics>} - A Promise resolving to an aggregated PlayerMetrics object.
@@ -742,36 +789,35 @@ export class Sequence extends EventEmitter {
    */
   private collectMetrics = async (
     playbackId: string,
-    pubId: string,
     playerProfileId: string,
     playerProfileOwnerAddress: `0x${string}`,
   ): Promise<PlayerMetrics> => {
     let playerMetrics: PlayerMetrics;
     try {
-      const existingMetrics =
-        await this.kinoraMetricsContract.getPlayerPlaybackIdMetricsHash(
-          playbackId,
-          playerProfileId,
-          this.questEnvokerProfileId,
-          pubId,
-        );
-
-      const { data } = await getPublicationClient({
-        forId: pubId,
+      const existingMetrics = await getMetrics({
+        playbackId,
+        questEnvokerProfileId: this.questEnvokerProfileId,
+        playerProfileId: parseInt(playerProfileId, 16),
       });
 
-      const lensStats: LensStats = (data?.publication.__typename === "Post" ||
-        data?.publication.__typename === "Comment") && {
-        hasReacted: data?.publication?.operations.hasReacted,
-        hasMirrored: data?.publication.operations.hasMirrored,
-        hasActed: data?.publication.operations.hasActed.isFinalisedOnchain,
-        hasNotInterested: data?.publication?.operations?.isNotInterested,
-        hasBookmarked: data?.publication.operations.hasBookmarked,
+      const { data } = await getPublicationClient({
+        forId: this.playerMap[playbackId].pubId,
+      });
+
+      const lensStats: LensStats = {
+        hasQuoted: (data?.publication as Post)?.operations?.hasQuoted,
+        hasReacted: (data?.publication as Post)?.operations.hasReacted,
+        hasMirrored: (data?.publication as Post)?.operations.hasMirrored,
+        hasActed: (data?.publication as Post)?.operations.hasActed
+          .isFinalisedOnchain,
+        hasNotInterested: (data?.publication as Post)?.operations
+          ?.isNotInterested,
+        hasBookmarked: (data?.publication as Post)?.operations.hasBookmarked,
       };
 
       if (existingMetrics) {
         const oldMetricsToParse = await axios.get(
-          `${INFURA_GATEWAY}/ipfs/${existingMetrics?.split("ipfs://")[1]}`,
+          `${INFURA_GATEWAY}/ipfs/${existingMetrics[0]?.split("ipfs://")[1]}`,
         );
 
         let oldMetricsValues: string = await JSON.parse(oldMetricsToParse.data);
@@ -781,7 +827,6 @@ export class Sequence extends EventEmitter {
             playbackId,
             playerProfileId,
             this.questEnvokerProfileId,
-            pubId,
           );
 
         if (isEncrypted) {
@@ -922,6 +967,7 @@ export class Sequence extends EventEmitter {
                   this.metrics[playbackId].getTotalDuration()) /
                 (oldMetrics.rawPlayCount +
                   this.metrics[playbackId].getPlayCount()),
+          hasQuoted: lensStats.hasQuoted,
           hasMirrored: lensStats.hasMirrored,
           hasReacted: lensStats.hasReacted,
           hasBookmarked: lensStats.hasBookmarked,
@@ -962,6 +1008,7 @@ export class Sequence extends EventEmitter {
           totalVolumeChangeCount:
             this.metrics[playbackId].getVolumeChangeCount(),
           totalBufferCount: this.metrics[playbackId].getBufferCount(),
+          hasQuoted: lensStats.hasQuoted,
           hasMirrored: lensStats.hasMirrored,
           hasReacted: lensStats.hasReacted,
           hasBookmarked: lensStats.hasBookmarked,
@@ -1030,7 +1077,6 @@ export class Sequence extends EventEmitter {
         uriParsed,
         playerProfileId,
         playerProfileOwnerAddress,
-        pubId,
       );
 
       return playerEligible;
@@ -1053,7 +1099,6 @@ export class Sequence extends EventEmitter {
    * @param {MilestoneEligibility[]} eligibilityCriteria - The eligibility criteria array.
    * @param {string} playerProfileId - The player's Lens Profile Id.
    * @param {string} playerProfileOwnerAddress - The Ethereum address of the player's profile owner.
-   * @param {string} pubId - The Lens Pub Id of the quest.
    * @returns {Promise<boolean>} - A Promise resolving to a boolean indicating whether the player meets the eligibility criteria.
    * @private
    */
@@ -1061,7 +1106,7 @@ export class Sequence extends EventEmitter {
     eligibilityCriteria: MilestoneEligibility,
     playerProfileId: string,
     playerProfileOwnerAddress: `0x${string}`,
-    pubId: string,
+    encrypted?: boolean,
   ): Promise<boolean> => {
     let result = true;
 
@@ -1071,62 +1116,75 @@ export class Sequence extends EventEmitter {
         i < eligibilityCriteria.internalPlaybackCriteria.length;
         i++
       ) {
-        let currentMetricsHash: string =
-          await this.kinoraQuestDataContract.getPlayerPlaybackIdMetricsHash(
+        let metrics: PlayerMetrics;
+        let { data, error } = await getMetrics({
+          questEnvokerProfileId: this.questEnvokerProfileId,
+          playerProfileId: parseInt(playerProfileId, 16),
+          playbackId:
             eligibilityCriteria.internalPlaybackCriteria[i].playbackId,
-            parseInt(playerProfileId, 16),
-            this.questEnvokerProfileId,
-            parseInt(pubId, 16),
-          );
+          encrypted: encrypted,
+        });
 
-        const currentMetricsToParse = await axios.get(
-          `${INFURA_GATEWAY}/ipfs/${currentMetricsHash}`,
-        );
-
-        let currentMetrics: string = currentMetricsToParse.data;
-
-        const encrypted =
-          await this.kinoraQuestDataContract.getPlayerPlaybackIdMetricsEncrypted(
-            eligibilityCriteria.internalPlaybackCriteria[i].playbackId,
-            parseInt(playerProfileId, 16),
-            this.questEnvokerProfileId,
-            parseInt(pubId, 16),
-          );
-
-        if (encrypted) {
-          const { error, message, decryptedString } = await decryptMetrics(
-            await JSON.parse(currentMetrics),
-            this.questEnvokerPKPData.ethAddress,
-            playerProfileOwnerAddress,
-            this.litAuthSig,
-            this.litNodeClient,
-          );
-
-          if (error) {
-            this.log(
-              LogCategory.ERROR,
-              `Player decrypt collected metrics failed.`,
-              message,
-              new Date().toISOString(),
+        if (data) {
+          if (data[0].encrypted) {
+            const { error, message, decryptedString } = await decryptMetrics(
+              await JSON.parse(data[0].json),
+              this.questEnvokerPKPData.ethAddress,
+              playerProfileOwnerAddress,
+              this.litAuthSig,
+              this.litNodeClient,
             );
-            if (this.errorHandlingModeStrict) {
-              throw new Error(
-                `Error decrypting player collected metrics: ${message}`,
+
+            if (error) {
+              this.log(
+                LogCategory.ERROR,
+                `Player decrypt collected metrics failed.`,
+                message,
+                new Date().toISOString(),
               );
+              if (this.errorHandlingModeStrict) {
+                throw new Error(
+                  `Error decrypting player collected metrics: ${message}`,
+                );
+              }
+              return;
+            } else {
+              const currentMetrics = decryptedString;
+              metrics = await JSON.parse(currentMetrics);
             }
-            return;
           } else {
-            currentMetrics = decryptedString;
+            metrics = Object.fromEntries(
+              Object.entries(data[0]).filter(
+                ([key]) =>
+                  ![
+                    "profileId",
+                    "playerProfileId",
+                    "playbackId",
+                    "encrypted",
+                    "json",
+                  ].includes(key) &&
+                  !key.startsWith("globalAverage") &&
+                  !key.startsWith("internalAverage"),
+              ),
+            ) as PlayerMetrics;
+          }
+        } else {
+          this.log(
+            LogCategory.ERROR,
+            `Error on get metrics for comparison.`,
+            error.message,
+            new Date().toISOString(),
+          );
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error getting metrics for comparison: ${error.message}`,
+            );
           }
         }
-
-        const currentPlayerMetrics: PlayerMetrics = await JSON.parse(
-          currentMetrics,
-        );
 
         result = await this.checkValues(
           eligibilityCriteria.internalPlaybackCriteria[i].playbackCriteria,
-          currentPlayerMetrics,
+          metrics,
         );
 
         if (!result) {
@@ -1139,86 +1197,212 @@ export class Sequence extends EventEmitter {
       }
     }
 
-    if (eligibilityCriteria.globalPlaybackCriteria) {
+    if (eligibilityCriteria.averageGlobalPlaybackCriteria) {
       for (
         let i = 0;
-        i < eligibilityCriteria.globalPlaybackCriteria.length;
+        i < eligibilityCriteria.averageGlobalPlaybackCriteria.length;
         i++
       ) {
-        let currentMetricsHash: string =
-          await this.kinoraQuestDataContract.getPlayerGlobalPlaybackIdMetrics(
-            eligibilityCriteria.globalPlaybackCriteria[i].playbackId,
-            parseInt(playerProfileId, 16),
+        let { data, error } = await getMetrics({
+          playerProfileId: parseInt(playerProfileId, 16),
+          playbackId:
+            eligibilityCriteria.averageGlobalPlaybackCriteria[i].playbackId,
+          encrypted: false,
+        });
+
+        if (data) {
+          const averagePlayerMetrics: PlayerMetrics = {} as PlayerMetrics;
+          const firstData = Object.fromEntries(
+            Object.entries(data[0]).filter(
+              ([key]) =>
+                ![
+                  "profileId",
+                  "playerProfileId",
+                  "playbackId",
+                  "encrypted",
+                  "json",
+                ].includes(key) &&
+                !key.startsWith("globalAverage") &&
+                !key.startsWith("internalAverage"),
+            ),
+          ) as PlayerMetrics;
+
+          const allPlayerMetrics: PlayerMetrics[] = data.map((obj) =>
+            Object.fromEntries(
+              Object.entries(obj).filter(
+                ([key]) =>
+                  ![
+                    "profileId",
+                    "playerProfileId",
+                    "playbackId",
+                    "encrypted",
+                    "json",
+                  ].includes(key) &&
+                  !key.startsWith("globalAverage") &&
+                  !key.startsWith("internalAverage"),
+              ),
+            ),
+          ) as PlayerMetrics[];
+
+          for (const key in firstData) {
+            if (Object.prototype.hasOwnProperty.call(firstData, key)) {
+              const firstValue = firstData[key];
+              if (typeof firstValue === "boolean") {
+                averagePlayerMetrics[key as LensKeys] =
+                  this.calculateBooleanAverage(
+                    allPlayerMetrics,
+                    key as LensKeys,
+                  );
+              } else if (typeof firstValue === "number") {
+                averagePlayerMetrics[key as MetricKeys] = this.calculateAverage(
+                  allPlayerMetrics,
+                  key as MetricKeys,
+                );
+              }
+            }
+          }
+
+          result = await this.checkValues(
+            eligibilityCriteria.averageGlobalPlaybackCriteria[i]
+              .playbackCriteria,
+            averagePlayerMetrics,
           );
 
-        const currentMetricsToParse = await axios.get(
-          `${INFURA_GATEWAY}/ipfs/${currentMetricsHash}`,
-        );
-
-        let currentMetrics: string = currentMetricsToParse.data;
-
-        const currentPlayerMetrics: PlayerMetrics = await JSON.parse(
-          currentMetrics,
-        );
-
-        result = await this.checkValues(
-          eligibilityCriteria.globalPlaybackCriteria[i].playbackCriteria,
-          currentPlayerMetrics,
-        );
-
-        if (!result) {
-          return false;
-        }
-      }
-
-      if (!result) {
-        return false;
-      }
-    }
-
-    if (eligibilityCriteria.totalAverageCriteriaStats) {
-      const allPlayerMetrics: PlayerMetrics[] = [];
-      for (
-        let i = 0;
-        i < eligibilityCriteria.globalPlaybackCriteria.length;
-        i++
-      ) {
-        let currentMetricsHash: string =
-          await this.kinoraQuestDataContract.getPlayerGlobalPlaybackIdMetrics(
-            eligibilityCriteria.globalPlaybackCriteria[i].playbackId,
-            parseInt(playerProfileId, 16),
+          if (!result) {
+            return false;
+          }
+        } else {
+          this.log(
+            LogCategory.ERROR,
+            `Error on get metrics for comparison.`,
+            error.message,
+            new Date().toISOString(),
           );
-
-        const currentMetricsToParse = await axios.get(
-          `${INFURA_GATEWAY}/ipfs/${currentMetricsHash}`,
-        );
-
-        let currentMetrics: string = currentMetricsToParse.data;
-
-        const currentPlayerMetrics: PlayerMetrics = await JSON.parse(
-          currentMetrics,
-        );
-        allPlayerMetrics.push(currentPlayerMetrics);
-      }
-
-      const averagePlayerMetrics: PlayerMetrics = {} as PlayerMetrics;
-      for (const key in allPlayerMetrics[0]) {
-        if (Object.prototype.hasOwnProperty.call(allPlayerMetrics[0], key)) {
-          const firstValue = allPlayerMetrics[0][key];
-          if (typeof firstValue === "boolean") {
-            averagePlayerMetrics[key as LensKeys] =
-              this.calculateBooleanAverage(allPlayerMetrics, key as LensKeys);
-          } else if (typeof firstValue === "number") {
-            averagePlayerMetrics[key as MetricKeys] = this.calculateAverage(
-              allPlayerMetrics,
-              key as MetricKeys,
+          if (this.errorHandlingModeStrict) {
+            throw new Error(
+              `Error getting metrics for comparison: ${error.message}`,
             );
           }
+        }
+      }
+
+      if (!result) {
+        return false;
+      }
+    }
+
+    if (eligibilityCriteria.averageInternalVideoStats) {
+      let { data, error } = await getMetrics({
+        playerProfileId: parseInt(playerProfileId, 16),
+        questEnvokerProfileId: this.questEnvokerProfileId,
+        encrypted: false,
+      });
+
+      const averagePlayerMetrics: PlayerMetrics = {} as PlayerMetrics;
+      if (data) {
+        const firstData = Object.fromEntries(
+          Object.entries(data[0]).filter(([key]) =>
+            key.startsWith("internalAverage"),
+          ),
+        ) as PlayerMetrics;
+
+        const allPlayerMetrics: PlayerMetrics[] = data.map((obj) =>
+          Object.fromEntries(
+            Object.entries(obj).filter(([key]) =>
+              key.startsWith("internalAverage"),
+            ),
+          ),
+        ) as PlayerMetrics[];
+
+        for (const key in firstData) {
+          if (Object.prototype.hasOwnProperty.call(firstData, key)) {
+            const firstValue = firstData[key];
+            if (typeof firstValue === "boolean") {
+              averagePlayerMetrics[key as LensKeys] =
+                this.calculateBooleanAverage(allPlayerMetrics, key as LensKeys);
+            } else if (typeof firstValue === "number") {
+              averagePlayerMetrics[key as MetricKeys] = this.calculateAverage(
+                allPlayerMetrics,
+                key as MetricKeys,
+              );
+            }
+          }
+        }
+      } else {
+        this.log(
+          LogCategory.ERROR,
+          `Error on get metrics for comparison.`,
+          error.message,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error getting metrics for comparison: ${error.message}`,
+          );
         }
       }
 
       result = await this.checkValues(
-        eligibilityCriteria.totalAverageCriteriaStats,
+        eligibilityCriteria.averageInternalVideoStats,
+        averagePlayerMetrics,
+      );
+
+      if (!result) {
+        return false;
+      }
+    }
+
+    if (eligibilityCriteria.averageGlobalVideoStats) {
+      let { data, error } = await getMetrics({
+        playerProfileId: parseInt(playerProfileId, 16),
+        encrypted: false,
+      });
+      const averagePlayerMetrics: PlayerMetrics = {} as PlayerMetrics;
+      if (data) {
+        const firstData = Object.fromEntries(
+          Object.entries(data[0]).filter(([key]) =>
+            key.startsWith("globalAverage"),
+          ),
+        ) as PlayerMetrics;
+
+        const allPlayerMetrics: PlayerMetrics[] = data.map((obj) =>
+          Object.fromEntries(
+            Object.entries(obj).filter(([key]) =>
+              key.startsWith("globalAverage"),
+            ),
+          ),
+        ) as PlayerMetrics[];
+
+        for (const key in firstData) {
+          if (Object.prototype.hasOwnProperty.call(firstData, key)) {
+            const firstValue = firstData[key];
+            if (typeof firstValue === "boolean") {
+              averagePlayerMetrics[key as LensKeys] =
+                this.calculateBooleanAverage(allPlayerMetrics, key as LensKeys);
+            } else if (typeof firstValue === "number") {
+              averagePlayerMetrics[key as MetricKeys] = this.calculateAverage(
+                allPlayerMetrics,
+                key as MetricKeys,
+              );
+            }
+          }
+        }
+      } else {
+        this.log(
+          LogCategory.ERROR,
+          `Error on get metrics for comparison.`,
+          error.message,
+          new Date().toISOString(),
+        );
+        if (this.errorHandlingModeStrict) {
+          throw new Error(
+            `Error getting metrics for comparison: ${error.message}`,
+          );
+        }
+      }
+
+      result = await this.checkValues(
+        eligibilityCriteria.averageGlobalVideoStats,
         averagePlayerMetrics,
       );
 

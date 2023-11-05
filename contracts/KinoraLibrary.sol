@@ -27,14 +27,15 @@ contract KinoraLibrary {
   }
   struct Reward {
     RewardType rewardType;
+    string uri;
     address tokenAddress;
     uint256 amount;
-    string uri;
   }
   struct Milestone {
     GatingLogic gated;
     Reward reward;
     string completionCriteria;
+    string milestoneLitActionHash;
     bytes32 conditionHash;
     uint256 milestone;
   }
@@ -49,8 +50,8 @@ contract KinoraLibrary {
     uint256 maxPlayerCount;
   }
   struct GatingLogic {
+    uint256[][] erc721TokenIds;
     address[] erc721Addresses;
-    uint256[] erc721TokenIds;
     address[] erc20Addresses;
     uint256[] erc20Thresholds;
     bool oneOf;
@@ -59,9 +60,8 @@ contract KinoraLibrary {
     mapping(uint256 => mapping(uint256 => uint256)) milestonesCompletedPerQuest;
     mapping(uint256 => uint256[]) questsJoined;
     mapping(uint256 => mapping(uint256 => bool)) joinedQuest;
-    mapping(uint256 => mapping(uint256 => mapping(string => PlayerLivepeerMetrics))) playbackIdMetrics;
+    mapping(string => mapping(uint256 => PlayerLivepeerMetrics)) playbackIdMetrics;
     mapping(uint256 => mapping(uint256 => mapping(uint256 => bool))) eligibleToClaimMilestone;
-    mapping(string => string[]) globalPlaybackIdMetrics;
     address playerAddress;
     uint256 activeSince;
   }
@@ -69,7 +69,6 @@ contract KinoraLibrary {
     string playbackId;
     string metricJSONHash;
     uint256 profileId;
-    uint256 pubId;
     bool encrypted;
   }
   struct InitializeAction {
@@ -87,5 +86,25 @@ contract KinoraLibrary {
     uint256 maxPlayerCount;
     uint256 profileId;
     uint256 pubId;
+  }
+  struct MilestoneVerify {
+    uint256[][] tokens;
+    address[] erc721s;
+    address[] erc20s;
+    uint256[] thresholds;
+    address playerAddress;
+    uint256 playerProfileId;
+    uint256 profileId;
+    uint256 pubId;
+    uint256 milestone;
+    bool joined;
+    bool oneOf;
+  }
+  struct TransferReward {
+    address playerAddress;
+    uint256 profileId;
+    uint256 playerProfileId;
+    uint256 pubId;
+    uint256 milestone;
   }
 }

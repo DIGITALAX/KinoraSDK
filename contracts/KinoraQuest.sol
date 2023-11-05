@@ -16,6 +16,7 @@ contract KinoraQuest is Initializable {
   KinoraAccessControl public accessControl;
   KinoraQuestData public kinoraQuestData;
   KinoraEscrow public escrow;
+  string public metricsHash;
   address public kinoraOpenAction;
 
   /**
@@ -174,7 +175,7 @@ contract KinoraQuest is Initializable {
       _profileId,
       _pubId
     );
-    uint256[] memory _tokens = kinoraQuestData.getQuestGatedERC721Tokens(
+    uint256[][] memory _tokens = kinoraQuestData.getQuestGatedERC721Tokens(
       _profileId,
       _pubId
     );
@@ -238,7 +239,7 @@ contract KinoraQuest is Initializable {
       .getMilestoneGatedERC721Addresses(_profileId, _pubId, _milestone);
     uint256[] memory _thresholds = kinoraQuestData
       .getMilestoneGatedERC20Thresholds(_profileId, _pubId, _milestone);
-    uint256[] memory _tokens = kinoraQuestData.getMilestoneGatedERC721Tokens(
+    uint256[][] memory _tokens = kinoraQuestData.getMilestoneGatedERC721Tokens(
       _profileId,
       _pubId,
       _milestone
@@ -246,58 +247,53 @@ contract KinoraQuest is Initializable {
     bool _oneOf = kinoraQuestData.getQuestGatedOneOf(_profileId, _pubId);
 
     if (
-      _joined &&
-      kinoraQuestData.getPlayerMilestonesCompletedPerQuest(
-        _playerProfileId,
-        _profileId,
-        _pubId
-      ) <
-      _milestone &&
-      (kinoraQuestData.getPlayerMilestonesCompletedPerQuest(
-        _playerProfileId,
-        _profileId,
-        _pubId
-      ) +
-        1 ==
-        _milestone) &&
-      kinoraQuestData.getPlayerEligibleToClaimMilestone(
-        _playerProfileId,
-        _profileId,
-        _pubId,
-        _milestone
-      ) &&
-      _isEligible(
-        _erc721s,
-        _erc20s,
-        _tokens,
-        _thresholds,
-        _playerAddress,
-        _oneOf
+      _milestoneVerify(
+        KinoraLibrary.MilestoneVerify({
+          tokens: _tokens,
+          erc721s: _erc721s,
+          erc20s: _erc20s,
+          thresholds: _thresholds,
+          playerAddress: _playerAddress,
+          playerProfileId: _playerProfileId,
+          profileId: _profileId,
+          pubId: _pubId,
+          milestone: _milestone,
+          joined: _joined,
+          oneOf: _oneOf
+        })
       )
     ) {
-      if (
-        kinoraQuestData.getQuestMilestoneRewardType(
-          _profileId,
-          _pubId,
-          _milestone
-        ) == KinoraLibrary.RewardType.ERC20
-      ) {
-        escrow.withdrawERC20(_playerAddress, _pubId, _milestone);
-      } else {
-        escrow.mintERC721(_playerAddress, _profileId, _pubId, _milestone);
-      }
-
-      kinoraQuestData.completeMilestone(
-        _pubId,
-        _profileId,
-        _playerProfileId,
-        _milestone
+      _transferReward(
+        KinoraLibrary.TransferReward({
+          playerAddress: _playerAddress,
+          profileId: _profileId,
+          playerProfileId: _playerProfileId,
+          pubId: _pubId,
+          milestone: _milestone
+        })
       );
     } else {
       revert KinoraErrors.PlayerNotEligible();
     }
 
     emit PlayerCompleteQuestMilestone(_pubId, _milestone, _playerProfileId);
+  }
+
+  /**
+   * Sets the Lit Actions URIs associated with the Quest.
+   *
+   * @param _milestoneHash - An array of the Lit Action Milestone URIs.
+   * @param _metricsHash - The metrics Lit Action URIs.
+   * @param _pubId -  The Lens Pub Id of the Quest.
+   */
+  function setLitActions(
+    string[] memory _milestoneHash,
+    string memory _metricsHash,
+    uint256 _pubId
+  ) public onlyQuestEnvokerPKPOrAdmin {
+    uint256 _profileId = accessControl.getProfileId();
+    kinoraQuestData.setQuestLitActionHashes(_milestoneHash, _profileId, _pubId);
+    metricsHash = _metricsHash;
   }
 
   /**
@@ -314,7 +310,7 @@ contract KinoraQuest is Initializable {
   function _isEligible(
     address[] memory _erc721s,
     address[] memory _erc20s,
-    uint256[] memory _tokens,
+    uint256[][] memory _tokens,
     uint256[] memory _thresholds,
     address _playerAddress,
     bool _oneOf
@@ -336,23 +332,33 @@ contract KinoraQuest is Initializable {
    * Checks the specified ERC-721 conditions for a player.
    *
    * @param _erc721Addresses - An array of addresses of ERC-721 contracts.
-   * @param _erc721TokenIds - An array of token IDs for the ERC-721 contracts.
+   * @param _erc721TokenIds - An array of an array of token IDs for the ERC-721 contracts.
    * @param _playerAddress - The Ethereum address of the player.
    * @return A boolean indicating whether the player meets any of the specified ERC-721 conditions.
    */
   function _checkERC721Conditions(
     address[] memory _erc721Addresses,
-    uint256[] memory _erc721TokenIds,
+    uint256[][] memory _erc721TokenIds,
     address _playerAddress
   ) internal view returns (bool) {
     for (uint256 i = 0; i < _erc721Addresses.length; i++) {
-      bool condition = (_erc721TokenIds[i] != 0)
-        ? (IERC721(_erc721Addresses[i]).ownerOf(_erc721TokenIds[i]) ==
-          _playerAddress)
-        : (IERC721(_erc721Addresses[i]).balanceOf(_playerAddress) > 0);
-      if (condition) return true;
+      IERC721 _erc721Contract = IERC721(_erc721Addresses[i]);
+      if (_erc721TokenIds[i].length != 0) {
+        bool tokenOwned;
+        for (uint256 j = 0; j < _erc721TokenIds[i].length; j++) {
+          if (
+            _erc721Contract.ownerOf(_erc721TokenIds[i][j]) == _playerAddress
+          ) {
+            tokenOwned = true;
+            break;
+          }
+        }
+        if (!tokenOwned) return false;
+      } else {
+        if (_erc721Contract.balanceOf(_playerAddress) == 0) return false;
+      }
     }
-    return false;
+    return true;
   }
 
   /**
@@ -375,5 +381,81 @@ contract KinoraQuest is Initializable {
       ) return true;
     }
     return false;
+  }
+
+  /**
+   * Checks if the milestone is eligible to pass.
+   *
+   * @param  _params - Milestone Verify interface
+   * @return A boolean indicating whether the player has passed the milestone.
+   */
+  function _milestoneVerify(
+    KinoraLibrary.MilestoneVerify memory _params
+  ) internal view returns (bool) {
+    return (_params.joined &&
+      kinoraQuestData.getPlayerMilestonesCompletedPerQuest(
+        _params.playerProfileId,
+        _params.profileId,
+        _params.pubId
+      ) <
+      _params.milestone &&
+      (kinoraQuestData.getPlayerMilestonesCompletedPerQuest(
+        _params.playerProfileId,
+        _params.profileId,
+        _params.pubId
+      ) +
+        1 ==
+        _params.milestone) &&
+      kinoraQuestData.getPlayerEligibleToClaimMilestone(
+        _params.playerProfileId,
+        _params.profileId,
+        _params.pubId,
+        _params.milestone
+      ) &&
+      _isEligible(
+        _params.erc721s,
+        _params.erc20s,
+        _params.tokens,
+        _params.thresholds,
+        _params.playerAddress,
+        _params.oneOf
+      ));
+  }
+
+  /**
+   * Transfers the ERC20 or ERC721 reward to the player.
+   *
+   * @param  _params - Transfer Reward interface
+   */
+  function _transferReward(
+    KinoraLibrary.TransferReward memory _params
+  ) internal {
+    if (
+      kinoraQuestData.getQuestMilestoneRewardType(
+        _params.profileId,
+        _params.pubId,
+        _params.milestone
+      ) == KinoraLibrary.RewardType.ERC20
+    ) {
+      escrow.withdrawERC20(
+        _params.playerAddress,
+        _params.pubId,
+        _params.milestone
+      );
+    } else {
+      escrow.mintERC721(
+        _params.playerAddress,
+        _params.profileId,
+        _params.pubId,
+        _params.milestone
+      );
+    }
+
+    kinoraQuestData.completeMilestone(
+      _params.pubId,
+      _params.profileId,
+      _params.playerProfileId,
+      _params.milestone
+    );
   }
 }
