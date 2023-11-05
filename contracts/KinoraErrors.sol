@@ -14,6 +14,7 @@ contract KinoraErrors {
   error OnlyAdmin();
   error PkpExists();
   error OnlyPKP();
+  error InvalidLength();
   error InvalidAddress();
   error InvalidContract();
   error UserNotMaintainer();

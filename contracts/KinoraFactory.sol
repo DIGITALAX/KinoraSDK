@@ -23,7 +23,7 @@ contract KinoraFactory {
   address public kinoraEscrow;
   address public kinoraMetrics;
   address public factoryMaintainer;
-  address public kinoraOpenAction; 
+  address public kinoraOpenAction;
 
   // Event emitted when a new suite of contracts is deployed via the KinoraFactory
   event KinoraFactoryDeployed(
@@ -162,11 +162,7 @@ contract KinoraFactory {
     );
 
     kinoraQuestData.setValidQuestContract(_profileId, _pubId, address(_newKQ));
-    kinoraQuestData.setValidMetricsContract(
-      _profileId,
-      _pubId,
-      address(_newKM)
-    );
+    kinoraQuestData.setValidMetricsContract(_profileId, address(_newKM));
     kinoraQuestData.setValidEscrowContract(_profileId, _pubId, address(_newKE));
     kinoraNFTCreator.setValidEscrowContract(
       _profileId,

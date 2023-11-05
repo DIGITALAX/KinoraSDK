@@ -102,6 +102,16 @@ contract KinoraOpenAction is HubRestricted, IPublicationActionModule {
         (KinoraLibrary.InitializeAction, KinoraLibrary.Milestone[], address)
       );
 
+    if (
+      (_params.gated.erc721TokenIds.length > 0 &&
+        (_params.gated.erc721Addresses.length !=
+          _params.gated.erc721TokenIds.length)) ||
+      _params.gated.erc20Addresses.length !=
+      _params.gated.erc20Thresholds.length
+    ) {
+      revert KinoraErrors.InvalidLength();
+    }
+
     address _questContract;
     address _escrowContract;
     if (

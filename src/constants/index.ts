@@ -14,20 +14,24 @@ export const KINORA_QUEST_DATA_CONTRACT: `0x${string}` = "0x";
  * @constant CHRONICLE_PKP_CONTRACT Chronicle Network Lit PKP Address.
  */
 export const CHRONICLE_PKP_CONTRACT: `0x${string}` =
-  "0x8F75a53F65e31DD0D2e40d0827becAaE2299D111";
+  "0x35789dea0044D311671D5827F6EB0f45081D8811";
 /**
  * @constant CHRONICLE_PKP_PERMISSIONS_CONTRACT Chronicle Network Lit PKP Permissions Address.
  */
 export const CHRONICLE_PKP_PERMISSIONS_CONTRACT: `0x${string}` =
-  "0x4Aed2F242E806c58758677059340e29E6B5b7619";
+  "0x9a0a6DD9D229eEfa5119cEB237c90D843d5e1003";
 /**
  * @constant LIT_RPC RPC for Lit Chronicle Network.
  */
 export const LIT_RPC: string = "https://chain-rpc.litprotocol.com/http";
 /**
- * @constant BASE_URL Base URL for the Lens V2 API.
+ * @constant LENS_BASE_URL Base URL for the Lens V2 API.
  */
-export const BASE_URL: string = "https://api.lens.dev";
+export const LENS_BASE_URL: string = "https://api-v2.lens.dev/";
+/**
+ * @constant GRAPH_BASE_URL Base URL for the the Kinora Subgraph.
+ */
+export const GRAPH_BASE_URL: string = "";
 /**
  * @constant INFURA_GATEWAY IPFS Infura Gateway.
  */

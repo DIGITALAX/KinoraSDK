@@ -89,6 +89,7 @@ export interface PlayerMetrics {
   averagePlayPauseRatio?: number;
   averageCtr?: number;
   averageAvd?: number;
+  hasQuoted: boolean;
   hasMirrored: boolean;
   hasReacted: boolean;
   hasBookmarked: boolean;
@@ -101,8 +102,9 @@ export interface PlayerMetrics {
  */
 export interface Reward {
   type: RewardType; // Type of reward
-  tokenAddress: `0x${string}`; // Address of the token contract
-  amount: number; // Amount of tokens to reward
+  erc721URI?: string; // URI hash for the NFT reward
+  erc20tokenAddress?: `0x${string}`; // Address of the token contract
+  erc20tokenAmount?: string; // Amount of erc20 tokens to reward
 }
 
 /**
@@ -110,9 +112,9 @@ export interface Reward {
  */
 export interface GatingLogic {
   erc721Addresses: `0x${string}`[];
-  erc721TokenIds: number[];
+  erc721TokenIds: number[][];
   erc20Addresses: `0x${string}`[];
-  erc20Thresholds: number[];
+  erc20Thresholds: string[];
   oneOf: boolean;
 }
 
@@ -123,7 +125,7 @@ export interface Milestone {
   gated: GatingLogic; // The logic for token gated milestones
   reward: Reward; // The reward for reaching this milestone
   milestone: number; // Milestone number or identifier
-  eligibilityHash: string; // Hash representing eligibility criteria for this milestone
+  eligibilityURI: string; // URI representing eligibility criteria for this milestone
 }
 
 /**
@@ -145,11 +147,12 @@ export interface MilestoneEligibility {
     playbackId: string;
     playbackCriteria: MilestoneEligibilityCriteria;
   }[];
-  globalPlaybackCriteria?: {
+  averageGlobalPlaybackCriteria?: {
     playbackId: string;
     playbackCriteria: MilestoneEligibilityCriteria;
   }[];
-  totalAverageCriteriaStats?: MilestoneEligibilityCriteria;
+  averageInternalVideoStats: MilestoneEligibilityCriteria;
+  averageGlobalVideoStats: MilestoneEligibilityCriteria;
 }
 
 /**
@@ -168,6 +171,7 @@ export interface MilestoneEligibilityCriteria {
   totalBufferCount?: MetricCriteria;
   averageEngagementRate?: MetricCriteria;
   averagePlayPauseRatio?: MetricCriteria;
+  quoteLens?: BoolLensCriteria;
   mirrorLens?: BoolLensCriteria;
   likeLens?: BoolLensCriteria;
   bookmarkLens?: BoolLensCriteria;
@@ -180,6 +184,7 @@ export interface MilestoneEligibilityCriteria {
  * @typedef LensKeys
  */
 export type LensKeys =
+  | "quoteLens"
   | "mirrorLens"
   | "likeLens"
   | "bookmarkLens"
@@ -228,6 +233,7 @@ export interface ILogEntry {
  * @description Interface representing statistics related to a lens.
  */
 export interface LensStats {
+  hasQuoted: boolean; // Flag indicating whether the user has quoted the video post id on Lens
   hasReacted: boolean; // Flag indicating whether the user has reacted to the video post id on Lens
   hasMirrored: boolean; // Flag indicating whether the user has mirrored the video post id on Lens
   hasActed: boolean; // Flag indicating whether the user has acted/collect the video post id on Lens
@@ -282,10 +288,12 @@ export interface BoolLensCriteria {
  * It encapsulates the video element associated with the player and a collection of event handlers that are invoked in response to various media events.
  *
  * @property videoElement - The HTMLVideoElement associated with the player.
+ * @property pubId - The Lens publication Id the video is being viewed from.
  * @property eventHandlers - A collection of functions that handle various media events.
  */
 export interface PlayerData {
   videoElement: HTMLVideoElement;
+  pubId: string;
   eventHandlers: {
     play: (event: Event) => void;
     pause: (event: Event) => void;
@@ -297,4 +305,135 @@ export interface PlayerData {
     waiting: (event: Event) => void;
     playing: (event: Event) => void;
   };
+}
+
+/** *
+ * @description PlayerMetricsResult Interface returned from subgraph query.
+ */
+export interface PlayerMetricsResult {
+  profileId: string;
+  playerProfileId: string;
+  playbackId: string;
+  encrypted: boolean;
+  json: string;
+  rawTotalDuration: number | undefined;
+  rawPlayCount: number | undefined;
+  rawPauseCount: number | undefined;
+  rawSkipCount: number | undefined;
+  rawClickCount: number | undefined;
+  rawImpressionCount: number | undefined;
+  rawBounceCount: number | undefined;
+  rawBounceRate: number | undefined;
+  rawVolumeChangeCount: number | undefined;
+  rawFullScreenCount: number | undefined;
+  rawBufferCount: number | undefined;
+  rawInteractionRate: number | undefined;
+  rawPreferredTimeToWatch: string | undefined;
+  rawMostViewedSegment: string | undefined;
+  rawBufferDuration: number | undefined;
+  rawEngagementRate: number | undefined;
+  rawMostReplayedArea: string | undefined;
+  rawPlayPauseRatio: number | undefined;
+  rawCtr: number | undefined;
+  rawAvd: number | undefined;
+  totalViewDuration: number | undefined;
+  totalFullScreenCount: number | undefined;
+  totalPlayCount: number | undefined;
+  totalPauseCount: number | undefined;
+  totalSkipCount: number | undefined;
+  totalClickCount: number | undefined;
+  totalVolumeChangeCount: number | undefined;
+  totalBufferCount: number | undefined;
+  averageBounceRate: number | undefined;
+  averageBufferDuration: number | undefined;
+  averageEngagementRate: number | undefined;
+  averagePlayPauseRatio: number | undefined;
+  averageCtr: number | undefined;
+  averageAvd: number | undefined;
+  hasQuoted: boolean | undefined;
+  hasMirrored: boolean | undefined;
+  hasReacted: boolean | undefined;
+  hasBookmarked: boolean | undefined;
+  hasNotInterested: boolean | undefined;
+  hasActed: boolean | undefined;
+  globalAverageRawTotalDuration: number | undefined;
+  globalAverageRawPlayCount: number | undefined;
+  globalAverageRawPauseCount: number | undefined;
+  globalAverageRawSkipCount: number | undefined;
+  globalAverageRawClickCount: number | undefined;
+  globalAverageRawImpressionCount: number | undefined;
+  globalAverageRawBounceCount: number | undefined;
+  globalAverageRawBounceRate: number | undefined;
+  globalAverageRawVolumeChangeCount: number | undefined;
+  globalAverageRawFullScreenCount: number | undefined;
+  globalAverageRawBufferCount: number | undefined;
+  globalAverageRawInteractionRate: number | undefined;
+  globalAverageRawPreferredTimeToWatch: number | undefined;
+  globalAverageRawMostViewedSegment: number | undefined;
+  globalAverageRawBufferDuration: number | undefined;
+  globalAverageRawEngagementRate: number | undefined;
+  globalAverageRawMostReplayedArea: number | undefined;
+  globalAverageRawPlayPauseRatio: number | undefined;
+  globalAverageRawCtr: number | undefined;
+  globalAverageRawAvd: number | undefined;
+  globalAverageTotalViewDuration: number | undefined;
+  globalAverageTotalFullScreenCount: number | undefined;
+  globalAverageTotalPlayCount: number | undefined;
+  globalAverageTotalPauseCount: number | undefined;
+  globalAverageTotalSkipCount: number | undefined;
+  globalAverageTotalClickCount: number | undefined;
+  globalAverageTotalVolumeChangeCount: number | undefined;
+  globalAverageTotalBufferCount: number | undefined;
+  globalAverageAverageBounceRate: number | undefined;
+  globalAverageAverageBufferDuration: number | undefined;
+  globalAverageAverageEngagementRate: number | undefined;
+  globalAverageAveragePlayPauseRatio: number | undefined;
+  globalAverageAverageCtr: number | undefined;
+  globalAverageAverageAvd: number | undefined;
+  globalAverageHasQuoted: boolean | undefined;
+  globalAverageHasMirrored: boolean | undefined;
+  globalAverageHasReacted: boolean | undefined;
+  globalAverageHasBookmarked: boolean | undefined;
+  globalAverageHasNotInterested: boolean | undefined;
+  globalAverageHasActed: boolean | undefined;
+  internalAverageRawTotalDuration: number | undefined;
+  internalAverageRawPlayCount: number | undefined;
+  internalAverageRawPauseCount: number | undefined;
+  internalAverageRawSkipCount: number | undefined;
+  internalAverageRawClickCount: number | undefined;
+  internalAverageRawImpressionCount: number | undefined;
+  internalAverageRawBounceCount: number | undefined;
+  internalAverageRawBounceRate: number | undefined;
+  internalAverageRawVolumeChangeCount: number | undefined;
+  internalAverageRawFullScreenCount: number | undefined;
+  internalAverageRawBufferCount: number | undefined;
+  internalAverageRawInteractionRate: number | undefined;
+  internalAverageRawPreferredTimeToWatch: number | undefined;
+  internalAverageRawMostViewedSegment: number | undefined;
+  internalAverageRawBufferDuration: number | undefined;
+  internalAverageRawEngagementRate: number | undefined;
+  internalAverageRawMostReplayedArea: number | undefined;
+  internalAverageRawPlayPauseRatio: number | undefined;
+  internalAverageRawCtr: number | undefined;
+  internalAverageRawAvd: number | undefined;
+  internalAverageTotalViewDuration: number | undefined;
+  internalAverageTotalFullScreenCount: number | undefined;
+  internalAverageTotalPlayCount: number | undefined;
+  internalAverageTotalPauseCount: number | undefined;
+  internalAverageTotalSkipCount: number | undefined;
+  internalAverageTotalClickCount: number | undefined;
+  internalAverageTotalVolumeChangeCount: number | undefined;
+  internalAverageTotalBufferCount: number | undefined;
+  internalAverageAverageBounceRate: number | undefined;
+  internalAverageAverageBufferDuration: number | undefined;
+  internalAverageAverageEngagementRate: number | undefined;
+  internalAverageAveragePlayPauseRatio: number | undefined;
+  internalAverageAverageCtr: number | undefined;
+  internalAverageAverageAvd: number | undefined;
+  internalAverageHasQuoted: boolean | undefined;
+  internalAverageHasMirrored: boolean | undefined;
+  internalAverageHasReacted: boolean | undefined;
+  internalAverageHasBookmarked: boolean | undefined;
+  internalAverageHasNotInterested: boolean | undefined;
+  internalAverageHasActed: boolean | undefined;
 }

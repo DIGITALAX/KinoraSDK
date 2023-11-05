@@ -5,10 +5,22 @@ import {
   HttpLink,
   ApolloLink,
 } from "@apollo/client";
-import { BASE_URL } from "./../../src/constants";
+import { GRAPH_BASE_URL, LENS_BASE_URL } from "./../../src/constants";
 
-export const client = new ApolloClient({
-  link: ApolloLink.from([new RetryLink(), new HttpLink({ uri: BASE_URL })]),
-  uri: BASE_URL,
+export const lensClient = new ApolloClient({
+  link: ApolloLink.from([
+    new RetryLink(),
+    new HttpLink({ uri: LENS_BASE_URL }),
+  ]),
+  uri: LENS_BASE_URL,
+  cache: new InMemoryCache(),
+});
+
+export const graphClient = new ApolloClient({
+  link: ApolloLink.from([
+    new RetryLink(),
+    new HttpLink({ uri: GRAPH_BASE_URL }),
+  ]),
+  uri: GRAPH_BASE_URL,
   cache: new InMemoryCache(),
 });

@@ -19,6 +19,7 @@ const isBrowser = typeof window !== "undefined";
  * @interface KinoraPlayerWrapperProps
  * @dev Defines the shape of props accepted by KinoraPlayerWrapper component.
  *  @param children - Function that accepts a setter for the Livepeer media element, returning React Node.
+ * @param parentId - The parent Id of the Player Wrapper.
  * @param playbackId - The Playback Id of the current video element.
  * @param onPlay - Handler for the play event.
  * @param onPause - Handler for the pause event.
@@ -59,6 +60,7 @@ type KinoraPlayerWrapperProps = {
   children: (
     setMediaElement: (node: HTMLVideoElement) => void,
   ) => React.ReactNode;
+  parentId: string;
   playbackId?: string;
   onPlay?: (event: Event) => void;
   onPause?: (event: Event) => void;
@@ -118,6 +120,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     pubId,
     playerProfileId,
     playbackId,
+    parentId,
     children,
     onLensVideoData,
     litAuthSig,
@@ -180,10 +183,12 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
         mediaElementRef.current &&
         kinoraSDKInstance &&
         playbackId &&
-        litAuthSig
+        litAuthSig &&
+        pubId
       ) {
         kinoraSDKInstance.livepeerAdd(
           playbackId,
+          pubId,
           mediaElementRef.current,
           litAuthSig,
         );
@@ -374,13 +379,15 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
      * @description - Handling styles for custom width and height fill of the video element container
      */
     useEffect(() => {
-      const livepeerContainer = document.querySelector(
-        ".livepeer-contents-container",
-      );
-      const aspectRatioContainer = document.querySelector(
-        ".livepeer-aspect-ratio-container",
-      );
-      const videoElement = document.querySelector(".c-lioqzt");
+      const livepeerContainer = document
+        .getElementById(parentId)
+        .querySelector(".livepeer-contents-container");
+      const aspectRatioContainer = document
+        .getElementById(parentId)
+        .querySelector(".livepeer-aspect-ratio-container");
+      const videoElement = document
+        .getElementById(parentId)
+        .querySelector(".c-lioqzt");
 
       const setStyles = (
         element: HTMLElement | null,
@@ -442,9 +449,9 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.addedNodes.length > 0) {
-            const parentDiv = document.querySelector(
-              ".livepeer-aspect-ratio-container",
-            );
+            const parentDiv = document
+              .getElementById(parentId)
+              .querySelector(".livepeer-aspect-ratio-container");
 
             if (parentDiv) {
               const videoTag = parentDiv.querySelector("video");
