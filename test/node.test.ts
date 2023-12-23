@@ -19,10 +19,7 @@ xdescribe("Node Test Suite", () => {
     before(async () => {
       signer = new ethers.Wallet(process.env.PRIVATE_KEY!, chronicleProvider);
 
-      newSequence = new Sequence({
-        questEnvokerProfileId: profileId,
-        signer,
-      });
+      newSequence = new Sequence();
     });
   });
 

@@ -4,21 +4,19 @@ import {
   NormalizedCacheObject,
 } from "@apollo/client";
 import {
-  ActOnOpenActionDocument,
-  ActOnOpenActionMutation,
   ActOnOpenActionRequest,
-} from "../../@types/generated";
+  CreateActOnOpenActionTypedDataDocument,
+  CreateActOnOpenActionTypedDataMutation,
+} from "./../../../src/@types/generated";
 
-const actOnGrant = async (
+export const act = async (
   request: ActOnOpenActionRequest,
-  playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>,
-): Promise<FetchResult<ActOnOpenActionMutation>> => {
-  return await playerAuthedApolloClient.mutate({
-    mutation: ActOnOpenActionDocument,
+  questEnvokerAuthedClient: ApolloClient<NormalizedCacheObject>,
+): Promise<FetchResult<CreateActOnOpenActionTypedDataMutation>> => {
+  return await questEnvokerAuthedClient.mutate({
+    mutation: CreateActOnOpenActionTypedDataDocument,
     variables: {
       request: request,
     },
   });
 };
-
-export default actOnGrant;

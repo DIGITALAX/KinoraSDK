@@ -61,18 +61,12 @@ module.exports = {
       pnpapi: false,
       worker_threads: false,
     },
-    alias: {
-      buffer: require.resolve("buffer"),
-    },
   },
   ignoreWarnings: [
     /Failed to parse source map/,
     /Critical dependency: require function is used/,
   ],
   plugins: [
-    new webpack.ProvidePlugin({
-      Buffer: ["buffer", "Buffer"],
-    }),
     new Dotenv({
       path: path.resolve(__dirname, ".env"),
     }),

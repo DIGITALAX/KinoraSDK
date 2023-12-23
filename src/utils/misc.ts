@@ -2,20 +2,17 @@ import { BoolLensCriteria, MetricCriteria } from "src/@types/kinora-sdk";
 
 /**
  * Validates a MetricCriteria object to ensure it contains valid values.
- * A valid MetricCriteria object should have both minValue and maxValue as numbers,
- * an operator of either 'or' or 'and', and minValue should not exceed maxValue.
+ * A valid MetricCriteria object should have a min value and
+ * an operator of either 'or' or 'and'.
  *
  * @param criteria - (Optional) The MetricCriteria object to validate. If omitted, the function returns true.
  * @returns A boolean indicating whether the provided MetricCriteria object is valid.
  */
 export const isValidMetricCriteria = (criteria?: MetricCriteria): boolean => {
   if (!criteria) return true;
-  const { minValue, maxValue, operator } = criteria;
+  const { minValue, operator } = criteria;
   return (
-    typeof minValue === "number" &&
-    typeof maxValue === "number" &&
-    (operator === "or" || operator === "and") &&
-    minValue <= maxValue
+    typeof minValue === "number" && (operator === "or" || operator === "and")
   );
 };
 

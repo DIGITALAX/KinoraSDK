@@ -5,16 +5,9 @@
 export class Metrics {
   private playCount: number = 0; // Number of times the video has been played
   private pauseCount: number = 0; // Number of times the video has been paused
-  private skipCount: number = 0; // Number of times the video has been skipped
   private totalDuration: number = 0; // Total duration of video playback in seconds
   private clickCount: number = 0; // Number of clicks on the video
   private impressionCount: number = 0; // Number of impressions (views)
-  private lastTimeUpdate: number = 0; // Last time the video time was updated
-  private bounceCount: number = 0; // Number of bounces (when users leave quickly)
-  private volumeChangeCount: number = 0; // Number of times the volume was changed
-  private fullScreenCount: number = 0; // Number of times the video entered fullscreen mode
-  private bufferCount: number = 0; // Number of times buffering started
-  private bufferDuration: number = 0; // Total duration of buffering in seconds
   private totalInteractions: number = 0; // Total number of user interactions
   private preferredTimeToWatch: { [key: string]: number } = {}; // Preferred time to watch the video
   private segmentViewCount: { [key: string]: number } = {}; // Count of segment views
@@ -50,51 +43,12 @@ export class Metrics {
   };
 
   /**
-   * @function onTimeUpdate
-   * @description Handle time updates in the video and update metrics accordingly.
-   * @param {number} currentTime - Current playback time in seconds.
-   */
-  public onTimeUpdate = (currentTime: number) => {
-    const currentTimeValue = Math.floor(currentTime);
-    const segment = Math.floor(currentTime / 10);
-    const lastTime = Math.floor(this.lastTimeUpdate);
-
-    this.totalDuration += currentTime;
-
-    if (currentTimeValue < lastTime) {
-      const segment = `${currentTimeValue}-${lastTime}`;
-      this.replayArea[segment] = (this.replayArea[segment] || 0) + 1;
-    }
-
-    this.lastTimeUpdate = currentTimeValue;
-    this.onInteraction();
-    this.onSegmentView(`Segment_${segment}`);
-  };
-
-  /**
    * @function onClick
    * @description Increment the click count and register a user interaction.
    */
   public onClick = () => {
     this.clickCount++;
     this.onInteraction();
-  };
-
-  /**
-   * @function onSkip
-   * @description Increment the skip count and register a user interaction.
-   */
-  public onSkip = () => {
-    this.skipCount++;
-    this.onInteraction();
-  };
-
-  /**
-   * @function onBounce
-   * @description Increment the bounce count.
-   */
-  public onBounce = () => {
-    this.bounceCount++;
   };
 
   /**
@@ -106,24 +60,6 @@ export class Metrics {
   };
 
   /**
-   * @function onVolumeChange
-   * @description Increment the volume change count and register a user interaction.
-   */
-  public onVolumeChange = () => {
-    this.volumeChangeCount++;
-    this.onInteraction();
-  };
-
-  /**
-   * @function onFullScreen
-   * @description Increment the fullscreen count and register a user interaction.
-   */
-  public onFullScreen = () => {
-    this.fullScreenCount++;
-    this.onInteraction();
-  };
-
-  /**
    * @function onWatchTime
    * @description Update the preferred time to watch metric based on the current time.
    */
@@ -131,32 +67,6 @@ export class Metrics {
     const time = new Date().getHours().toString();
     this.preferredTimeToWatch[time] =
       (this.preferredTimeToWatch[time] || 0) + 1;
-  };
-
-  /**
-   * @function onBufferStart
-   * @description Increment the buffer count and start tracking the buffer duration.
-   */
-  public onBufferStart = () => {
-    this.bufferCount++;
-    this.bufferDuration -= new Date().getTime();
-  };
-
-  /**
-   * @function onBufferEnd
-   * @description Stop tracking the buffer duration.
-   */
-  public onBufferEnd = () => {
-    this.bufferDuration += new Date().getTime();
-  };
-
-  /**
-   * @function getBounceRate
-   * @description Calculates and retrieves the bounce rate as a percentage.
-   * @returns {number} The bounce rate percentage.
-   */
-  public getBounceRate = (): number => {
-    return (this.bounceCount / this.impressionCount) * 100;
   };
 
   /**
@@ -176,15 +86,6 @@ export class Metrics {
    */
   public getInteractionRate = (): number => {
     return (this.totalInteractions / this.impressionCount) * 100;
-  };
-
-  /**
-   * @function getBufferDuration
-   * @description Retrieves the total buffer duration in seconds.
-   * @returns {number} The total buffer duration in seconds.
-   */
-  public getBufferDuration = (): number => {
-    return this.bufferDuration / 1000;
   };
 
   /**
@@ -259,15 +160,6 @@ export class Metrics {
   };
 
   /**
-   * @function getPlayPauseRatio
-   * @description Calculates and returns the ratio of play events to pause events.
-   * @returns {number} The play-pause ratio.
-   */
-  public getPlayPauseRatio = (): number => {
-    return this.playCount / this.pauseCount;
-  };
-
-  /**
    * @function getPlayCount
    * @description Retrieves the total count of play events.
    * @returns {number} Total count of play events.
@@ -295,15 +187,6 @@ export class Metrics {
   };
 
   /**
-   * @function getSkipCount
-   * @description Retrieves the total count of skip events.
-   * @returns {number} Total count of skip events.
-   */
-  public getSkipCount = (): number => {
-    return this.skipCount;
-  };
-
-  /**
    * @function getClickCount
    * @description Retrieves the total count of click events.
    * @returns {number} Total count of click events.
@@ -322,58 +205,15 @@ export class Metrics {
   };
 
   /**
-   * @function getVolumeChangeCount
-   * @description Retrieves the total count of volume change events.
-   * @returns {number} Total count of volume change events.
-   */
-  public getVolumeChangeCount = (): number => {
-    return this.volumeChangeCount;
-  };
-
-  /**
-   * @function getFullScreenCount
-   * @description Retrieves the total count of fullscreen events.
-   * @returns {number} Total count of fullscreen events.
-   */
-  public getFullScreenCount = (): number => {
-    return this.fullScreenCount;
-  };
-
-  /**
-   * @function getBounceCount
-   * @description Retrieves the total count of bounce events.
-   * @returns {number} Total count of bounce events.
-   */
-  public getBounceCount = (): number => {
-    return this.bounceCount;
-  };
-
-  /**
-   * @function getBufferCount
-   * @description Get the total count of buffer events.
-   * @returns {number} Total count of buffer events.
-   */
-  public getBufferCount = (): number => {
-    return this.bufferCount;
-  };
-
-  /**
    * @function reset
    * @description Reset all metrics to their initial values.
    */
   public reset = () => {
     this.playCount = 0;
     this.pauseCount = 0;
-    this.skipCount = 0;
     this.totalDuration = 0;
     this.clickCount = 0;
     this.impressionCount = 0;
-    this.lastTimeUpdate = 0;
-    this.bounceCount = 0;
-    this.volumeChangeCount = 0;
-    this.fullScreenCount = 0;
-    this.bufferCount = 0;
-    this.bufferDuration = 0;
     this.totalInteractions = 0;
     this.preferredTimeToWatch = {};
     this.segmentViewCount = {};

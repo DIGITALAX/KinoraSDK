@@ -1,22 +1,14 @@
 import { ethers } from "ethers";
-import { KINORA_OPEN_ACTION_CONTRACT } from "./constants";
+import {
+  KINORA_OPEN_ACTION_CONTRACT,
+  LENS_HUB_PROXY_CONTRACT,
+} from "./constants";
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
-import { ActOnOpenActionMutation } from "./@types/generated";
-import actOnGrant from "./graphql/mutations/actOn";
-
+import { omit } from "lodash";
+import { act } from "./graphql/mutations/actOn";
+import LensHubProxyAbi from "./../src/abis/LensHubProxy.json";
 
 export class Dispatch {
-  /**
-   * @private
-   * @type {Object}
-   * @description Quest envoker's PKP data including public key, token Id, and Ethereum address.
-   */
-  private questEnvokerPKPData: {
-    publicKey: `0x04${string}`;
-    tokenId: string;
-    ethAddress: `0x${string}`;
-  };
-
   /**
    * @private
    * @type {ApolloClient<NormalizedCacheObject>}
@@ -25,37 +17,37 @@ export class Dispatch {
   private playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>;
 
   /**
+   * @private
+   * @type {ethers.Contract}
+   * @description Instance of ethers.Contract for interacting with the Lens Hub Proxy contract.
+   */
+  private lensHubProxyContract: ethers.Contract;
+
+  /**
    * @constructor
-   * @param {`0x04${string}`} [args.questEnvokerPKPPublicKey] - Quest envoker's PKP public key (optional)
-   * @param {string} [args.questEnvokerPKPTokenId] - Quest envoker's PKP token Id (optional)
    * @param {ApolloClient<NormalizedCacheObject>} [args.playerAuthedApolloClient] - Authenticated Apollo client for the player
    */
   constructor(args: {
-    questEnvokerPKPPublicKey: `0x04${string}`;
-    questEnvokerPKPTokenId: string;
     playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>;
   }) {
-    this.questEnvokerPKPData = {
-      publicKey: args.questEnvokerPKPPublicKey,
-      tokenId: args.questEnvokerPKPTokenId,
-      ethAddress: ethers.utils.computeAddress(
-        args.questEnvokerPKPPublicKey,
-      ) as `0x${string}`,
-    };
     this.playerAuthedApolloClient = args.playerAuthedApolloClient;
   }
 
   /**
    * @method
    * @description Allows a player to join a quest. Ensures a Player Authed Apollo Client is set before proceeding.
-   * @param {string} pubId - The Lens Pub Id of the quest.
+   * @param {string} postId - The Lens Pub Id of the quest.
+   * @param {ethers.Wallet} wallet - The Player's wallet for signing and broadcasting the tx.
+   * @param {boolean} encrypt - Player to choose to encrypt metrics for quest or not.
    * @throws Will throw an error if the Player Authed Apollo Client is not set.
    * @returns {Promise<Object>} - Promise resolving to an object containing data about the action performed.
    */
   playerJoinQuest = async (
-    pubId: string,
+    postId: `0x${string}`,
+    wallet: ethers.Wallet,
+    encrypt: boolean,
   ): Promise<{
-    data?: ActOnOpenActionMutation;
+    txHash?: string;
     error: boolean;
     errorMessage?: string;
   }> => {
@@ -63,12 +55,18 @@ export class Dispatch {
       throw new Error(`Set Player Authed Apollo Client before Continuing.`);
     }
     try {
-      const encodedData = ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256"],
-        [this.questEnvokerPKPData.ethAddress, 0],
+      this.lensHubProxyContract = new ethers.Contract(
+        LENS_HUB_PROXY_CONTRACT,
+        LensHubProxyAbi,
+        wallet,
       );
 
-      const { data } = await actOnGrant(
+      const encodedData = ethers.utils.defaultAbiCoder.encode(
+        ["uint256", "boolean"],
+        [0, encrypt],
+      );
+
+      const { data } = await act(
         {
           actOn: {
             unknownOpenAction: {
@@ -76,13 +74,43 @@ export class Dispatch {
               data: encodedData,
             },
           },
-          for: pubId,
+          for: postId,
         },
         this.playerAuthedApolloClient,
       );
 
+      const typedData = data?.createActOnOpenActionTypedData.typedData;
+
+      await wallet.signMessage(
+        ethers.utils.arrayify(
+          ethers.utils.keccak256(
+            JSON.stringify({
+              types: omit(typedData?.types, ["__typename"]),
+              primaryType: "Act",
+              domain: omit(typedData?.domain, ["__typename"]),
+              message: omit(typedData?.value, ["__typename"]),
+            }),
+          ),
+        ),
+      );
+
+      const tx = await this.lensHubProxyContract.act({
+        publicationActedProfileId: parseInt(
+          typedData?.value.publicationActedProfileId,
+          16,
+        ),
+        publicationActedId: parseInt(typedData?.value.publicationActedId, 16),
+        actorProfileId: parseInt(typedData?.value.actorProfileId, 16),
+        referrerProfileIds: typedData?.value.referrerProfileIds,
+        referrerPubIds: typedData?.value.referrerPubIds,
+        actionModuleAddress: typedData?.value.actionModuleAddress,
+        actionModuleData: typedData?.value.actionModuleData,
+      });
+
+      const txHash = await tx.wait();
+
       return {
-        data: data,
+        txHash: txHash,
         error: false,
       };
     } catch (err: any) {
@@ -96,16 +124,18 @@ export class Dispatch {
   /**
    * @method
    * @description Allows a player to complete a milestone in a quest. Ensures a Player Authed Apollo Client is set before proceeding.
-   * @param {string} pubId - The Lens Pub Id of the quest.
+   * @param {string} postId - The Lens Pub Id of the quest.
    * @param {number} milestone - The milestone number to be completed.
+   * @param {ethers.Wallet} wallet - The Player's wallet for signing and broadcasting the tx.
    * @throws Will throw an error if the Player Authed Apollo Client is not set.
    * @returns {Promise<Object>} - Promise resolving to an object containing data about the action performed.
    */
   playerCompleteQuestMilestone = async (
-    pubId: string,
+    postId: `0x${string}`,
     milestone: number,
+    wallet: ethers.Signer,
   ): Promise<{
-    data?: ActOnOpenActionMutation;
+    txHash?: string;
     error: boolean;
     errorMessage?: string;
   }> => {
@@ -116,10 +146,10 @@ export class Dispatch {
     try {
       const encodedData = ethers.utils.defaultAbiCoder.encode(
         ["address", "uint256"],
-        [this.questEnvokerPKPData.ethAddress, milestone],
+        [milestone],
       );
 
-      const { data } = await actOnGrant(
+      const { data } = await act(
         {
           actOn: {
             unknownOpenAction: {
@@ -127,13 +157,43 @@ export class Dispatch {
               data: encodedData,
             },
           },
-          for: pubId,
+          for: postId,
         },
         this.playerAuthedApolloClient,
       );
 
+      const typedData = data?.createActOnOpenActionTypedData?.typedData;
+
+      await wallet.signMessage(
+        ethers.utils.arrayify(
+          ethers.utils.keccak256(
+            JSON.stringify({
+              types: omit(typedData?.types, ["__typename"]),
+              primaryType: "Post",
+              domain: omit(typedData?.domain, ["__typename"]),
+              message: omit(typedData?.value, ["__typename"]),
+            }),
+          ),
+        ),
+      );
+
+      const tx = await this.lensHubProxyContract.act({
+        publicationActedProfileId: parseInt(
+          typedData?.value.publicationActedProfileId,
+          16,
+        ),
+        publicationActedId: parseInt(typedData?.value.publicationActedId, 16),
+        actorProfileId: parseInt(typedData?.value.actorProfileId, 16),
+        referrerProfileIds: typedData?.value.referrerProfileIds,
+        referrerPubIds: typedData?.value.referrerPubIds,
+        actionModuleAddress: typedData?.value.actionModuleAddress,
+        actionModuleData: typedData?.value.actionModuleData,
+      });
+
+      const txHash = await tx.wait();
+
       return {
-        data: data,
+        txHash: txHash,
         error: false,
       };
     } catch (err: any) {

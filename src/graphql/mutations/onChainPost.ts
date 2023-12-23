@@ -7,7 +7,7 @@ import {
   OnchainPostRequest,
   CreateOnchainPostTypedDataMutation,
   CreateOnchainPostTypedDataDocument,
-} from "../../@types/generated";
+} from "./../../../src/@types/generated";
 
 const onChainPost = async (
   request: OnchainPostRequest,

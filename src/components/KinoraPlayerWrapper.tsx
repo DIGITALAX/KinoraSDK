@@ -10,7 +10,6 @@ import React, {
 import { Mirror, Post, Quote } from "./../../src/@types/generated";
 import getPublicationClient from "./../../src/graphql/queries/getPublicationClient";
 import { KinoraContext } from "./KinoraProvider";
-import { LitAuthSig } from "src/@types/kinora-sdk";
 
 // Code can only be executed in a browser environment
 const isBrowser = typeof window !== "undefined";
@@ -45,7 +44,6 @@ const isBrowser = typeof window !== "undefined";
  * @param onWaiting - Handler for the waiting event.
  * @param onFullScreenChange - Handler for the full screen change event.
  * @param onLensVideoData - Handler for the Lens video data event.
- * @param litAuthSig - Lit Auth Sig.
  * @param volume - Object containing the level and id for volume setting.
  * @param seekTo - Object containing the time and id for seeking operation.
  * @param play - A boolean to control play state.
@@ -53,7 +51,7 @@ const isBrowser = typeof window !== "undefined";
  * @param fullscreen - A boolean to control fullscreen state.
  * @param fillWidthHeight - A boolean to control fill width and height state.
  * @param customControls - A boolean to control custom controls state.
- * @param pubId - The Lens Pub Id associated with the media playback Id.
+ * @param postId - The Lens Pub Id associated with the media playback Id.
  * @param playerProfileId - The Lens Profile Id of the player.
  */
 type KinoraPlayerWrapperProps = {
@@ -61,7 +59,6 @@ type KinoraPlayerWrapperProps = {
     setMediaElement: (node: HTMLVideoElement) => void,
   ) => React.ReactNode;
   parentId: string;
-  playbackId?: string;
   onPlay?: (event: Event) => void;
   onPause?: (event: Event) => void;
   onAbort?: (event: Event) => void;
@@ -89,7 +86,6 @@ type KinoraPlayerWrapperProps = {
     data: Post | Mirror | Comment | Quote,
     error: ApolloError | undefined,
   ) => void;
-  litAuthSig?: LitAuthSig;
   volume?: { level: number; id: number };
   seekTo?: { time: number; id: number };
   play?: boolean;
@@ -97,8 +93,8 @@ type KinoraPlayerWrapperProps = {
   fullscreen?: boolean;
   fillWidthHeight?: boolean;
   customControls?: boolean;
-  pubId?: string;
-  playerProfileId?: string;
+  postId?: `0x${string}`;
+  playerProfileId?: `0x${string}`;
 };
 
 /**
@@ -117,13 +113,11 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     pause = true,
     customControls = true,
     fillWidthHeight = false,
-    pubId,
+    postId,
     playerProfileId,
-    playbackId,
     parentId,
     children,
     onLensVideoData,
-    litAuthSig,
     ...props
   }) => {
     if (!isBrowser) return null;
@@ -137,14 +131,14 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     const [isPlaying, setIsPlaying] = useState(false);
     // State for managing Lens related properties
     const [lensProps, setLensProps] = useState<{
-      pubId: string | undefined;
+      postId: `0x${string}` | undefined;
       playerProfileId: string | undefined;
       onLensVideoData: (
         data: Post | Mirror | Comment | Quote,
         error: ApolloError | undefined,
       ) => void | undefined;
     }>({
-      pubId: undefined,
+      postId: undefined,
       playerProfileId: undefined,
       onLensVideoData: undefined,
     });
@@ -182,22 +176,15 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       if (
         mediaElementRef.current &&
         kinoraSDKInstance &&
-        playbackId &&
-        litAuthSig &&
-        pubId
+        postId
       ) {
-        kinoraSDKInstance.livepeerAdd(
-          playbackId,
-          pubId,
-          mediaElementRef.current,
-          litAuthSig,
-        );
+        kinoraSDKInstance.livepeerAdd(postId, mediaElementRef.current);
 
         return () => {
-          kinoraSDKInstance.livepeerDestroy(playbackId);
+          kinoraSDKInstance.livepeerDestroy(postId);
         };
       }
-    }, [playbackId, mediaElementRef]);
+    }, [postId, mediaElementRef]);
 
     // Callback to set media element and setup/cleanup event listeners
     const setMediaElement = useCallback(
@@ -288,23 +275,23 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
      * @description - Handling Lens pub video data and updating LensProps state
      */
     useEffect(() => {
-      if (onLensVideoData && pubId) {
+      if (onLensVideoData && postId) {
         if (
           !handleIsEqual(lensProps, {
-            pubId,
+            postId,
             playerProfileId,
             onLensVideoData,
           })
         ) {
           handleVideoLensData();
           setLensProps({
-            pubId,
+            postId,
             playerProfileId,
             onLensVideoData,
           });
         }
       }
-    }, [onLensVideoData, pubId, playerProfileId]);
+    }, [onLensVideoData, postId, playerProfileId]);
 
     /**
      * @effect
@@ -494,18 +481,18 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     const handleIsEqual = useCallback(
       (
         prevProps: {
-          pubId: string;
+          postId: `0x${string}`;
           playerProfileId: string;
           onLensVideoData: Function;
         },
         nextProps: {
-          pubId: string;
+          postId: `0x${string}`;
           playerProfileId: string;
           onLensVideoData: Function;
         },
       ): boolean => {
         return (
-          prevProps.pubId === nextProps.pubId &&
+          prevProps.postId === nextProps.postId &&
           prevProps.onLensVideoData === nextProps.onLensVideoData &&
           prevProps.playerProfileId === nextProps.playerProfileId
         );
@@ -519,13 +506,13 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
      */
     const handleVideoLensData = useCallback(async (): Promise<void> => {
       const { data, error } = await getPublicationClient({
-        forId: pubId,
+        forId: postId,
       });
       onLensVideoData(
         data.publication as Post | Mirror | Comment | Quote,
         error,
       );
-    }, [pubId, onLensVideoData]);
+    }, [postId, onLensVideoData]);
 
     return <>{children(setMediaElement)}</>;
   },
