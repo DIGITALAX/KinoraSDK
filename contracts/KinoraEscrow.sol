@@ -165,10 +165,7 @@ contract KinoraEscrow is Initializable {
     address _toAddress,
     uint256 _pubId,
     uint256 _milestone
-  ) public {
-    if (!accessControl.isAdmin(msg.sender)) {
-      revert KinoraErrors.OnlyAdmin();
-    }
+  ) public onlyQuestEnvoker {
     uint256 _profileId = accessControl.getProfileId();
 
     _erc20Transfer(_toAddress, _pubId, _milestone, _profileId);

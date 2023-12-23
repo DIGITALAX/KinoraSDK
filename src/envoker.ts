@@ -225,16 +225,11 @@ export class Envoker {
 
       const encodedData = ethers.utils.defaultAbiCoder.encode(
         [
-          "tuple(tuple(address[] erc721Addresses, uint256[][] erc721TokenIds, address[] erc20Addresses, address[] erc20Thresholds, bool oneOf), uint256 maxPlayerCount)",
+          "tuple(tuple(address[] erc721Addresses, uint256[][] erc721TokenIds, address[] erc20Addresses, address[] erc20Thresholds, bool oneOf)",
+          "uint256",
           "tuple(tuple(uint256 type, address tokenAddress, uint256 amount)[] reward, string completionCriteria, bytes32 conditionHash, uint256 milestone, string uri)[]",
         ],
-        [
-          {
-            gated: args.joinQuestTokenGatedLogic,
-            maxPlayerCount: args.maxPlayerCount,
-          },
-          milestoneDetails,
-        ],
+        [args.joinQuestTokenGatedLogic, args.maxPlayerCount, milestoneDetails],
       );
 
       const { data } = await onChainPost(

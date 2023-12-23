@@ -39,13 +39,6 @@ contract KinoraMetrics is Initializable {
     uint256 playerProfileId
   );
 
-  modifier onlyQuestEnvokerPKP() {
-    if (msg.sender != accessControl.getAssignedPKPAddress()) {
-      revert KinoraErrors.OnlyPKP();
-    }
-    _;
-  }
-
   /**
    * @dev Initializes the contract with initial values
    * @param _accessControlAddress Address of the Kinora Access Control
@@ -76,7 +69,7 @@ contract KinoraMetrics is Initializable {
     address _playerAddress,
     uint256 _playerProfileId,
     bool _encrypted
-  ) public onlyQuestEnvokerPKP {
+  ) public onlyQuestEnvoker {
     if (IERC721(lensHub).ownerOf(_playerProfileId) != _playerAddress) {
       revert KinoraErrors.InvalidAddress();
     }
@@ -111,7 +104,7 @@ contract KinoraMetrics is Initializable {
     uint256 _milestone,
     uint256 _playerProfileId,
     bool _eligibility
-  ) public onlyQuestEnvokerPKP {
+  ) public onlyQuestEnvoker {
     uint256 _profileId = accessControl.getProfileId();
 
     kinoraQuestData.updatePlayerMilestoneEligibility(

@@ -45,7 +45,6 @@ export class Dispatch {
   playerJoinQuest = async (
     postId: `0x${string}`,
     wallet: ethers.Wallet,
-    encrypt: boolean,
   ): Promise<{
     txHash?: string;
     error: boolean;
@@ -61,17 +60,12 @@ export class Dispatch {
         wallet,
       );
 
-      const encodedData = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "boolean"],
-        [0, encrypt],
-      );
-
       const { data } = await act(
         {
           actOn: {
             unknownOpenAction: {
               address: KINORA_OPEN_ACTION_CONTRACT,
-              data: encodedData,
+              data: "",
             },
           },
           for: postId,
@@ -125,14 +119,12 @@ export class Dispatch {
    * @method
    * @description Allows a player to complete a milestone in a quest. Ensures a Player Authed Apollo Client is set before proceeding.
    * @param {string} postId - The Lens Pub Id of the quest.
-   * @param {number} milestone - The milestone number to be completed.
    * @param {ethers.Wallet} wallet - The Player's wallet for signing and broadcasting the tx.
    * @throws Will throw an error if the Player Authed Apollo Client is not set.
    * @returns {Promise<Object>} - Promise resolving to an object containing data about the action performed.
    */
   playerCompleteQuestMilestone = async (
     postId: `0x${string}`,
-    milestone: number,
     wallet: ethers.Signer,
   ): Promise<{
     txHash?: string;
@@ -144,17 +136,12 @@ export class Dispatch {
     }
 
     try {
-      const encodedData = ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256"],
-        [milestone],
-      );
-
       const { data } = await act(
         {
           actOn: {
             unknownOpenAction: {
               address: KINORA_OPEN_ACTION_CONTRACT,
-              data: encodedData,
+              data: "",
             },
           },
           for: postId,
