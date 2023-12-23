@@ -3,17 +3,7 @@
 pragma solidity ^0.8.19;
 
 contract KinoraErrors {
-  string public name;
-  string public symbol;
-
-  constructor() {
-    name = "KinoraErrors";
-    symbol = "KER";
-  }
-
   error OnlyAdmin();
-  error PkpExists();
-  error OnlyPKP();
   error InvalidLength();
   error InvalidAddress();
   error InvalidContract();

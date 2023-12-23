@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "./KinoraFactory.sol";
 import "./KinoraErrors.sol";
 
 /**
@@ -15,10 +14,6 @@ contract KinoraAccessControl is Initializable {
   string public symbol;
   // Name of the access control contract
   string public name;
-  // Instance of the KinoraFactory contract
-  KinoraFactory public kinoraFactory;
-  // Address assigned to the Programmable Key Pair (PKP)
-  address private _assignedPKPAddress;
   // Unique Lens Profile Id identifier
   uint256 private _profileId;
 
@@ -29,8 +24,6 @@ contract KinoraAccessControl is Initializable {
   event AdminAdded(address indexed admin);
   // Event emitted when an admin is removed
   event AdminRemoved(address indexed admin);
-  // Event emitted when the assigned PKP address is updated
-  event AssignedPKPAddressUpdated(address indexed pkpAddress);
 
   /**
    * @dev Modifier to restrict functions to admins only
@@ -44,23 +37,14 @@ contract KinoraAccessControl is Initializable {
 
   /**
    * @dev Initializes the contract with initial values
-   * @param _pkpAddress Address of the Programmable Key Pair
    * @param _deployerAdmin Address of the deployer admin
-   * @param _kinoraFactoryAddress Address of the Kinora factory contract
    * @param _profile Lens Profile Id
    */
-  function initialize(
-    address _pkpAddress,
-    address _deployerAdmin,
-    address _kinoraFactoryAddress,
-    uint256 _profile
-  ) public {
+  function initialize(address _deployerAdmin, uint256 _profile) public {
     symbol = "KAC";
     name = "KinoraAccessControl";
-    kinoraFactory = KinoraFactory(_kinoraFactoryAddress);
     _admins[msg.sender] = true;
     _admins[_deployerAdmin] = true;
-    _assignedPKPAddress = _pkpAddress;
     _profileId = _profile;
   }
 
@@ -90,20 +74,6 @@ contract KinoraAccessControl is Initializable {
   }
 
   /**
-   * @dev Updates the assigned PKP address
-   * @param _newAssignedPKPAddress New address to be assigned as PKP address
-   */
-  function updateAssignedPKPAddress(
-    address _newAssignedPKPAddress
-  ) public onlyAdmin {
-    if (kinoraFactory.getPKPToProfileId(_newAssignedPKPAddress) != 0) {
-      revert KinoraErrors.PkpExists();
-    }
-    _assignedPKPAddress = _newAssignedPKPAddress;
-    emit AssignedPKPAddressUpdated(_newAssignedPKPAddress);
-  }
-
-  /**
    * @dev Checks if an address is an admin
    * @param _address Address to check admin status
    * @return bool Admin status of the address
@@ -118,13 +88,5 @@ contract KinoraAccessControl is Initializable {
    */
   function getProfileId() public view returns (uint256) {
     return _profileId;
-  }
-
-  /**
-   * @dev Fetches the assigned PKP address
-   * @return address The assigned PKP address
-   */
-  function getAssignedPKPAddress() public view returns (address) {
-    return _assignedPKPAddress;
   }
 }

@@ -3,14 +3,6 @@
 pragma solidity ^0.8.19;
 
 contract KinoraLibrary {
-  string public name;
-  string public symbol;
-
-  constructor() {
-    name = "KinoraLibrary";
-    symbol = "KLI";
-  }
-
   enum Status {
     Open,
     Closed
@@ -18,12 +10,6 @@ contract KinoraLibrary {
   enum RewardType {
     ERC20,
     ERC721
-  }
-
-  struct Kinora {
-    address[4] contracts;
-    address deployer;
-    uint256 profileId;
   }
   struct Reward {
     RewardType rewardType;
@@ -33,7 +19,7 @@ contract KinoraLibrary {
   }
   struct Milestone {
     GatingLogic gated;
-    Reward reward;
+    Reward[] rewards;
     string completionCriteria;
     string milestoneLitActionHash;
     bytes32 conditionHash;
@@ -73,7 +59,6 @@ contract KinoraLibrary {
   }
   struct InitializeAction {
     GatingLogic gated;
-    address questEnvokerPKP;
     address questEnvoker;
     uint256 maxPlayerCount;
   }
@@ -106,5 +91,13 @@ contract KinoraLibrary {
     uint256 playerProfileId;
     uint256 pubId;
     uint256 milestone;
+  }
+  struct NewQuestParams {
+    uint256 maxPlayerCount;
+    GatingLogic gateLogic;
+    Milestone[] milestones;
+    address envokerAddress;
+    uint256 pubId;
+    uint256 profileId;
   }
 }

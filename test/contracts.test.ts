@@ -10,7 +10,6 @@ const pointScore = 100;
 
 describe("Contract Test Suite", () => {
   let maintainer: Signer,
-    pkp: Signer,
     questEnvoker: Signer,
     playerAddress: Signer,
     kinoraFactory: Contract,
@@ -142,7 +141,6 @@ describe("Contract Test Suite", () => {
         const tx = await kinoraFactory
           .connect(kinoraOpenAction)
           .deployFromKinoraFactory(
-            await pkp.getAddress(),
             await questEnvoker.getAddress(),
             profileId,
             pubId,

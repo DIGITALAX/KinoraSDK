@@ -20,22 +20,11 @@ contract KinoraQuest is Initializable {
   address public kinoraOpenAction;
 
   /**
-   * @dev Modifier to ensure function caller is the quest envoker PKP.
+   * @dev Modifier to ensure function caller the the Quest envoker.
    */
-  modifier onlyQuestEnvokerPKP() {
-    if (msg.sender != accessControl.getAssignedPKPAddress()) {
-      revert KinoraErrors.OnlyPKP();
-    }
-    _;
-  }
-
-  /**
-   * @dev Modifier to ensure function caller is either the quest envoker PKP or an admin.
-   */
-  modifier onlyQuestEnvokerPKPOrAdmin() {
+  modifier onlyQuestEnvoker() {
     if (
-      msg.sender != accessControl.getAssignedPKPAddress() &&
-      !accessControl.isAdmin(msg.sender)
+    
     ) {
       revert KinoraErrors.InvalidAddress();
     }
@@ -142,7 +131,7 @@ contract KinoraQuest is Initializable {
    */
   function terminateQuest(
     uint256 _pubId
-  ) public onlyQuestEnvokerPKPOrAdmin questOpen(_pubId) {
+  ) public onlyQuestEnvoker questOpen(_pubId) {
     uint256 _profileId = accessControl.getProfileId();
 
     kinoraQuestData.updateQuestStatus(_profileId, _pubId);
@@ -277,23 +266,6 @@ contract KinoraQuest is Initializable {
     }
 
     emit PlayerCompleteQuestMilestone(_pubId, _milestone, _playerProfileId);
-  }
-
-  /**
-   * Sets the Lit Actions URIs associated with the Quest.
-   *
-   * @param _milestoneHash - An array of the Lit Action Milestone URIs.
-   * @param _metricsHash - The metrics Lit Action URIs.
-   * @param _pubId -  The Lens Pub Id of the Quest.
-   */
-  function setLitActions(
-    string[] memory _milestoneHash,
-    string memory _metricsHash,
-    uint256 _pubId
-  ) public onlyQuestEnvokerPKPOrAdmin {
-    uint256 _profileId = accessControl.getProfileId();
-    kinoraQuestData.setQuestLitActionHashes(_milestoneHash, _profileId, _pubId);
-    metricsHash = _metricsHash;
   }
 
   /**
