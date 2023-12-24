@@ -1,8 +1,4 @@
-import {
-  ILogEntry,
-  LogCategory,
-  PlayerData,
-} from "./@types/kinora-sdk";
+import { ILogEntry, LogCategory, PlayerData } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import { ethers } from "ethers";
 import {

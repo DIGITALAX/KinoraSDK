@@ -227,7 +227,7 @@ export class Envoker {
         [
           "tuple(tuple(address[] erc721Addresses, uint256[][] erc721TokenIds, address[] erc20Addresses, address[] erc20Thresholds, bool oneOf)",
           "uint256",
-          "tuple(tuple(uint256 type, address tokenAddress, uint256 amount)[] reward, string completionCriteria, bytes32 conditionHash, uint256 milestone, string uri)[]",
+          "tuple(tuple(uint256 type, address tokenAddress, uint256 amount)[] reward, uint256 milestone, string uri)[]",
         ],
         [args.joinQuestTokenGatedLogic, args.maxPlayerCount, milestoneDetails],
       );

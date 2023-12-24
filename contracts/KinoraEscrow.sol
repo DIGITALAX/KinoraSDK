@@ -25,10 +25,10 @@ contract KinoraEscrow {
   address public kinoraOpenAction;
 
   // Mapping to store ERC20 deposits for quest milestones
-  mapping(uint256 => mapping(uint256 => mapping(uint256 => mapping(address => uint256))))
+  mapping(uint256 => mapping(uint256 => mapping(address => uint256)))
     private _questMilestoneERC20Deposit;
   // Mapping to store ERC721 deposits for quest milestones
-  mapping(uint256 => mapping(uint256 => mapping(uint256 => string)))
+  mapping(uint256 => mapping(uint256 => string))
     private _questMilestoneERC721Deposit;
 
   // Modifier to ensure only KinoraOpenAction can call a function
@@ -51,36 +51,35 @@ contract KinoraEscrow {
   event ERC20Deposited(
     address tokenAddress,
     uint256 amount,
-    uint256 pubId,
-    uint256 profileId,
+    uint256 questId,
     uint256 milestone
   );
   // Event emitted when ERC721 URI is set for a milestone
-  event ERC721URISet(string uri, uint256 pubId, uint256 milestone);
+  event ERC721URISet(string uri, uint256 questId, uint256 milestone);
   // Event emitted when ERC20 tokens are withdrawn
-  event ERC20Withdrawn(address toAddress, uint256 pubId, uint256 milestone);
+  event ERC20Withdrawn(address toAddress, uint256 questId, uint256 milestone);
   // Event emitted during emergency withdrawal of ERC20 tokens
   event EmergencyERC20Withdrawn(
     address toAddress,
-    uint256 pubId,
+    uint256 questId,
     uint256 milestone
   );
   // Event emitted when ERC721 token is minted
-  event ERC721Minted(address playerAddress, uint256 pubId, uint256 milestone);
+  event ERC721Minted(address playerAddress, uint256 questId, uint256 milestone);
 
   /**
-   * @dev Initializes the contract with the necessary contract instances and addresses
+   * @dev Constructor
    * @param _accessControlAddress Address of the KinoraAccessControl contract
    * @param _kinoraQuestDataAddress Address of the KinoraQuestData contract
    * @param _kinoraNFTCreatorAddress Address of the KinoraNFTCreator contract
    * @param _kinoraOpenActionAddress Address of the KinoraOpenAction contract
    */
-  function initialize(
+  constructor(
     address _accessControlAddress,
     address _kinoraQuestDataAddress,
     address _kinoraNFTCreatorAddress,
     address _kinoraOpenActionAddress
-  ) public {
+  ) {
     name = "KinoraEscrow";
     symbol = "KES";
     accessControl = KinoraAccessControl(_accessControlAddress);
@@ -94,106 +93,94 @@ contract KinoraEscrow {
    * @param _tokenAddress Address of the ERC20 token contract
    * @param _fromAddress Address from where the tokens are transferred
    * @param _amount Amount of tokens to deposit
-   * @param _pubId Lens Pub Id of the quest
-   * @param _profileId Lens Profile Id of the quest
+   * @param _questId Quest Id
    * @param _milestone Id of the milestone
    */
   function depositERC20(
     address _tokenAddress,
     address _fromAddress,
     uint256 _amount,
-    uint256 _pubId,
-    uint256 _profileId,
+    uint256 _questId,
     uint256 _milestone
   ) external onlyOpenAction {
     IERC20(_tokenAddress).transferFrom(_fromAddress, address(this), _amount);
 
-    _questMilestoneERC20Deposit[_profileId][_pubId][_milestone][
-      _tokenAddress
-    ] = _amount;
+    _questMilestoneERC20Deposit[_questId][_milestone][_tokenAddress] = _amount;
 
-    emit ERC20Deposited(_tokenAddress, _amount, _pubId, _profileId, _milestone);
+    emit ERC20Deposited(_tokenAddress, _amount, _questId, _milestone);
   }
 
   /**
    * @dev Withdraws ERC20 tokens for a specific quest milestone
    * @param _toAddress Address to which the tokens are transferred
-   * @param _pubId Lens Pub Id of the quest
-   * @param _profileId Lens Profile Id of the quest
+   * @param _questId Quest ID
    * @param _milestone ID of the milestone
    */
   function withdrawERC20(
     address _toAddress,
-    uint256 _pubId,
-    uint256 _profileId,
+    uint256 _questId,
     uint256 _milestone
   ) external onlyKinoraQuest {
-    if (
-      kinoraQuestData.getQuestStatus(_profileId, _pubId) !=
-      KinoraLibrary.Status.Open
-    ) {
+    if (kinoraQuestData.getQuestStatus(_questId) != KinoraLibrary.Status.Open) {
       revert KinoraErrors.QuestClosed();
     }
 
-    _erc20Transfer(_toAddress, _pubId, _profileId, _milestone, _profileId);
+    _erc20Transfer(_toAddress, _questId, _milestone);
 
-    emit ERC20Withdrawn(_toAddress, _pubId, _profileId, _milestone);
+    emit ERC20Withdrawn(_toAddress, _questId, _milestone);
   }
 
   /**
    * @dev Allows for emergency withdrawal of ERC20 tokens by an admin
    * @param _toAddress The address to send the withdrawn tokens
-   * @param _pubId The Lens Pub Id of the quest
-   * @param _milestone The milestone number for which the withdrawal is being made
+   * @param _questId The Quest Id
    */
   function emergencyWithdrawERC20(
     address _toAddress,
-    uint256 _pubId,
-    uint256 _milestone
+    uint256 _questId
   ) public onlyQuestEnvoker {
-    uint256 _profileId = accessControl.getProfileId();
+    uint256 _milestoneCount = kinoraQuestData.getQuestMilestoneCount();
 
-    _erc20Transfer(_toAddress, _pubId, _milestone, _profileId);
+    for (uint256 = 0; i < _milestoneCount.length; i++) {
+      _erc20Transfer(_toAddress, _questId, i + 1);
+    }
 
-    kinoraQuestData.updateQuestStatus(_profileId, _pubId);
+    kinoraQuestData.updateQuestStatus(_questId);
 
-    emit EmergencyERC20Withdrawn(_toAddress, _pubId, _milestone);
+    emit EmergencyERC20Withdrawn(_toAddress, _questId, _milestone);
   }
 
   /**
    * @dev Deposits an ERC721 URI for a specific quest milestone
    * @param _uri The URI of the ERC721 token
-   * @param _pubId The Lens Pub Id of the quest
+   * @param _questId The Quest Id
    * @param _milestone The milestone number for which the deposit is being made
    */
   function depositERC721(
     string memory _uri,
-    uint256 _pubId,
+    uint256 _questId,
     uint256 _milestone
   ) external onlyOpenAction {
-    _questMilestoneERC721Deposit[_pubId][_milestone] = _uri;
+    _questMilestoneERC721Deposit[_questId][_milestone] = _uri;
 
-    emit ERC721URISet(_uri, _pubId, _milestone);
+    emit ERC721URISet(_uri, _questId, _milestone);
   }
 
   /**
    * @dev Mints an ERC721 token for a player upon completion of a milestone
    * @param _playerAddress The address of the player
-   * @param _profileId The Lens Profile Id of the player
-   * @param _pubId The Lens Pub Id of the quest
+   * @param _questId The Quest Id
    * @param _milestone The milestone number for which the token is being minted
    */
   function mintERC721(
     address _playerAddress,
-    uint256 _profileId,
-    uint256 _pubId,
+    uint256 _questId,
     uint256 _milestone
   ) external onlyKinoraQuest {
     kinoraNFTCreator.mintToken(
-      _questMilestoneERC721Deposit[_pubId][_milestone],
+      _questMilestoneERC721Deposit[_questId][_milestone],
       _playerAddress,
-      _profileId,
-      _pubId
+      _questId
     );
 
     emit ERC721Minted(_playerAddress, _pubId, _milestone);
@@ -202,76 +189,53 @@ contract KinoraEscrow {
   /**
    * @dev Internal function to handle ERC20 token transfers
    * @param _toAddress The address to send the tokens
-   * @param _pubId The Lens Pub Id of the quest
-   * @param _profileId The Lens Profile Id of the quest
-   * @param _milestone The milestone number for which the transfer is being made
-   * @param _profileId The Lens Profile Id of the player
-   */
+   * @param _questId The Quest Id
+   * @param _milestone The Milestone Id */
   function _erc20Transfer(
     address _toAddress,
-    uint256 _pubId,
-    uint256 _profileId,
-    uint256 _milestone,
-    uint256 _playerProfileId
+    uint256 _questId,
+    uint256 _milestone
   ) internal {
     uint256 _amount = kinoraQuestData.getQuestMilestoneRewardTokenAmount(
-      _profileId,
-      _pubId,
-      _milestone
-    );
-    address _tokenAddress = kinoraQuestData.getQuestMilestoneRewardTokenAddress(
-      _profileId,
-      _pubId,
+      _questId,
       _milestone
     );
 
-    if (
-      _questMilestoneERC20Deposit[_profileId][_pubId][_milestone][
-        _tokenAddress
-      ] < _amount
-    ) {
-      revert KinoraErrors.InsufficientBalance();
-    }
+    address _tokenAddress = kinoraQuestData.getQuestMilestoneRewardTokenAddress(
+      _questId,
+      _milestone
+    );
 
     IERC20(_tokenAddress).transfer(_toAddress, _amount);
 
-    _questMilestoneERC20Deposit[_profileId][_pubId][_milestone][
-      _tokenAddress
-    ] -= _amount;
+    _questMilestoneERC20Deposit[_questId][_milestone][_tokenAddress] -= _amount;
   }
 
   /**
    * @dev Gets the amount of ERC20 tokens deposited for a specific quest milestone
    * @param _tokenAddress The address of the ERC20 token contract
-   * @param _pubId The Lens Pub Id of the quest
-   * @param _profileId The Lens Profile Id of the quest
+   * @param _questId The Quest Id
    * @param _milestone The milestone number for which the deposit is being queried
    * @return The amount of tokens deposited
    */
   function getQuestMilestoneERC20Amount(
     address _tokenAddress,
-    uint256 _pubId,
-    uint256 _profileId,
+    uint256 _questId,
     uint256 _milestone
   ) public view returns (uint256) {
-    return
-      _questMilestoneERC20Deposit[_profileId][_pubId][_milestone][
-        _tokenAddress
-      ];
+    return _questMilestoneERC20Deposit[_questId][_milestone][_tokenAddress];
   }
 
   /**
    * @dev Gets the URI of the ERC721 token deposited for a specific quest milestone
-   * @param _pubId The Lens Pub Id of the quest
-   * @param _profileId The Lens Profile Id of the quest
+   * @param _questId The Quest Id
    * @param _milestone The milestone number for which the deposit is being queried
    * @return The URI of the ERC721 token
    */
   function getQuestMilestoneERC721URI(
-    uint256 _pubId,
-    uint256 _profileId,
+    uint256 _questId,
     uint256 _milestone
   ) public view returns (string memory) {
-    return _questMilestoneERC721Deposit[_profileId][_pubId][_milestone];
+    return _questMilestoneERC721Deposit[_questId][_milestone];
   }
 }

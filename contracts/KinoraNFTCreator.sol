@@ -4,41 +4,51 @@ pragma solidity ^0.8.19;
 
 import "./KinoraLibrary.sol";
 import "./KinoraErrors.sol";
+import "./KinoraEscrow.sol";
+import "./KinoraAccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 contract KinoraNFTCreator is ERC721Enumerable {
-  // Address of the factory contract
-  address public factoryContract;
-  // Address of the kinora open action contract
-  address public kinoraOpenAction;
+  // Kinora Escrow
+  KinoraEscrow public kinoraEscrow;
+  // Kinora Escrow
+  KinoraAccessControl public kinoraAccess;
   // Counter for the total token supply
   uint256 private _tokenSupply;
 
   // Mapping to store URI of each token ID
   mapping(uint256 => string) private _tokenIdURI;
-  // Mapping to store valid escrow contracts for each Lens Profile Id and Lens Pub Id
-  mapping(uint256 => mapping(uint256 => address)) private _validEscrowContract;
+
+  // Ensures the caller is the maintainer.
+  modifier onlyMaintainer() {
+    if (!kinoraAccess.isAdmin(msg.sender)) {
+      revert KinoraErrors.InvalidAddress();
+    }
+    _;
+  }
+
+  // Ensure the caller is only the Kinora Escrow
+  modifier onlyKinoraEscrow() {
+    if (address(kinoraEscrow) != msg.sender) {
+      revert KinoraErrors.InvalidContract();
+    }
+    _;
+  }
 
   // Event emitted when a new token is minted
   event TokenMinted(address playerAddress, uint256 tokenId);
-  // Event emitted when a new escrow contract is validated
-  event EscrowContractValidated(
-    uint256 profileId,
-    uint256 pubId,
-    address escrowContract
-  );
 
   /**
    * @dev Contract constructor.
-   * @param _factoryAddress Address of the factory contract.
-   * @param _kinoraOpenActionAddress Address of the kinora open action contract.
+   * @param _kinoraEscrowAddress Address of the Kinora Escrow contract.
+   * @param _kinoraAccessAddress Address of the Kinora Access contract.
    */
   constructor(
-    address _factoryAddress,
-    address _kinoraOpenActionAddress
+    address _kinoraEscrowAddress,
+    address _kinoraAccessAddress
   ) ERC721("KinoraNFTCreator", "KNC") {
-    factoryContract = _factoryAddress;
-    kinoraOpenAction = _kinoraOpenActionAddress;
+    kinoraEscrow = _kinoraEscrowAddress;
+    kinoraAccess = _kinoraAccessAddress;
     _tokenSupply = 0;
   }
 
@@ -46,18 +56,13 @@ contract KinoraNFTCreator is ERC721Enumerable {
    * @dev Function to mint a new token.
    * @param _uri URI of the token to be minted.
    * @param _playerAddress Address of the player receiving the minted token.
-   * @param _profileId Lens Profile Id associated with the minting process.
-   * @param _pubId Lens Pub Id associated with the minting process.
+   * @param _questId The Quest Id.
    */
   function mintToken(
     string memory _uri,
     address _playerAddress,
-    uint256 _profileId,
-    uint256 _pubId
-  ) public {
-    if (_validEscrowContract[_profileId][_pubId] != msg.sender) {
-      revert KinoraErrors.InvalidContract();
-    }
+    uint256 _questId
+  ) public onlyKinoraEscrow {
     _tokenSupply++;
 
     _tokenIdURI[_tokenSupply] = _uri;
@@ -65,25 +70,6 @@ contract KinoraNFTCreator is ERC721Enumerable {
     _safeMint(_playerAddress, _tokenSupply);
 
     emit TokenMinted(_playerAddress, _tokenSupply);
-  }
-
-  /**
-   * @dev Function to set a valid escrow contract.
-   * @param _profileId Lens Profile Id associated with the escrow contract.
-   * @param _pubId Lens Pub Id associated with the escrow contract.
-   * @param _newEscrowContract Address of the new escrow contract.
-   */
-  function setValidEscrowContract(
-    uint256 _profileId,
-    uint256 _pubId,
-    address _newEscrowContract
-  ) external {
-    if (msg.sender != factoryContract && msg.sender != kinoraOpenAction) {
-      revert KinoraErrors.InvalidAddress();
-    }
-    _validEscrowContract[_profileId][_pubId] = _newEscrowContract;
-
-    emit EscrowContractValidated(_profileId, _pubId, _newEscrowContract);
   }
 
   /**
@@ -106,15 +92,22 @@ contract KinoraNFTCreator is ERC721Enumerable {
   }
 
   /**
-   * @dev Function to get the valid escrow contract for a given Lens Profile Id and Lens Pub Id.
-   * @param _profileId Lens Profile Id to get the valid escrow contract of.
-   * @param _pubId Lens Pub Id to get the valid escrow contract of.
-   * @return Address of the valid escrow contract.
+   * @dev Sets a new valid escrow contract.
+   * @param _newEscrowContract The address of the new escrow contract.
    */
-  function getValidEscrowContract(
-    uint256 _profileId,
-    uint256 _pubId
-  ) public view returns (address) {
-    return _validEscrowContract[_profileId][_pubId];
+  function setKinoraEscrowContract(
+    address _newEscrowContract
+  ) external onlyMaintainer {
+    kinoraEscrow = KinoraEscrow(_newEscrowContract);
+  }
+
+  /**
+   * @dev Sets a new valid access contract.
+   * @param _newAccessContract The address of the new access contract.
+   */
+  function setKinoraAccessContract(
+    address _newAccessContract
+  ) external onlyMaintainer {
+    kinoraAccess = KinoraAccessControl(_newAccessContract);
   }
 }

@@ -31,7 +31,7 @@ contract KinoraLibrary {
     uint256 minCTR;
     uint256 minAVD;
     uint256 minImpressionCount;
-    uint256 minEngagementCount;
+    uint256 minEngagementRate;
     uint256 minDuration;
     bool quote;
     bool mirror;
@@ -43,11 +43,12 @@ contract KinoraLibrary {
 
   struct Quest {
     Milestone[] milestones;
+    Player[] players;
     GatingLogic gated;
     Status status;
+    uint256 questId;
     uint256 profileId;
     uint256 pubId;
-    uint256 milestoneCount;
     uint256 maxPlayerCount;
   }
   struct GatingLogic {
@@ -57,19 +58,32 @@ contract KinoraLibrary {
     uint256[] erc20Thresholds;
     bool oneOf;
   }
+  struct PlayerVideoMetrics {
+    uint256 playCount;
+    uint256 ctr;
+    uint256 avd;
+    uint256 impressionCount;
+    uint256 engagementRate;
+    uint256 duration;
+    uint256 mostViewedSegment;
+    uint256 interactionRate;
+    uint256 mostReplayedArea;
+    bool hasQuoted;
+    bool hasMirrored;
+    bool hasCommented;
+    bool hasBookmarked;
+    bool hasReacted;
+    bool hasCollected;
+  }
+
   struct Player {
     mapping(uint256 => mapping(uint256 => uint256)) milestonesCompletedPerQuest;
-    mapping(uint256 => uint256[]) questsJoined;
-    mapping(uint256 => mapping(uint256 => bool)) joinedQuest;
-    mapping(string => mapping(uint256 => PlayerLivepeerMetrics)) playbackIdMetrics;
-    mapping(uint256 => mapping(uint256 => mapping(uint256 => bool))) eligibleToClaimMilestone;
+    uint256[] questsJoined;
+    mapping(uint256 => bool) joinedQuest;
+    mapping(uint256 => mapping(uint256 => PlayerVideoMetrics)) videoMetrics;
+    mapping(uint256 => mapping(uint256 => bool)) eligibleToClaimMilestone;
     address playerAddress;
     uint256 activeSince;
-  }
-  struct PlayerLivepeerMetrics {
-    string playbackId;
-    uint256 profileId;
-    bool encrypted;
   }
   struct InitializeAction {
     GatingLogic gated;
