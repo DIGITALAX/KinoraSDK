@@ -4,13 +4,13 @@ pragma solidity ^0.8.19;
 
 import "./KinoraLibrary.sol";
 import "./KinoraErrors.sol";
+import "./KinoraQuest.sol";
 
 contract KinoraQuestData {
   string public name;
   string public symbol;
-  address public factoryContract;
   address public kinoraOpenAction;
-  address public factoryMaintainer;
+  address public kinoraQuest;
   uint256 private _questCount;
   uint256 private _playerCount;
 
@@ -37,12 +37,6 @@ contract KinoraQuestData {
     uint256 profileId,
     uint256 pubId,
     uint256 playerProfileId
-  );
-  // Emitted when the Quest Lit Actions are set.
-  event LitActionsSet(
-    string[] milestoneHashes,
-    uint256 profileId,
-    uint256 pubId
   );
   // Emitted when player metrics are updated.
   event PlayerMetricsUpdated(
@@ -89,8 +83,8 @@ contract KinoraQuestData {
   );
 
   // Ensures the caller is a valid metrics contract for the specified profile and quest.
-  modifier onlyValidQuestContract(uint256 _profileId, uint256 _pubId) {
-    if (_validQuestContract[_profileId][_pubId] != msg.sender) {
+  modifier onlyKinoraQuest() {
+    if (kinoraQuest != msg.sender) {
       revert KinoraErrors.InvalidContract();
     }
     _;
@@ -148,19 +142,11 @@ contract KinoraQuestData {
 
   /**
    * @dev Function to create a new quest.
-   * @param _milestones Array of Milestone structs defining the quest milestones.
-   * @param _gated Join quest token gated logic.
-   * @param _maxPlayerCount Maximum number of players allowed for the quest.
-   * @param _pubId Lens Pub Id for the quest.
-   * @param _profileId Lens Profile Id for the quest.
+   * @param _params NewQuestParams struct from KinoraLibrary contract
    */
   function newQuest(
-    KinoraLibrary.Milestone[] memory _milestones,
-    KinoraLibrary.GatingLogic memory _gated,
-    uint256 _maxPlayerCount,
-    uint256 _pubId,
-    uint256 _profileId
-  ) external onlyValidQuestContract(_profileId, _pubId) {
+    KinoraLibrary.NewQuestParams memory _params
+  ) external onlyKinoraQuest {
     uint256[] memory _emptyPlayers;
 
     _allQuests[_profileId][_pubId].pubId = _pubId;
@@ -366,30 +352,6 @@ contract KinoraQuestData {
       _json,
       _encrypted
     );
-  }
-
-  /**
-   * @dev Set the Lit Action hashes for the Quest.
-   * @param _milestoneHash The Lit Action hashes for the Milestones.
-   * @param _profileId The Lens Profile Id of the quest.
-   * @param _pubId The Quest pub Id.
-   */
-  function setQuestLitActionHashes(
-    string[] memory _milestoneHash,
-    uint256 _profileId,
-    uint256 _pubId
-  ) external onlyValidQuestContract(_profileId, _pubId) {
-    for (
-      uint256 i = 0;
-      i < _allQuests[_profileId][_pubId].milestones.length;
-      i++
-    ) {
-      _allQuests[_profileId][_pubId]
-        .milestones[i + 1]
-        .milestoneLitActionHash = _milestoneHash[i];
-    }
-
-    emit LitActionsSet(_milestoneHash, _profileId, _pubId);
   }
 
   /**
@@ -702,24 +664,6 @@ contract KinoraQuestData {
         .milestones[_milestone]
         .gated
         .erc721Addresses;
-  }
-
-  /**
-   * @dev Retrieves the Milestone Lit Action bytes.
-   * @param _questProfileId Lens Profile Id for the quest profile.
-   * @param _questPubId Lens Pub Id for the quest.
-   * @param _milestone Milestone number in the quest.
-   * @return The bytes hash.
-   */
-  function getMilestoneLitActionHash(
-    uint256 _questProfileId,
-    uint256 _questPubId,
-    uint256 _milestone
-  ) public view returns (string memory) {
-    return
-      _allQuests[_questProfileId][_questPubId]
-        .milestones[_milestone]
-        .milestoneLitActionHash;
   }
 
   /**

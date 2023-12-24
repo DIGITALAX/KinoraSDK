@@ -28,7 +28,14 @@ contract KinoraOpenAction is
 
   IModuleRegistry public immutable MODULE_GLOBALS;
 
-  event QuestJoined(
+  event PlayerCompletedMilestone(
+    uint256 questId,
+    uint256 milestoneId,
+    uint256 pubId,
+    uint256 profileId,
+    address envokerAddress
+  );
+  event PlayerCompletedQuest(
     uint256 questId,
     uint256 pubId,
     uint256 profileId,
@@ -107,38 +114,9 @@ contract KinoraOpenAction is
 
     _questGroups[_profileId][_pubId] = _questId;
 
-    emit CoinOpInitialized(_questId, _profileId, _pubId, _envokerAddress);
+    emit QuestInitialized(_questId, _profileId, _pubId, _envokerAddress);
 
     return abi.encode(_questId, _profileId, _pubId);
-  }
-
-  function _configureRewardEscrow(
-    KinoraLibrary.Milestone[] _milestones,
-    address _envokerAddress,
-    uint256 _pubId
-  ) private {
-    for (uint256 i = 0; i < _milestones.length; i++) {
-      for (uint256 j = 0; j < _milestones[i].rewards.length; j++) {
-        if (
-          _milestones[i].rewards[j].rewardType == KinoraLibrary.RewardType.ERC20
-        ) {
-          IERC20(_milestones[i].rewards[j].tokenAddress).depositERC20(
-            _envokerAddress,
-            address(_kinoraEscrow),
-            _milestones[i].rewards[j].amount
-          );
-          kinoraEscrow.depositERC20(
-            _milestones[i].rewards[j].tokenAddress,
-            _envokerAddress,
-            _milestones[i].rewards[j].amount,
-            _pubId,
-            i
-          );
-        } else {
-          kinoraEscrow.depositERC721(_milestones[i].rewards[j].uri, _pubId, i);
-        }
-      }
-    }
   }
 
   function processPublicationAction(
@@ -153,17 +131,35 @@ contract KinoraOpenAction is
       publicationActedId
     ];
 
-    bool _playerJoined = kinoraQuestData.getPlayerHasJoinedQuest();
+    bool _playerJoined = kinoraQuestData.getPlayerHasJoinedQuest(
+      _params.actorProfileId
+    );
 
     if (_playerJoined) {
       uint256 _playerMilestone = kinoraQuestData
         .getPlayerMilestonesCompletedPerQuest(_questId);
+      uint256 _videoLength = kinoraQuestData.getMilestoneVideoLength();
 
-      _checkMilestoneEligibility(_playerMilestone);
+      for (uint256 = i; i < _videoLength; i++) {
+        KinoraLibrary.Video memory _video = kinoraQuestData
+          .getMilestoneVideoByIndex(i);
 
-      kinoraQuest.playerCompleteMilestone();
+        _checkMilestoneEligibility(
+          _video,
+          _playerMilestone,
+          _questId,
+          _params.actorProfileId
+        );
+      }
 
-      emit PlayerCompletedQuest(
+      kinoraQuest.playerCompleteMilestone(
+        _params.publicationActedProfileId,
+        _params.publicationActedId,
+        _playerMilestone,
+        _params.actorProfileId
+      );
+
+      emit PlayerCompletedMilestone(
         _params.actorProfileOwner,
         _questId,
         _milestoneId,
@@ -180,7 +176,11 @@ contract KinoraOpenAction is
 
       _checkJoinEligibility(_questId);
 
-      kinoraQuest.playerJoinQuest();
+      kinoraQuest.playerJoinQuest(
+        _params.actorProfileOwner,
+        _params.publicationActedId,
+        _params.publicationActedProfileId
+      );
 
       emit PlayerJoinedQuest(
         _params.actorProfileOwner,
@@ -211,10 +211,145 @@ contract KinoraOpenAction is
     kinoraEscrowData = KinoraEscrowData(_newKinoraEscrowAddress);
   }
 
+  function _checkMilestoneEligibility(
+    KinoraLibrary.Video memory _video,
+    uint256 _milestone,
+    uint256 _questId,
+    uint256 _playerProfileId,
+    uint256 _videoIndex
+  ) private {
+    kinoraQuestData.getVideoMilestoneMinEngagementRate(_questId, _milestone);
+    kinoraQuestData.getMilestoneMinDuration(_questId, _milestone);
+    kinoraQuestData.getMilestoneLensQuote(_questId, _milestone);
+    kinoraQuestData.getMilestoneLensMirror(_questId, _milestone);
+    kinoraQuestData.getMilestoneLensComment(_questId, _milestone);
+    kinoraQuestData.getMilestoneLensCollect(_questId, _milestone);
+    kinoraQuestData.getMilestoneLensReact(_questId, _milestone);
+    kinoraQuestData.getMilestoneLensBookmark(_questId, _milestone);
+
+    if (
+      kinoraQuestData.getPlayerMilestonePlayCount(
+        _questId,
+        _milestone,
+        _playerProfileId,
+        _videIndex
+      ) <
+      _video.minPlayCount ||
+      kinoraQuestData.getPlayerMilestoneCTR(
+        _questId,
+        _milestone,
+        _playerProfileId,
+        _videIndex
+      ) <
+      _video.minCTR ||
+      kinoraQuestData.getPlayerMilestoneAVD(
+        _questId,
+        _milestone,
+        _playerProfileId,
+        _videoIndex
+      ) <
+      _video.minAVD ||
+      kinoraQuestData.getPlayerMilestoneImpressionCount(
+        _questId,
+        _milestone,
+        _playerProfileId,
+        _videoIndex
+      ) <
+      _video.minImpressionCount ||
+      kinoraQuestData.getPlayerMilestoneEngagementRate(
+        _questId,
+        _milestone,
+        _playerProfileId,
+        _videoIndex
+      ) <
+      _video.minEngagementRate ||
+      kinoraQuestData.getPlayerMilestoneComment(
+        _questId,
+        _milestone,
+        _playerProfileId,
+        _videoIndex
+      ) <
+      _video.comment ||
+      kinoraQuestData.getPlayerMilestoneReact(
+        _questId,
+        _milestone,
+        _playerProfileId,
+        _videoIndex
+      ) <
+      _video.react ||
+      kinoraQuestData.getPlayerMilestoneCollect(
+        _questId,
+        _milestone,
+        _playerProfileId,
+        _videoIndex
+      ) <
+      _video.collect ||
+      kinoraQuestData.getPlayerMilestoneQuote(
+        _questId,
+        _milestone,
+        _playerProfileId,
+        _videoIndex
+      ) <
+      _video.quote ||
+      kinoraQuestData.getPlayerMilestoneMirror(
+        _questId,
+        _milestone,
+        _playerProfileId,
+        _videoIndex
+      ) <
+      _video.mirror ||
+      kinoraQuestData.getPlayerMilestoneBookmark(
+        _questId,
+        _milestone,
+        _playerProfileId,
+        _videoIndex
+      ) <
+      _video.bookmark
+    ) {
+      revert KinoraErrors.MilestoneInvalid();
+    }
+  }
+
+  function _configureRewardEscrow(
+    KinoraLibrary.Milestone[] _milestones,
+    address _envokerAddress,
+    uint256 _pubId,
+    uint256 _profileId
+  ) private {
+    for (uint256 i = 0; i < _milestones.length; i++) {
+      for (uint256 j = 0; j < _milestones[i].rewards.length; j++) {
+        if (
+          _milestones[i].rewards[j].rewardType == KinoraLibrary.RewardType.ERC20
+        ) {
+          IERC20(_milestones[i].rewards[j].tokenAddress).depositERC20(
+            _envokerAddress,
+            address(_kinoraEscrow),
+            _milestones[i].rewards[j].amount
+          );
+          kinoraEscrow.depositERC20(
+            _milestones[i].rewards[j].tokenAddress,
+            _envokerAddress,
+            _milestones[i].rewards[j].amount,
+            _pubId,
+            _profileId,
+            i
+          );
+        } else {
+          kinoraEscrow.depositERC721(
+            _milestones[i].rewards[j].uri,
+            _pubId,
+            _profileId,
+            i
+          );
+        }
+      }
+    }
+  }
+
   function _checkMilestoneGate(
     uint256 _questId,
     address _playerAddress
-  ) private returns (bool) {
+  ) private {
     bool isOneOf = kinoraQuestData.getQuestMilestoneGatedOneOf(_questId);
     address[] memory erc20Addresses = kinoraQuestData
       .getQuestMilestoneGatedERC20Addresses(_questId);
@@ -225,17 +360,20 @@ contract KinoraOpenAction is
     uint256[][] memory erc721Tokens = kinoraQuestData
       .getQuestMilestoneGatedERC721Tokens(_questId);
 
-    return
-      _gateChecker(
+    if (
+      !_gateChecker(
         isOneOf,
         erc20Addresses,
         erc20Thresholds,
         erc721Addresses,
         erc721Tokens
-      );
+      )
+    ) {
+      revert KinoraErrors.PlayerNotEligible();
+    }
   }
 
-  function _checkJoinEligibility(uint256 _milestone) private returns (bool) {
+  function _checkJoinEligibility(uint256 _milestone) private {
     bool isOneOf = kinoraQuestData.getQuestGatedOneOf(_questId);
     address[] memory erc20Addresses = kinoraQuestData
       .getQuestGatedERC20Addresses(_questId);
@@ -247,14 +385,17 @@ contract KinoraOpenAction is
       _questId
     );
 
-    return
-      _gateChecker(
+    if (
+      !_gateChecker(
         isOneOf,
         erc20Addresses,
         erc20Thresholds,
         erc721Addresses,
         erc721Tokens
-      );
+      )
+    ) {
+      revert KinoraErrors.PlayerNotEligible();
+    }
   }
 
   function _gateChecker() private returns (bool) {

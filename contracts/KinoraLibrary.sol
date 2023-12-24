@@ -20,15 +20,30 @@ contract KinoraLibrary {
   struct Milestone {
     GatingLogic gated;
     Reward[] rewards;
-    string completionCriteria;
-    string milestoneLitActionHash;
-    bytes32 conditionHash;
+    Video[] videos;
     uint256 milestone;
   }
+
+  struct Video {
+    uint256 profileId;
+    uint256 pubId;
+    uint256 minPlayCount;
+    uint256 minCTR;
+    uint256 minAVD;
+    uint256 minImpressionCount;
+    uint256 minEngagementCount;
+    uint256 minDuration;
+    bool quote;
+    bool mirror;
+    bool comment;
+    bool bookmark;
+    bool react;
+    bool collect;
+  }
+
   struct Quest {
     Milestone[] milestones;
     GatingLogic gated;
-    uint256[] players;
     Status status;
     uint256 profileId;
     uint256 pubId;
@@ -53,7 +68,6 @@ contract KinoraLibrary {
   }
   struct PlayerLivepeerMetrics {
     string playbackId;
-    string metricJSONHash;
     uint256 profileId;
     bool encrypted;
   }
