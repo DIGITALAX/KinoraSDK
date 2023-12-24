@@ -201,6 +201,7 @@ contract KinoraQuest is Initializable {
    */
   function playerCompleteMilestone(
     uint256 _pubId,
+    uint256 _profileId,
     uint256 _milestone,
     uint256 _playerProfileId
   ) external onlyOpenAction questOpen(_pubId) {

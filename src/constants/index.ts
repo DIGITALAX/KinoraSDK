@@ -20,10 +20,6 @@ export const KINORA_ESCROW_CONTRACT: `0x${string}` = "0x";
 export const LENS_HUB_PROXY_CONTRACT: `0x${string}` =
   "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d";
 /**
- * @constant KINORA_FACTORY_CONTRACT Kinora Factory Address Matic Network.
- */
-export const KINORA_FACTORY_CONTRACT: `0x${string}` = "0x";
-/**
  * @constant KINORA_QUEST_DATA_CONTRACT Kinora Quest Data Address Matic Network.
  */
 export const KINORA_QUEST_DATA_CONTRACT: `0x${string}` = "0x";
