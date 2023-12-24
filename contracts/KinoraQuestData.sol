@@ -5,71 +5,43 @@ pragma solidity ^0.8.19;
 import "./KinoraLibrary.sol";
 import "./KinoraErrors.sol";
 import "./KinoraQuest.sol";
+import "./KinoraEscrow.sol";
+import "./KinoraMetrics.sol";
+import "./KinoraAccessControl.sol";
 
 contract KinoraQuestData {
+  KinoraQuest public kinoraQuest;
+  KinoraAccessControl public kinoraAccess;
+  KinoraMetrics public kinoraMetrics;
+  KinoraEscrow public kinoraEscrow;
   string public name;
   string public symbol;
   address public kinoraOpenAction;
-  address public kinoraQuest;
   uint256 private _questCount;
   uint256 private _playerCount;
 
   // Mapping to store the data of all players against their Profile Id.
   mapping(uint256 => KinoraLibrary.Player) private _allPlayers;
-  // Nested mapping to store the quest data against the Lens Profile id and Lens Pub id.
-  mapping(uint256 => mapping(uint256 => KinoraLibrary.Quest))
-    private _allQuests;
-  // Nested mapping to store the address of valid quest contracts against the Lens Profile id and Lens Pub id.
-  mapping(uint256 => mapping(uint256 => address)) private _validQuestContract;
-  // Nested mapping to store the address of valid escrow contracts against the Lens Profile id and Lens Pub id.
-  mapping(uint256 => mapping(uint256 => address)) private _validEscrowContract;
-  // Nested mapping to store the address of valid metrics contracts against the Lens Profile id and Lens Pub id.
-  mapping(uint256 => address[]) private _validMetricsContract;
+  // Nested mapping to store the quest data against the Quest Id.
+  mapping(uint256 => KinoraLibrary.Quest) private _allQuests;
+  // Lens Pub and Profile Id to Quest Id
+  mapping(uint256 => mapping(uint256 => uint256)) _lensToQuestId;
 
   // Event emitted when a new quest is instantiated.
-  event QuestInstantiated(
-    uint256 profileId,
-    uint256 pubId,
-    uint256 milestoneCount
-  );
+  event QuestInstantiated(uint256 questId, uint256 milestoneCount);
   // Emitted when a player joins a quest.
-  event PlayerJoinedQuest(
-    uint256 profileId,
-    uint256 pubId,
-    uint256 playerProfileId
-  );
+  event PlayerJoinedQuest(uint256 questId, uint256 playerProfileId);
   // Emitted when player metrics are updated.
   event PlayerMetricsUpdated(
-    uint256 profileId,
     uint256 playerProfileId,
-    string playbackId,
-    string metricsJSON,
-    bool encrypted
+    uint256 videoPubId,
+    uint256 videoProfileId
   );
   // Emitted when the status of a quest is updated.
-  event QuestStatusUpdated(
-    uint256 profileId,
-    uint256 pubId,
-    KinoraLibrary.Status status
-  );
-  // Emitted when a quest contract is validated.
-  event QuestContractValidated(
-    uint256 profileId,
-    uint256 pubId,
-    address questContract
-  );
-  // Emitted when an escrow contract is validated.
-  event EscrowContractValidated(
-    uint256 profileId,
-    uint256 pubId,
-    address escrowContract
-  );
-  // Emitted when a metrics contract is validated.
-  event MetricsContractValidated(uint256 profileId, address metricsContract);
+  event QuestStatusUpdated(uint256 questId, KinoraLibrary.Status status);
   // Emitted when the a milestone is completed by a player.
   event MilestoneCompleted(
-    uint256 profileId,
-    uint256 pubId,
+    uint256 questId,
     uint256 playerProfileId,
     uint256 milestone
   );
@@ -84,285 +56,207 @@ contract KinoraQuestData {
 
   // Ensures the caller is a valid metrics contract for the specified profile and quest.
   modifier onlyKinoraQuest() {
-    if (kinoraQuest != msg.sender) {
+    if (address(kinoraQuest) != msg.sender) {
       revert KinoraErrors.InvalidContract();
     }
     _;
   }
 
-  // Ensures the caller is either a valid metrics or escrow contract for the specified profile and quest.
-  modifier onlyValidQuestOrEscrowContract(uint256 _profileId, uint256 _pubId) {
-    if (
-      _validQuestContract[_profileId][_pubId] != msg.sender &&
-      _validEscrowContract[_profileId][_pubId] != msg.sender
-    ) {
+  // Ensures the caller is a valid escrow contract for the specified profile and quest.
+  modifier onlyKinoraEscrow() {
+    if (address(kinoraEscrow) != msg.sender) {
       revert KinoraErrors.InvalidContract();
     }
     _;
   }
 
-  // Ensures the caller is either the factory or open action contract.
-  modifier onlyActionOrFactory() {
-    if (msg.sender != factoryContract && msg.sender != kinoraOpenAction) {
+  // Ensures the caller is a valid metrics contract for the specified profile and quest.
+  modifier onlyMetricsContract() {
+    if (address(kinoraMetrics) != msg.sender) {
       revert KinoraErrors.InvalidContract();
     }
     _;
   }
 
-  // Ensures the caller is either a valid metrics contract for the specified profile and quest.
-  modifier onlyValidMetricsContract(uint256 _profileId) {
-    address[] memory _addresses = _validMetricsContract[_profileId];
-    bool _valid = false;
-
-    for (uint256 i = 0; i < _addresses.length; i++) {
-      if (_addresses[i] == msg.sender) {
-        _valid = true;
-        return;
-      }
-    }
-
-    if (!_valid) {
-      revert KinoraErrors.InvalidContract();
+  // Ensures the caller is the maintainer.
+  modifier onlyMaintainer() {
+    if (!kinoraAccess.isAdmin(msg.sender)) {
+      revert KinoraErrors.InvalidAddress();
     }
     _;
   }
 
   /**
-   * @dev Constructor function to initialize contract with a factory address.
-   * @param _factoryAddress Address of the factory contract.
+   * @dev Constructor function to initialize related Kinora contracts.
    */
-  constructor(address _factoryAddress) {
+  constructor(
+    address _metricsAddress,
+    address _escrowAddress,
+    address _questAddress,
+    address _accessAddress
+  ) {
     name = "KinoraQuestData";
     symbol = "KQD";
     _questCount = 0;
     _playerCount = 0;
-    factoryContract = _factoryAddress;
-    factoryMaintainer = msg.sender;
+    kinoraAccess = KinoraAccessControl(_accessAddress);
+    kinoraQuest = KinoraQuest(_questAddress);
+    kinoraMetrics = KinoraMetrics(_metricsAddress);
+    kinoraEscrow = KinoraEscrow(_escrowAddress);
   }
 
   /**
    * @dev Function to create a new quest.
    * @param _params NewQuestParams struct from KinoraLibrary contract
+   * @param _questId Quest Id
    */
   function newQuest(
-    KinoraLibrary.NewQuestParams memory _params
+    KinoraLibrary.NewQuestParams memory _params,
+    uint256 _questId
   ) external onlyKinoraQuest {
     uint256[] memory _emptyPlayers;
-
-    _allQuests[_profileId][_pubId].pubId = _pubId;
-    _allQuests[_profileId][_pubId].profileId = _profileId;
-    _allQuests[_profileId][_pubId].players = _emptyPlayers;
-    _allQuests[_profileId][_pubId].milestoneCount = _milestones.length;
-    _allQuests[_profileId][_pubId].status = KinoraLibrary.Status.Open;
-    _allQuests[_profileId][_pubId].maxPlayerCount = _maxPlayerCount;
-    _allQuests[_profileId][_pubId].gated = _gated;
-
-    for (uint256 i = 0; i < _milestones.length; i++) {
-      KinoraLibrary.Milestone memory newMilestone;
-      newMilestone.reward = _milestones[i].reward;
-      newMilestone.conditionHash = _milestones[i].conditionHash;
-      newMilestone.completionCriteria = _milestones[i].completionCriteria;
-      newMilestone.milestone = i + 1;
-      newMilestone.gated = _milestones[i].gated;
-
-      _allQuests[_profileId][_pubId].milestones.push(newMilestone);
-    }
-
     _questCount++;
 
-    emit QuestInstantiated(_profileId, _pubId, _milestones.length);
+    _allQuests[_questId] = KinoraLibrary.Quest({
+      questId: _questCount,
+      pubId: _params.pubId,
+      profileId: _params.profileId,
+      players: _emptyPlayers,
+      status: KinoraLibrary.Status.Open,
+      maxPlayerCount: _params.maxPlayerCount,
+      gated: _params.gated,
+      milestones: _params.milestones
+    });
+
+    _lensToQuestId[_params.pubId][_params.profileId] = _questCount;
+
+    emit QuestInstantiated(_questId, _params.milestones.length);
   }
 
   /**
    * @dev Allows a player to join a quest.
    * @param _playerAddress The address of the player joining the quest.
-   * @param _pubId The Lens Pub Id of the quest.
-   * @param _profileId The Lens Profile Id of the profile associated with the quest.
+   * @param _questId The Quest Id
    * @param _playerProfileId The Lens Profile Id of the player's profile.
    */
   function joinQuest(
     address _playerAddress,
-    uint256 _pubId,
-    uint256 _profileId,
+    uint256 _questId,
     uint256 _playerProfileId
-  ) external onlyValidQuestContract(_profileId, _pubId) {
-    if (
-      _allQuests[_profileId][_pubId].players.length >=
-      _allQuests[_profileId][_pubId].maxPlayerCount
-    ) {
-      revert KinoraErrors.MaxPlayerCountReached();
-    }
-
+  ) external onlyKinoraQuest {
     if (_allPlayers[_playerProfileId].activeSince == 0) {
       _playerCount++;
       _allPlayers[_playerProfileId].playerAddress = _playerAddress;
       _allPlayers[_playerProfileId].activeSince = block.timestamp;
     }
 
-    _allPlayers[_playerProfileId].questsJoined[_profileId].push(_pubId);
-    _allPlayers[_playerProfileId].joinedQuest[_profileId][_pubId] = true;
-    _allQuests[_profileId][_pubId].players.push(_playerProfileId);
+    _allPlayers[_playerProfileId].questsJoined.push(_questId);
+    _allPlayers[_playerProfileId].joinedQuest[_questId] = true;
+    _allQuests[_questId].players.push(_playerProfileId);
 
-    emit PlayerJoinedQuest(_profileId, _pubId, _playerProfileId);
+    emit PlayerJoinedQuest(_questId, _playerProfileId);
   }
 
   /**
    * @dev Records the completion of a milestone by a player.
-   * @param _pubId The Lens Pub Id of the quest.
-   * @param _profileId The Lens Profile Id of the profile associated with the quest.
+   * @param _questId The Lens Pub Id of the quest.
    * @param _playerProfileId The Lens Profile Id of the player's profile.
-   * @param _milestone The milestone number that was completed.
    */
   function completeMilestone(
-    uint256 _pubId,
-    uint256 _profileId,
-    uint256 _playerProfileId,
-    uint256 _milestone
-  ) external onlyValidQuestContract(_profileId, _pubId) {
-    _allPlayers[_playerProfileId].milestonesCompletedPerQuest[_profileId][
-        _pubId
-      ] = _milestone;
+    uint256 _questId,
+    uint256 _playerProfileId
+  ) external onlyKinoraQuest {
+    uint256 _milestone = _allPlayers[_playerProfileId]
+      .milestonesCompletedPerQuest + 1;
 
-    emit MilestoneCompleted(_profileId, _pubId, _playerProfileId, _milestone);
+    _allPlayers[_playerProfileId].milestonesCompletedPerQuest[
+      _questId
+    ] = _milestone;
+
+    emit MilestoneCompleted(_questId, _playerProfileId, _milestone);
   }
 
   /**
    * @dev Sets a new valid metrics contract.
-   * @param _profileId The Lens Profile Id of the profile associated with the quest.
    * @param _newMetricsContract The address of the new metrics contract.
    */
-  function setValidMetricsContract(
-    uint256 _profileId,
+  function setKinoraMetricsContract(
     address _newMetricsContract
-  ) external onlyActionOrFactory {
-    _validMetricsContract[_profileId].push(_newMetricsContract);
-
-    emit MetricsContractValidated(_profileId, _newMetricsContract);
+  ) external onlyMaintainer {
+    kinoraMetrics = KinoraMetrics(_newMetricsContract);
   }
 
   /**
-   * @dev Sets a new valid quest contract for a specified quest.
-   * @param _profileId The Lens Profile Id of the profile associated with the quest.
-   * @param _pubId The Lens Pub Id of the quest.
+   * @dev Sets a new valid open action contract.
+   * @param _newOpenActionContract The address of the new open action contract.
+   */
+  function setKinoraMetricsContract(
+    address _newOpenActionContract
+  ) external onlyMaintainer {
+    kinoraOpenAction = _newOpenActionContract;
+  }
+
+  /**
+   * @dev Sets a new valid access contract.
+   * @param _newAccessContract The address of the new access
+   */
+  function setKinoraAccessContract(
+    address _newAccessContract
+  ) external onlyMaintainer {
+    kinoraAccess = KinoraAccessControl(_newAccessContract);
+  }
+
+  /**
+   * @dev Sets a new valid quest contract.
    * @param _newQuestContract The address of the new quest contract.
    */
-  function setValidQuestContract(
-    uint256 _profileId,
-    uint256 _pubId,
+  function setKinoraQuestContract(
     address _newQuestContract
-  ) external onlyActionOrFactory {
-    _validQuestContract[_profileId][_pubId] = _newQuestContract;
-
-    emit QuestContractValidated(_profileId, _pubId, _newQuestContract);
+  ) external onlyMaintainer {
+    kinoraQuest = KinoraQuest(_newQuestContract);
   }
 
   /**
-   * @dev Sets a new valid escrow contract for a specified quest.
-   * @param _profileId The Lens Profile Id of the profile associated with the quest.
-   * @param _pubId The Lens Pub Id of the quest.
+   * @dev Sets a new valid escrow contract.
    * @param _newEscrowContract The address of the new escrow contract.
    */
-  function setValidEscrowContract(
-    uint256 _profileId,
-    uint256 _pubId,
+  function setKinoraEscrowContract(
     address _newEscrowContract
-  ) external onlyActionOrFactory {
-    _validEscrowContract[_profileId][_pubId] = _newEscrowContract;
-
-    emit EscrowContractValidated(_profileId, _pubId, _newEscrowContract);
-  }
-
-  /**
-   * @dev Updates the eligibility of a player for a milestone reward.
-   * @param _playerProfileId The Lens Profile Id of the player's profile.
-   * @param _profileId The Lens Profile Id of the profile associated with the quest.
-   * @param _pubId The Lens Pub Id of the quest.
-   * @param _milestone The milestone number.
-   * @param _eligibility The new eligibility status.
-   */
-  function updatePlayerMilestoneEligibility(
-    uint256 _playerProfileId,
-    uint256 _profileId,
-    uint256 _pubId,
-    uint256 _milestone,
-    bool _eligibility
-  ) external onlyValidMetricsContract(_profileId) {
-    _allPlayers[_playerProfileId].eligibleToClaimMilestone[_profileId][_pubId][
-        _milestone
-      ] = _eligibility;
-
-    emit PlayerMilestoneEligibilityUpdated(
-      _playerProfileId,
-      _profileId,
-      _pubId,
-      _milestone,
-      _eligibility
-    );
+  ) external onlyMaintainer {
+    kinoraEscrow = KinoraEscrow(_newEscrowContract);
   }
 
   /**
    * @dev Updates the status of a quest.
-   * @param _profileId The Lens Profile Id of the profile associated with the quest.
-   * @param _pubId The Lens Pub Id of the quest.
+   * @param _questId The Quest Id
    */
-  function updateQuestStatus(
-    uint256 _profileId,
-    uint256 _pubId
-  ) external onlyValidQuestOrEscrowContract(_profileId, _pubId) {
-    _allQuests[_profileId][_pubId].status = KinoraLibrary.Status.Closed;
+  function updateQuestStatus(uint256 _questId) external onlyKinoraEscrow {
+    _allQuests[_questId].status = KinoraLibrary.Status.Closed;
 
-    emit QuestStatusUpdated(
-      _profileId,
-      _pubId,
-      _allQuests[_profileId][_pubId].status
-    );
+    emit QuestStatusUpdated(_questId, _allQuests[_questId].status);
   }
 
   /**
-   * @dev Updates the metrics of a player for a particular quest.
-   * @param _playbackId The playback identifier of the metrics.
-   * @param _json The JSON hash of the metrics.
+   * @dev Updates the metrics of a player for a particular video.
+   * @param _metrics The Player Video metrics object.
+   * @param _videoPubId The Video pub Id for metrics to update.
+   * @param _videoProfileId The Video profile Id for metrics to update.
    * @param _playerProfileId The Lens Profile Id of the player.
-   * @param _profileId The Lens Profile Id of the quest.
-   * @param _encrypted Boolean indicating whether the metrics are encrypted.
    */
   function updatePlayerMetrics(
-    string memory _playbackId,
-    string memory _json,
-    uint256 _playerProfileId,
-    uint256 _profileId,
-    bool _encrypted
-  ) external onlyValidMetricsContract(_profileId) {
+    KinoraLibrary.PlayerVideoMetrics memory _metrics,
+    uint256 _videoPubId,
+    uint256 _videoProfileId,
+    uint256 _playerProfileId
+  ) external onlyMetricsContract {
     if (_allPlayers[_playerProfileId].activeSince == 0) {
       revert KinoraErrors.PlayerNotEligible();
     }
-    _allPlayers[_playerProfileId].playbackIdMetrics[_playbackId][
-        _profileId
-      ] = KinoraLibrary.PlayerLivepeerMetrics({
-      playbackId: _playbackId,
-      profileId: _profileId,
-      metricJSONHash: _json,
-      encrypted: _encrypted
-    });
+    _allPlayers[_playerProfileId].videoMetrics[_videoPubId][
+      _videoProfileId
+    ] = _metrics;
 
-    emit PlayerMetricsUpdated(
-      _profileId,
-      _playerProfileId,
-      _playbackId,
-      _json,
-      _encrypted
-    );
-  }
-
-  /**
-   * @dev Sets the address of the Kinora Open Action.
-   * @param _kinoraOpenActionAddress The address to be set.
-   */
-  function setKinoraOpenAction(address _kinoraOpenActionAddress) public {
-    if (msg.sender != factoryMaintainer) {
-      revert KinoraErrors.OnlyAdmin();
-    }
-    kinoraOpenAction = _kinoraOpenActionAddress;
+    emit PlayerMetricsUpdated(_playerProfileId, _videoPubId, _videoProfileId);
   }
 
   /**
@@ -743,42 +637,6 @@ contract KinoraQuestData {
   }
 
   /**
-   * @dev Retrieves the completion condition hash of a specific milestone in a quest.
-   * @param _questProfileId Lens Profile Id for the quest profile.
-   * @param _questPubId Lens Pub Id for the quest.
-   * @param _milestone Milestone number in the quest.
-   * @return Completion condition hash of the specified milestone.
-   */
-  function getQuestMilestoneCompletionCriteria(
-    uint256 _questProfileId,
-    uint256 _questPubId,
-    uint256 _milestone
-  ) public view returns (string memory) {
-    return
-      _allQuests[_questProfileId][_questPubId]
-        .milestones[_milestone - 1]
-        .completionCriteria;
-  }
-
-  /**
-   * @dev Retrieves the condition hash of a specific milestone in a quest.
-   * @param _questProfileId Lens Profile Id for the quest profile.
-   * @param _questPubId Lens Pub Id for the quest.
-   * @param _milestone Milestone number in the quest.
-   * @return Condition hash of the specified milestone.
-   */
-  function getQuestMilestoneConditionHash(
-    uint256 _questProfileId,
-    uint256 _questPubId,
-    uint256 _milestone
-  ) public view returns (bytes32) {
-    return
-      _allQuests[_questProfileId][_questPubId]
-        .milestones[_milestone - 1]
-        .conditionHash;
-  }
-
-  /**
    * @dev Retrieves the reward type of a specific milestone in a quest.
    * @param _questProfileId Lens Profile Id for the quest profile.
    * @param _questPubId Lens Pub Id for the quest.
@@ -852,42 +710,5 @@ contract KinoraQuestData {
         .milestones[_milestone - 1]
         .reward
         .uri;
-  }
-
-  /**
-   * @dev Retrieves the address of a valid quest contract for a quest profile and pubId.
-   * @param _profileId Lens Profile Id for the quest profile.
-   * @param _pubId Lens Pub Id for the quest.
-   * @return Address of the valid quest contract.
-   */
-  function getValidQuestContract(
-    uint256 _profileId,
-    uint256 _pubId
-  ) public view returns (address) {
-    return _validQuestContract[_profileId][_pubId];
-  }
-
-  /**
-   * @dev Retrieves the address of a valid escrow contract for a quest profile and pubId.
-   * @param _profileId Lens Profile Id for the quest profile.
-   * @param _pubId Lens Pub Id for the quest.
-   * @return Address of the valid escrow contract.
-   */
-  function getValidEscrowContract(
-    uint256 _profileId,
-    uint256 _pubId
-  ) public view returns (address) {
-    return _validEscrowContract[_profileId][_pubId];
-  }
-
-  /**
-   * @dev Retrieves the address of a valid metrics contract for a quest profile and pubId.
-   * @param _profileId Lens Profile Id for the quest profile.
-   * @return Addresses array of the valid metrics contracts.
-   */
-  function getValidMetricsContracts(
-    uint256 _profileId
-  ) public view returns (address[] memory) {
-    return _validMetricsContract[_profileId];
   }
 }

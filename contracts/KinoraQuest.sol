@@ -10,26 +10,13 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 
-contract KinoraQuest is Initializable {
+contract KinoraQuest {
   string public name;
   string public symbol;
   KinoraAccessControl public accessControl;
   KinoraQuestData public kinoraQuestData;
-  KinoraEscrow public escrow;
-  string public metricsHash;
+  KinoraEscrow public kinoraEscrow;
   address public kinoraOpenAction;
-
-  /**
-   * @dev Modifier to ensure function caller the the Quest envoker.
-   */
-  modifier onlyQuestEnvoker() {
-    if (
-    
-    ) {
-      revert KinoraErrors.InvalidAddress();
-    }
-    _;
-  }
 
   /**
    * @dev Modifier to ensure function caller is the open action address.
@@ -37,6 +24,16 @@ contract KinoraQuest is Initializable {
   modifier onlyOpenAction() {
     if (kinoraOpenAction != msg.sender) {
       revert KinoraErrors.InvalidAddress();
+    }
+    _;
+  }
+
+  /**
+   * @dev Modifier to only the Quest Envoker can call.
+   */
+  modifier onlyQuestEnvoker() {
+    if (kinoraQuestData.getQuestEnvokerAddress() != msg.sender) {
+      KinoraErrors.InvalidAddress();
     }
     _;
   }
@@ -74,22 +71,22 @@ contract KinoraQuest is Initializable {
   event PlayerJoinQuest(uint256 pubId, uint256 playerProfileId);
 
   /**
-   * @dev Initializes the contract with provided addresses.
+   * @dev Constructor
    * @param _accessControlAddress Address of the AccessControl contract.
    * @param _escrowAddress Address of the Escrow contract.
    * @param _kinoraQuestDataAddress Address of the QuestData contract.
    * @param _kinoraOpenActionAddress Address of the OpenAction contract.
    */
-  function initialize(
+  constructor(
     address _accessControlAddress,
     address _escrowAddress,
     address _kinoraQuestDataAddress,
     address _kinoraOpenActionAddress
-  ) public {
+  ) {
     name = "KinoraQuest";
     symbol = "KQU";
     accessControl = KinoraAccessControl(_accessControlAddress);
-    escrow = KinoraEscrow(_escrowAddress);
+    kinoraEscrow = KinoraEscrow(_escrowAddress);
     kinoraQuestData = KinoraQuestData(_kinoraQuestDataAddress);
     kinoraOpenAction = _kinoraOpenActionAddress;
   }
@@ -410,13 +407,13 @@ contract KinoraQuest is Initializable {
         _params.milestone
       ) == KinoraLibrary.RewardType.ERC20
     ) {
-      escrow.withdrawERC20(
+      kinoraEscrow.withdrawERC20(
         _params.playerAddress,
         _params.pubId,
         _params.milestone
       );
     } else {
-      escrow.mintERC721(
+      kinoraEscrow.mintERC721(
         _params.playerAddress,
         _params.profileId,
         _params.pubId,

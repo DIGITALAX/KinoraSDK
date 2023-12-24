@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./KinoraErrors.sol";
 
 /**
  * @title KinoraAccessControl
- * @dev This contract manages administrative access control for the suite of Quest Contracts deployed through the Kinora Factory.
+ * @dev This contract manages administrative access control for maintaining the Quest Contracts.
  * It contains functionalities to add, remove administrators and update critical addresses.
  */
-contract KinoraAccessControl is Initializable {
+contract KinoraAccessControl {
   // Symbol of the access control contract
   string public symbol;
   // Name of the access control contract
@@ -36,11 +35,11 @@ contract KinoraAccessControl is Initializable {
   }
 
   /**
-   * @dev Initializes the contract with initial values
+   * @dev Constructor
    * @param _deployerAdmin Address of the deployer admin
    * @param _profile Lens Profile Id
    */
-  function initialize(address _deployerAdmin, uint256 _profile) public {
+  constructor(address _deployerAdmin, uint256 _profile) {
     symbol = "KAC";
     name = "KinoraAccessControl";
     _admins[msg.sender] = true;
