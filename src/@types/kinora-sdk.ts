@@ -46,8 +46,8 @@ export interface Reward {
  * @description Represents the gating logic for eligibility in the system. It encapsulates various on-chain assets and their associated thresholds that are evaluated to determine eligibility for a particular operation or access.
  */
 export interface GatingLogic {
-  erc721Addresses: `0x${string}`[];
   erc721TokenIds: number[][];
+  erc721Addresses: `0x${string}`[];
   erc20Addresses: `0x${string}`[];
   erc20Thresholds: string[];
   oneOf: boolean;
@@ -76,10 +76,6 @@ export interface MilestoneEligibility {
     postId: string;
     playbackCriteria: MilestoneEligibilityCriteria;
   }[];
-  averageGlobalCriteria?: {
-    postId: string;
-    playbackCriteria: MilestoneEligibilityCriteria;
-  }[];
 }
 
 /**
@@ -97,7 +93,6 @@ export interface MilestoneEligibilityCriteria {
   likeLens?: BoolLensCriteria;
   bookmarkLens?: BoolLensCriteria;
   commentLens?: BoolLensCriteria;
-  collectLens?: BoolLensCriteria;
 }
 
 /**
