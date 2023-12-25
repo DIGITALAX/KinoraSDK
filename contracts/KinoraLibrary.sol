@@ -20,8 +20,10 @@ contract KinoraLibrary {
   struct Milestone {
     GatingLogic gated;
     Reward[] rewards;
-    Video[] videos;
+    mapping(uint256 => mapping(uint256 => Video)) videos;
     uint256 milestone;
+    uint256 videoLength;
+    uint256 rewardsLength;
   }
 
   struct Video {
@@ -38,17 +40,18 @@ contract KinoraLibrary {
     bool comment;
     bool bookmark;
     bool react;
-    bool collect;
   }
 
   struct Quest {
     Milestone[] milestones;
-    Player[] players;
     GatingLogic gated;
+    uint256[] players;
     Status status;
+    address envoker;
     uint256 questId;
     uint256 profileId;
     uint256 pubId;
+    uint256 milestoneCount;
     uint256 maxPlayerCount;
   }
   struct GatingLogic {
@@ -73,11 +76,10 @@ contract KinoraLibrary {
     bool hasCommented;
     bool hasBookmarked;
     bool hasReacted;
-    bool hasCollected;
   }
 
   struct Player {
-    mapping(uint256 => mapping(uint256 => uint256)) milestonesCompletedPerQuest;
+    mapping(uint256 => uint256) milestonesCompletedPerQuest;
     uint256[] questsJoined;
     mapping(uint256 => bool) joinedQuest;
     mapping(uint256 => mapping(uint256 => PlayerVideoMetrics)) videoMetrics;
@@ -85,47 +87,25 @@ contract KinoraLibrary {
     address playerAddress;
     uint256 activeSince;
   }
-  struct InitializeAction {
-    GatingLogic gated;
-    address questEnvoker;
-    uint256 maxPlayerCount;
-  }
-  struct InitializeDeposit {
-    Milestone[] milestones;
-    GatingLogic gated;
-    address escrowContract;
-    address questContract;
-    address questEnvoker;
-    uint256 maxPlayerCount;
-    uint256 profileId;
-    uint256 pubId;
-  }
-  struct MilestoneVerify {
-    uint256[][] tokens;
-    address[] erc721s;
-    address[] erc20s;
-    uint256[] thresholds;
-    address playerAddress;
-    uint256 playerProfileId;
-    uint256 profileId;
-    uint256 pubId;
-    uint256 milestone;
-    bool joined;
-    bool oneOf;
-  }
-  struct TransferReward {
-    address playerAddress;
-    uint256 profileId;
-    uint256 playerProfileId;
-    uint256 pubId;
-    uint256 milestone;
-  }
   struct NewQuestParams {
     uint256 maxPlayerCount;
     GatingLogic gateLogic;
-    Milestone[] milestones;
+    MilestoneParameter[] milestones;
     address envokerAddress;
     uint256 pubId;
     uint256 profileId;
+  }
+  struct MilestoneParameter {
+    GatingLogic gated;
+    Reward[] rewards;
+    Video[] videos;
+    uint256 milestone;
+  }
+
+  struct ActionParameters {
+    KinoraLibrary.GatingLogic gateLogic;
+    uint256 maxPlayerCount;
+    KinoraLibrary.MilestoneParameter[] milestones;
+    address envokerAddress;
   }
 }
