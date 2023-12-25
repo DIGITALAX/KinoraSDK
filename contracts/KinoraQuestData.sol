@@ -451,7 +451,7 @@ contract KinoraQuestData {
     return _allQuests[_questId].status;
   }
 
-  function getQuestMilestoneCount(
+  function getMilestoneCount(
     uint256 _questId
   ) public view returns (uint256) {
     return _allQuests[_questId].milestoneCount;
@@ -674,7 +674,7 @@ contract KinoraQuestData {
     return _allQuests[_questId].milestones[_milestone].gated.erc20Thresholds;
   }
 
-  function getQuestMilestoneRewardType(
+  function getMilestoneRewardType(
     uint256 _questId,
     uint256 _rewardIndex,
     uint256 _milestone
@@ -686,7 +686,7 @@ contract KinoraQuestData {
         .rewardType;
   }
 
-  function getQuestMilestoneRewardTokenAddress(
+  function getMilestoneRewardTokenAddress(
     uint256 _questId,
     uint256 _rewardIndex,
     uint256 _milestone
@@ -698,7 +698,7 @@ contract KinoraQuestData {
         .tokenAddress;
   }
 
-  function getQuestMilestoneRewardTokenAmount(
+  function getMilestoneRewardTokenAmount(
     uint256 _questId,
     uint256 _rewardIndex,
     uint256 _milestone
@@ -710,7 +710,7 @@ contract KinoraQuestData {
         .amount;
   }
 
-  function getQuestMilestoneRewardURI(
+  function getMilestoneRewardURI(
     uint256 _questId,
     uint256 _rewardIndex,
     uint256 _milestone

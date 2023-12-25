@@ -93,7 +93,7 @@ contract KinoraEscrow {
     address _toAddress,
     uint256 _questId
   ) public onlyQuestEnvoker(_questId) {
-    uint256 _milestoneCount = kinoraQuestData.getQuestMilestoneCount(_questId);
+    uint256 _milestoneCount = kinoraQuestData.getMilestoneCount(_questId);
 
     for (uint256 i = 0; i < _milestoneCount; i++) {
       _erc20Transfer(_toAddress, _questId, i + 1);
@@ -138,14 +138,14 @@ contract KinoraEscrow {
     );
 
     for (uint256 i = 0; i < _rewardLength; i++) {
-      uint256 _amount = kinoraQuestData.getQuestMilestoneRewardTokenAmount(
+      uint256 _amount = kinoraQuestData.getMilestoneRewardTokenAmount(
         _questId,
         i,
         _milestone
       );
 
       address _tokenAddress = kinoraQuestData
-        .getQuestMilestoneRewardTokenAddress(_questId, i, _milestone);
+        .getMilestoneRewardTokenAddress(_questId, i, _milestone);
 
       IERC20(_tokenAddress).transfer(_toAddress, _amount);
 

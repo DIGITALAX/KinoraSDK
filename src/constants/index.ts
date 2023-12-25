@@ -3,10 +3,6 @@
  */
 export const KINORA_OPEN_ACTION_CONTRACT: `0x${string}` = "0x";
 /**
- * @constant KINORA_QUEST_CONTRACT Lens Kinora Quest Address Matic Network.
- */
-export const KINORA_QUEST_CONTRACT: `0x${string}` = "0x";
-/**
  * @constant KINORA_METRICS_CONTRACT Lens Kinora Metrics Address Matic Network.
  */
 export const KINORA_METRICS_CONTRACT: `0x${string}` = "0x";

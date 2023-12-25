@@ -11,29 +11,20 @@ import {
   IPFS_REGEX,
   KINORA_OPEN_ACTION_CONTRACT,
   LENS_HUB_PROXY_CONTRACT,
-  KINORA_QUEST_CONTRACT,
-  KINORA_QUEST_DATA_CONTRACT,
   KINORA_ESCROW_CONTRACT,
+  KINORA_METRICS_CONTRACT,
 } from "./constants";
 import { v4 as uuidv4 } from "uuid";
 import onChainPost from "./graphql/mutations/onChainPost";
 import validateMetadata from "./graphql/queries/validateMetadata";
 import LensHubProxyAbi from "./abis/LensHubProxy.json";
-import KinoraQuestAbi from "./abis/KinoraQuest.json";
-import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
 import KinoraEscrowAbi from "./abis/KinoraEscrow.json";
+import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
 import { ethers } from "ethers";
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import { PublicationMetadataMainFocusType } from "./@types/generated";
 
 export class Envoker {
-  /**
-   * @private
-   * @type {number}
-   * @description Quest envoker's profile Id.
-   */
-  private questEnvokerProfileId: number;
-
   /**
    * @private
    * @type {ApolloClient<NormalizedCacheObject>}
@@ -51,9 +42,9 @@ export class Envoker {
   /**
    * @private
    * @type {ethers.Contract}
-   * @description Instance of ethers.Contract for interacting with the Kinora Quest contract.
+   * @description Instance of ethers.Contract for interacting with the Kinora Metrics contract.
    */
-  private kinoraQuestContract: ethers.Contract;
+  private kinoraMetricsContract: ethers.Contract;
 
   /**
    * @private
@@ -61,13 +52,6 @@ export class Envoker {
    * @description Instance of ethers.Contract for interacting with the Kinora Escrow contract.
    */
   private kinoraEscrowContract: ethers.Contract;
-
-  /**
-   * @private
-   * @type {ethers.Contract}
-   * @description Instance of ethers.Contract for interacting with the Kinora Quest Data contract.
-   */
-  private kinoraQuestDataContract: ethers.Contract;
 
   /**
    * @private
@@ -86,11 +70,9 @@ export class Envoker {
    * @param args.signer - A signer instance for authorizing transactions.
    */
   constructor(args: {
-    questEnvokerProfileId: `0x${string}`;
     authedApolloClient: ApolloClient<NormalizedCacheObject>;
     wallet?: ethers.Wallet;
   }) {
-    this.questEnvokerProfileId = parseInt(args.questEnvokerProfileId, 16);
     this.questEnvokerAuthedApolloClient = args.authedApolloClient;
     this.wallet = args.wallet;
     if (args.wallet) {
@@ -104,17 +86,12 @@ export class Envoker {
         KinoraEscrowAbi,
         this.wallet,
       );
+      this.kinoraMetricsContract = new ethers.Contract(
+        KINORA_METRICS_CONTRACT,
+        KinoraMetricsAbi,
+        this.wallet,
+      );
     }
-    this.kinoraQuestContract = new ethers.Contract(
-      KINORA_QUEST_CONTRACT,
-      KinoraQuestAbi,
-      this.wallet,
-    );
-    this.kinoraQuestDataContract = new ethers.Contract(
-      KINORA_QUEST_DATA_CONTRACT,
-      KinoraQuestDataAbi,
-      this.wallet,
-    );
   }
 
   /**
@@ -343,56 +320,73 @@ export class Envoker {
   /**
    * @method
    * @description Terminates a quest and triggers the withdrawal process for any remaining funds. Ensures necessary setups and data are present before proceeding.
-   * @param {`0x${string}`} postId - The Lens Pub Id of the quest.
-   * @param {`0x${string}`} toAddress - Ethereum address to which remaining funds will be sent.
+   * @param {`0x${string}`} questId - The Quest Id.
+   * @param {`0x${string}`} wallet - (Optional) Ethereum wallet boject for signing the transaction.
    * @throws Will throw an error if necessary setups or data are missing.
    * @returns {Promise<Object>} - Promise resolving to an object containing transaction hashes for termination and withdrawal processes.
    */
   terminateQuestAndWithdraw = async (
-    postId: `0x${string}`,
-    toAddress: `0x${string}`,
+    questId: `0x${string}`,
     wallet?: ethers.Wallet,
   ): Promise<{
     txHash?: string;
-    withdrawTxes?: string[];
     error: boolean;
     errorMessage?: string;
   }> => {
     try {
-      const txHash = await this.kinoraQuestContract.terminateQuest(
-        parseInt(postId, 16),
+      const tx = await this.kinoraEscrowContract.emergencyWithdrawERC20(
+        this.wallet.getAddress() || wallet.getAddress(),
+        questId,
       );
 
-      const milestoneCount =
-        await this.kinoraQuestDataContract.getQuestMilestoneCount(
-          this.questEnvokerProfileId,
-          parseInt(postId, 16),
-        );
-
-      const withdrawTxes: string[] = [];
-
-      if (!this.wallet && !this.kinoraEscrowContract && wallet) {
-        this.kinoraEscrowContract = new ethers.Contract(
-          KINORA_ESCROW_CONTRACT,
-          KinoraEscrowAbi,
-          wallet,
-        );
-      }
-
-      for (let i = 1; i <= milestoneCount; i++) {
-        const withdrawTx =
-          await this.kinoraEscrowContract.emergencyWithdrawERC20(
-            toAddress,
-            parseInt(postId, 16),
-            i,
-          );
-        withdrawTxes.push(withdrawTx);
-      }
+      const txHash = await tx.wait();
 
       return {
         txHash,
-        withdrawTxes,
         error: false,
+      };
+    } catch (err: any) {
+      return {
+        error: true,
+        errorMessage: `Error terminating Quest: ${err.message}`,
+      };
+    }
+  };
+
+  /**
+   * Quest Envoker to verify Player can claim milestone.
+   *
+   * @param questId - The Quest Id.
+   * @param milestone - The Milestone to verify.
+   * @param playerProfileId - The Player's profile Id.
+   * @param eligible - The eligibility boolean.
+   * @returns {Promise<Object>} - Promise resolving to an object containing transaction hashes for termination and withdrawal processes.
+   *
+   */
+  setPlayerEligibleToClaimMilestone = async (
+    questId: number,
+    milestone: number,
+    playerProfileId: string,
+    eligible: boolean,
+  ): Promise<{
+    txHash?: string;
+    error: boolean;
+    errorMessage?: string;
+  }> => {
+    try {
+      const tx =
+        await this.kinoraMetricsContract.playerEligibleToClaimMilestone(
+          questId,
+          milestone,
+          playerProfileId,
+          eligible,
+        );
+
+      const txHash = await tx.wait();
+
+      return {
+        error: false,
+        txHash,
       };
     } catch (err: any) {
       return {
