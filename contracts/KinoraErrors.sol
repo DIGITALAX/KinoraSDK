@@ -13,4 +13,6 @@ contract KinoraErrors {
   error PlayerNotEligible();
   error MaxPlayerCountReached();
   error MilestoneInvalid();
+  error CurrencyNotWhitelisted();
+  error InvalidRewardAmount();
 }
