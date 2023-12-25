@@ -186,7 +186,7 @@ contract KinoraOpenAction is
 
       for (uint256 k = 0; k < _rewardLength; k++) {
         if (
-          kinoraQuestData.getQuestMilestoneRewardType(
+          kinoraQuestData.getMilestoneRewardType(
             _questId,
             k,
             _playerMilestone

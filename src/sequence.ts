@@ -163,34 +163,6 @@ export class Sequence extends EventEmitter {
         commentData = data?.publications?.items as Comment[];
       }
 
-      const encodedData = ethers.utils.defaultAbiCoder.encode(
-        [
-          "tuple(boolean hasQuoted, boolean hasReacted, boolean hasMirrored, boolean hasCollected, boolean hasCommented, boolean hasBookmarked, uint256 playCount, uint256 ctr, uint256 avd, uint256 impressionCount, uint256 engagementRate, uint256 mostViewed, uint256 interactionRate, uint256 mostReplayed)",
-        ],
-        [
-          {
-            hasQuoted: (data?.publication as Post)?.operations?.hasQuoted,
-            hasReacted: (data?.publication as Post)?.operations.hasReacted,
-            hasMirrored: (data?.publication as Post)?.operations.hasMirrored,
-            hasCollected: (data?.publication as Post)?.operations.hasActed
-              .isFinalisedOnchain,
-            hasCommented: commentData?.length > 0 ? true : false,
-            hasBookmarked: (data?.publication as Post)?.operations
-              .hasBookmarked,
-            playCount: this.metrics[postId].getPlayCount(),
-            ctr: this.metrics[postId].getCTR(),
-            avd: this.metrics[postId].getAVD(),
-            impressionCount: this.metrics[postId].getImpressionCount(),
-            engagementRate: this.metrics[postId].getEngagementRate(
-              this.playerMap[postId].videoElement.duration,
-            ),
-            mostViewedSegment: this.metrics[postId].getMostViewedSegment(),
-            interactionRate: this.metrics[postId].getInteractionRate(),
-            mostReplayedArea: this.metrics[postId].getMostReplayedArea(),
-          },
-        ],
-      );
-
       const kinoraMetricsContract = new ethers.Contract(
         KINORA_METRICS_CONTRACT,
         KinoraMetricsAbi,
@@ -198,9 +170,27 @@ export class Sequence extends EventEmitter {
       );
 
       const tx = await kinoraMetricsContract.addPlayerMetrics(
-        parseInt(postId, 16),
-        encodedData,
+        {
+          playCount: this.metrics[postId].getPlayCount(),
+          ctr: this.metrics[postId].getCTR(),
+          avd: this.metrics[postId].getAVD(),
+          impressionCount: this.metrics[postId].getImpressionCount(),
+          engagementRate: this.metrics[postId].getEngagementRate(
+            this.playerMap[postId].videoElement.duration,
+          ),
+          duration: this.metrics[postId].getTotalDuration(),
+          mostViewedSegment: this.metrics[postId].getMostViewedSegment(),
+          interactionRate: this.metrics[postId].getInteractionRate(),
+          mostReplayedArea: this.metrics[postId].getMostReplayedArea(),
+          hasQuoted: (data?.publication as Post)?.operations?.hasQuoted,
+          hasMirrored: (data?.publication as Post)?.operations.hasMirrored,
+          hasCommented: commentData?.length > 0 ? true : false,
+          hasBookmarked: (data?.publication as Post)?.operations.hasBookmarked,
+          hasReacted: (data?.publication as Post)?.operations.hasReacted,
+        },
         parseInt(playerProfileId, 16),
+        parseInt(postId?.split("-")[0], 16),
+        parseInt(postId?.split("-")[1], 16),
       );
 
       this.metrics[postId].reset();
