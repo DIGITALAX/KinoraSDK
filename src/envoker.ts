@@ -150,6 +150,10 @@ export class Envoker {
       );
     }
 
+    if (args.maxPlayerCount < 1) {
+      throw new Error(`Invalid Max Player Count.`);
+    }
+
     if (!IPFS_REGEX.test(args.questDetails.cover)) {
       throw new Error(`Invalid IPFS Cover Hash.`);
     }
@@ -190,7 +194,6 @@ export class Envoker {
           if (!this.validateMilestoneEligibilityHash(milestone.eligibility)) {
             throw new Error(`Invalid Milestone Eligibility Configuration.`);
           } else {
-            const hashedEligibility = await hashToIPFS(JSON.stringify(data));
             return {
               gated: milestone.gated,
               reward: milestone.reward.map(async (reward) => {
@@ -217,19 +220,62 @@ export class Envoker {
                   };
                 }
               }),
-              completionCriteria: hashedEligibility.cid,
               milestone: milestone.milestone,
+              videos: milestone.eligibility.internalCriteria.map((item) => {
+                return {
+                  profileId: parseInt(item?.postId?.split("-")[0], 16),
+                  pubId: parseInt(item?.postId?.split("-")[1], 16),
+                  minPlayCount: item.playbackCriteria.minPlayCount,
+                  minCTR: item.playbackCriteria.minCtr,
+                  minAVD: item.playbackCriteria.minAvd,
+                  minImpressionCount: item.playbackCriteria.minImpressionCount,
+                  minEngagementRate: item.playbackCriteria.minEngagementRate,
+                  minDuration: item.playbackCriteria.minDuration,
+                  quote: item.playbackCriteria.quoteLens,
+                  mirror: item.playbackCriteria.mirrorLens,
+                  comment: item.playbackCriteria.commentLens,
+                  bookmark: item.playbackCriteria.bookmarkLens,
+                  react: item.playbackCriteria.likeLens,
+                };
+              }),
             };
           }
         });
 
       const encodedData = ethers.utils.defaultAbiCoder.encode(
         [
-          "tuple(tuple(address[] erc721Addresses, uint256[][] erc721TokenIds, address[] erc20Addresses, address[] erc20Thresholds, bool oneOf)",
-          "uint256",
-          "tuple(tuple(uint256 type, address tokenAddress, uint256 amount)[] reward, uint256 milestone, string uri)[]",
+          "tuple(" +
+            "tuple(" +
+            "address[]," +
+            "uint256[][]," +
+            "address[]," +
+            "uint256[]," +
+            "bool" +
+            ")," +
+            "uint256," +
+            "tuple(" +
+            "tuple(" +
+            "uint8," +
+            "string," +
+            "address," +
+            "uint256" +
+            ")[]," +
+            "uint256," +
+            "tuple(" +
+            ")[]" +
+            ")[]," +
+            "address" +
+            ")",
         ],
-        [args.joinQuestTokenGatedLogic, args.maxPlayerCount, milestoneDetails],
+        [
+          {
+            gateLogic: args.joinQuestTokenGatedLogic,
+            maxPlayerCount: args.maxPlayerCount,
+            milestones: milestoneDetails,
+            envokerAddress:
+              this.wallet.getAddress() || args.wallet?.getAddress(),
+          },
+        ],
       );
 
       const { data } = await onChainPost(
@@ -369,9 +415,8 @@ export class Envoker {
     let valid = true;
 
     if (
-      (eligibility?.internalCriteria?.length < 1 &&
-        eligibility?.averageGlobalCriteria?.length < 1) ||
-      (!eligibility.internalCriteria && !eligibility.averageGlobalCriteria)
+      eligibility?.internalCriteria?.length < 1 ||
+      !eligibility.internalCriteria
     ) {
       throw new Error(`Specify criteria for Milestones.`);
     }
@@ -408,59 +453,7 @@ export class Envoker {
             eligibility?.internalCriteria[i].playbackCriteria.bookmarkLens,
           ) &&
           isValidBoolLensCriteria(
-            eligibility?.internalCriteria[i].playbackCriteria.collectLens,
-          ) &&
-          isValidBoolLensCriteria(
             eligibility?.internalCriteria[i].playbackCriteria.commentLens,
-          );
-
-        if (!valid) {
-          return valid;
-        }
-      }
-
-      if (!valid) {
-        return;
-      }
-    }
-
-    if (eligibility?.averageGlobalCriteria) {
-      for (let i = 0; i < eligibility?.averageGlobalCriteria?.length; i++) {
-        valid =
-          isValidMetricCriteria(
-            eligibility?.averageGlobalCriteria[i].playbackCriteria.minAvd,
-          ) &&
-          isValidMetricCriteria(
-            eligibility?.averageGlobalCriteria[i].playbackCriteria.minCtr,
-          ) &&
-          isValidMetricCriteria(
-            eligibility?.averageGlobalCriteria[i].playbackCriteria.minPlayCount,
-          ) &&
-          isValidMetricCriteria(
-            eligibility?.averageGlobalCriteria[i].playbackCriteria.minDuration,
-          ) &&
-          isValidMetricCriteria(
-            eligibility?.averageGlobalCriteria[i].playbackCriteria
-              .minEngagementRate,
-          ) &&
-          isValidMetricCriteria(
-            eligibility?.averageGlobalCriteria[i].playbackCriteria
-              .minImpressionCount,
-          ) &&
-          isValidBoolLensCriteria(
-            eligibility?.averageGlobalCriteria[i].playbackCriteria.mirrorLens,
-          ) &&
-          isValidBoolLensCriteria(
-            eligibility?.averageGlobalCriteria[i].playbackCriteria.likeLens,
-          ) &&
-          isValidBoolLensCriteria(
-            eligibility?.averageGlobalCriteria[i].playbackCriteria.bookmarkLens,
-          ) &&
-          isValidBoolLensCriteria(
-            eligibility?.averageGlobalCriteria[i].playbackCriteria.collectLens,
-          ) &&
-          isValidBoolLensCriteria(
-            eligibility?.averageGlobalCriteria[i].playbackCriteria.commentLens,
           );
 
         if (!valid) {
