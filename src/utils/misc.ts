@@ -1,4 +1,4 @@
-import { BoolLensCriteria, MetricCriteria } from "src/@types/kinora-sdk";
+import { BoolLensCriteria, MetricCriteria } from "./../@types/kinora-sdk";
 
 /**
  * Validates a MetricCriteria object to ensure it contains valid values.

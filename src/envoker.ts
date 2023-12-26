@@ -1,5 +1,6 @@
 import { omit } from "lodash";
 import {
+  EthereumAddress,
   GatingLogic,
   LensQuestMetadata,
   Milestone,
@@ -13,7 +14,7 @@ import {
   LENS_HUB_PROXY_CONTRACT,
   KINORA_ESCROW_CONTRACT,
   KINORA_METRICS_CONTRACT,
-} from "./constants";
+} from "./constants/index";
 import { v4 as uuidv4 } from "uuid";
 import onChainPost from "./graphql/mutations/onChainPost";
 import validateMetadata from "./graphql/queries/validateMetadata";
@@ -23,6 +24,7 @@ import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
 import { ethers } from "ethers";
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import { PublicationMetadataMainFocusType } from "./@types/generated";
+import { hashToIPFS } from "./utils/ipfs";
 
 export class Envoker {
   /**
@@ -37,28 +39,28 @@ export class Envoker {
    * @type {ethers.Contract}
    * @description Instance of ethers.Contract for interacting with the Lens Hub Proxy contract.
    */
-  private lensHubProxyContract: ethers.Contract;
+  private lensHubProxyContract: ethers.Contract | undefined;
 
   /**
    * @private
    * @type {ethers.Contract}
    * @description Instance of ethers.Contract for interacting with the Kinora Metrics contract.
    */
-  private kinoraMetricsContract: ethers.Contract;
+  private kinoraMetricsContract: ethers.Contract | undefined;
 
   /**
    * @private
    * @type {ethers.Contract}
    * @description Instance of ethers.Contract for interacting with the Kinora Escrow contract.
    */
-  private kinoraEscrowContract: ethers.Contract;
+  private kinoraEscrowContract: ethers.Contract | undefined;
 
   /**
    * @private
    * @type {ethers.Wallet}
    * @description Instance of Wallet for signing transactions.
    */
-  private wallet: ethers.Wallet;
+  private wallet: ethers.Wallet | undefined;
 
   /**
    * Constructs an instance of the enclosing class, initializing necessary properties
@@ -74,8 +76,8 @@ export class Envoker {
     wallet?: ethers.Wallet;
   }) {
     this.questEnvokerAuthedApolloClient = args.authedApolloClient;
-    this.wallet = args.wallet;
     if (args.wallet) {
+      this.wallet = args.wallet;
       this.lensHubProxyContract = new ethers.Contract(
         LENS_HUB_PROXY_CONTRACT,
         LensHubProxyAbi,
@@ -116,8 +118,8 @@ export class Envoker {
     joinQuestTokenGatedLogic: GatingLogic;
     wallet?: ethers.Wallet;
   }): Promise<{
-    postId?: `0x${string}`;
-    transactionHash?: `0x${string}`;
+    postId?: EthereumAddress;
+    transactionHash?: EthereumAddress;
     error: boolean;
     errorMessage?: string;
   }> => {
@@ -175,7 +177,7 @@ export class Envoker {
               gated: milestone.gated,
               reward: milestone.reward.map(async (reward) => {
                 if (
-                  !IPFS_REGEX.test(reward.erc721URI) &&
+                  !IPFS_REGEX.test(reward.erc721URI as string) &&
                   reward.type === RewardType.ERC721
                 ) {
                   throw new Error(`Invalid ERC721 Reward URI Hash.`);
@@ -198,7 +200,7 @@ export class Envoker {
                 }
               }),
               milestone: milestone.milestone,
-              videos: milestone.eligibility.internalCriteria.map((item) => {
+              videos: milestone.eligibility.internalCriteria?.map((item) => {
                 return {
                   profileId: parseInt(item?.postId?.split("-")[0], 16),
                   pubId: parseInt(item?.postId?.split("-")[1], 16),
@@ -250,7 +252,7 @@ export class Envoker {
             maxPlayerCount: args.maxPlayerCount,
             milestones: milestoneDetails,
             envokerAddress:
-              this.wallet.getAddress() || args.wallet?.getAddress(),
+              this.wallet?.getAddress() || args.wallet?.getAddress(),
           },
         ],
       );
@@ -272,7 +274,7 @@ export class Envoker {
 
       const typedData = data?.createOnchainPostTypedData?.typedData;
 
-      await this.wallet.signMessage(
+      await this.wallet?.signMessage(
         ethers.utils.arrayify(
           ethers.utils.keccak256(
             JSON.stringify({
@@ -293,7 +295,7 @@ export class Envoker {
         );
       }
 
-      const tx = await this.lensHubProxyContract.post({
+      const tx = await this.lensHubProxyContract?.post({
         profileId: parseInt(typedData?.value.profileId, 16),
         contentURI: typedData?.value.contentURI,
         actionModules: typedData?.value?.actionModules,
@@ -305,7 +307,7 @@ export class Envoker {
       const txHash = await tx.wait();
 
       return {
-        postId: data.createOnchainPostTypedData.id,
+        postId: data?.createOnchainPostTypedData.id,
         transactionHash: txHash,
         error: false,
       };
@@ -320,13 +322,13 @@ export class Envoker {
   /**
    * @method
    * @description Terminates a quest and triggers the withdrawal process for any remaining funds. Ensures necessary setups and data are present before proceeding.
-   * @param {`0x${string}`} questId - The Quest Id.
-   * @param {`0x${string}`} wallet - (Optional) Ethereum wallet boject for signing the transaction.
+   * @param {EthereumAddress} questId - The Quest Id.
+   * @param {EthereumAddress} wallet - (Optional) Ethereum wallet boject for signing the transaction.
    * @throws Will throw an error if necessary setups or data are missing.
    * @returns {Promise<Object>} - Promise resolving to an object containing transaction hashes for termination and withdrawal processes.
    */
   terminateQuestAndWithdraw = async (
-    questId: `0x${string}`,
+    questId: EthereumAddress,
     wallet?: ethers.Wallet,
   ): Promise<{
     txHash?: string;
@@ -334,8 +336,8 @@ export class Envoker {
     errorMessage?: string;
   }> => {
     try {
-      const tx = await this.kinoraEscrowContract.emergencyWithdrawERC20(
-        this.wallet.getAddress() || wallet.getAddress(),
+      const tx = await this.kinoraEscrowContract?.emergencyWithdrawERC20(
+        this.wallet?.getAddress() || wallet?.getAddress(),
         questId,
       );
 
@@ -375,7 +377,7 @@ export class Envoker {
   }> => {
     try {
       const tx =
-        await this.kinoraMetricsContract.playerEligibleToClaimMilestone(
+        await this.kinoraMetricsContract?.playerEligibleToClaimMilestone(
           questId,
           milestone,
           playerProfileId,
@@ -409,8 +411,9 @@ export class Envoker {
     let valid = true;
 
     if (
-      eligibility?.internalCriteria?.length < 1 ||
-      !eligibility.internalCriteria
+      !eligibility.internalCriteria ||
+      (eligibility.internalCriteria &&
+        eligibility?.internalCriteria?.length < 1)
     ) {
       throw new Error(`Specify criteria for Milestones.`);
     }
@@ -456,7 +459,7 @@ export class Envoker {
       }
 
       if (!valid) {
-        return;
+        return false;
       }
     }
 

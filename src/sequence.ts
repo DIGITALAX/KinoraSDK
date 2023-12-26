@@ -1,16 +1,12 @@
-import { ILogEntry, LogCategory, PlayerData } from "./@types/kinora-sdk";
+import { EthereumAddress, ILogEntry, LogCategory, PlayerData } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import { ethers } from "ethers";
-import {
-  KINORA_METRICS_CONTRACT,
-  KINORA_QUEST_DATA_CONTRACT,
-} from "./constants";
+import { KINORA_METRICS_CONTRACT } from "./constants/index";
 import { EventEmitter } from "events";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
-import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
 import getPublicationClient from "./graphql/queries/getPublicationClient";
-import { Comment, Post } from "./@types/generated";
 import getPublicationsClient from "./graphql/queries/getPublicationsClient";
+import { Post, Comment } from "./@types/generated";
 
 export class Sequence extends EventEmitter {
   /**
@@ -18,21 +14,21 @@ export class Sequence extends EventEmitter {
    * @type {boolean}
    * @description Flag to determine the mode of error handling; strict or not.
    */
-  private errorHandlingModeStrict: boolean = false;
+  private errorHandlingModeStrict: boolean | undefined = false;
 
   /**
    * @private
-   * @type {{ [postId: `0x${string}`]: Metrics } }
+   * @type {{ [postId: EthereumAddress]: Metrics } }
    * @description Instance of Metrics class for each Player to handle metric data.
    */
-  private metrics: { [postId: `0x${string}`]: Metrics } = {};
+  private metrics: { [postId: EthereumAddress]: Metrics } = {};
 
   /**
    * @private
-   * @type {{ [postId: `0x${string}`]: PlayerData }}
+   * @type {{ [postId: EthereumAddress]: PlayerData }}
    * @description Livepeer Player mapping.
    */
-  private playerMap: { [postId: `0x${string}`]: PlayerData } = {};
+  private playerMap: { [postId: EthereumAddress]: PlayerData } = {};
 
   /**
    * @private
@@ -56,24 +52,12 @@ export class Sequence extends EventEmitter {
   private logs: ILogEntry[] = new Array(this.logSize);
 
   /**
-   * @private
-   * @type {ethers.Contract}
-   * @description Instance of ethers.Contract for interacting with the Kinora Quest Data contract.
-   */
-  private kinoraQuestDataContract: ethers.Contract;
-
-  /**
    * Constructs an instance of the enclosing class, initializing necessary properties and contracts.
    * @param {boolean} errorHandlingModeStrict - A boolean indicating whether the error handling mode is strict. Optional.
    */
-  constructor(errorHandlingModeStrict?: boolean) {
+  constructor(errorHandlingModeStrict?: boolean | undefined) {
     super();
     this.errorHandlingModeStrict = errorHandlingModeStrict;
-
-    this.kinoraQuestDataContract = new ethers.Contract(
-      KINORA_QUEST_DATA_CONTRACT,
-      KinoraQuestDataAbi,
-    );
   }
 
   /**
@@ -83,7 +67,7 @@ export class Sequence extends EventEmitter {
    * @param videoElement - The HTML video element associated with the player.
    */
   initializePlayer = (
-    postId: `0x${string}`,
+    postId: EthereumAddress,
     videoElement: HTMLVideoElement,
   ): void => {
     const playerData = this.playerMap[postId];
@@ -120,7 +104,7 @@ export class Sequence extends EventEmitter {
    *
    * @param postId - A string representing the Lens Post Id.
    */
-  destroyPlayer = (postId: `0x${string}`): void => {
+  destroyPlayer = (postId: EthereumAddress): void => {
     if (!this.playerMap[postId]) return;
     this.cleanUpListeners(postId);
     delete this.playerMap[postId];
@@ -129,15 +113,15 @@ export class Sequence extends EventEmitter {
   /**
    * @method sendMetricsOnChain
    * @description This function is responsible for sending player metrics to the blockchain. It performs various checks and validations before proceeding with the transaction, and logs the outcome.
-   * @param {`0x${string}`} postId - The Lens Post Id of the for the connected video.
-   * @param {`0x${string}`} playerProfileId - The Profile Id of the Player.
+   * @param {EthereumAddress} postId - The Lens Post Id of the for the connected video.
+   * @param {EthereumAddress} playerProfileId - The Profile Id of the Player.
    * @param {ethers.Wallet} wallet - The Ethers.Wallet object of the Player.
    * @throws Will throw an error if required data is missing or if transaction generation or execution fails.
    * @returns {Promise<void>} - A Promise that resolves when the operation completes.
    */
   sendMetricsOnChain = async (
-    postId: `0x${string}`,
-    playerProfileId: `0x${string}`,
+    postId: EthereumAddress,
+    playerProfileId: EthereumAddress,
     wallet: ethers.Wallet,
   ): Promise<void> => {
     if (Object.keys(this.playerMap).length === 0)
@@ -149,7 +133,7 @@ export class Sequence extends EventEmitter {
       const { data } = await getPublicationClient({
         forId: postId,
       });
-      let commentData: Comment[];
+      let commentData: Comment[] = [];
       if ((data?.publication as Post)?.stats?.comments > 0) {
         const { data } = await getPublicationsClient({
           where: {
@@ -240,45 +224,18 @@ export class Sequence extends EventEmitter {
    * @throws Will throw an error if not used in a browser environment or if the video element is not found.
    * @private
    */
-  private cleanUpListeners = (playbackId: string) => {
-    this.playerMap[playbackId].videoElement.removeEventListener(
+  private cleanUpListeners = (postId: EthereumAddress) => {
+    this.playerMap[postId].videoElement.removeEventListener(
       "play",
-      this.playerMap[playbackId].eventHandlers.play,
+      this.playerMap[postId].eventHandlers.play,
     );
-    this.playerMap[playbackId].videoElement.removeEventListener(
+    this.playerMap[postId].videoElement.removeEventListener(
       "pause",
-      this.playerMap[playbackId].eventHandlers.pause,
+      this.playerMap[postId].eventHandlers.pause,
     );
-    this.playerMap[playbackId].videoElement.removeEventListener(
-      "timeupdate",
-      this.playerMap[playbackId].eventHandlers.timeupdate,
-    );
-    this.playerMap[playbackId].videoElement.removeEventListener(
+    this.playerMap[postId].videoElement.removeEventListener(
       "click",
-      this.playerMap[playbackId].eventHandlers.click,
-    );
-    this.playerMap[playbackId].videoElement.removeEventListener(
-      "seeking",
-      this.playerMap[playbackId].eventHandlers.seeking,
-    );
-
-    this.playerMap[playbackId].videoElement.removeEventListener(
-      "volumechange",
-      this.playerMap[playbackId].eventHandlers.volumechange,
-    );
-    this.playerMap[playbackId].videoElement.removeEventListener(
-      "fullscreenchange",
-      this.playerMap[playbackId].eventHandlers.fullscreenchange,
-    );
-
-    this.playerMap[playbackId].videoElement.removeEventListener(
-      "waiting",
-      this.playerMap[playbackId].eventHandlers.waiting,
-    );
-
-    this.playerMap[playbackId].videoElement.removeEventListener(
-      "playing",
-      this.playerMap[playbackId].eventHandlers.playing,
+      this.playerMap[postId].eventHandlers.click,
     );
   };
 

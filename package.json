@@ -1,6 +1,6 @@
 {
   "name": "kinora-sdk",
-  "version": "0.0.2",
+  "version": "0.0.384",
   "description": "An open source typescript SDK that combines automated on-chain Livepeer videometric logging with decentralized social quests on Lens Protocol.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,7 +11,7 @@
     "install-demo": "cd demo && rm -rf node_modules package-lock.json .env && npm install && cd ..",
     "start-demo": "cd demo && npm run start",
     "dev": "npm run install-demo && npm run copy-env && npm run start-demo",
-    "build": "node --trace-deprecation node_modules/.bin/webpack",
+    "build": "node --trace-deprecation node_modules/.bin/webpack && tsc",
     "start": "node dist/index.js",
     "test": "npx hardhat test --typecheck"
   },
@@ -35,9 +35,10 @@
     "@types/dotenv-webpack": "^7.0.7",
     "@types/express": "^4.17.17",
     "@types/lodash": "^4.14.202",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "^20.6.0",
-    "@types/uuid": "^9.0.6"
+    "@types/node": "^20",
+    "@types/uuid": "^9.0.6",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5"
   },
   "dependencies": {
     "@apollo/client": "^3.8.3",
@@ -55,20 +56,14 @@
     "hardhat": "^2.17.2",
     "hardhat-gas-reporter": "^1.0.9",
     "https-browserify": "^1.0.0",
-    "kinora-sdk": "file:.yalc/kinora-sdk",
-    "mocha": "^10.2.0",
     "os-browserify": "^0.3.0",
     "path-browserify": "^1.0.1",
-    "siwe": "^2.1.4",
-    "source-map-loader": "^4.0.1",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "terser-webpack-plugin": "^5.3.9",
-    "ts-loader": "^9.4.4",
     "ts-node": "^10.9.1",
     "tty-browserify": "^0.0.1",
     "typechain": "^8.1.1",
-    "typescript": "^4.9.5",
     "uuid": "^9.0.1",
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4"

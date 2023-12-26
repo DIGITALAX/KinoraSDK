@@ -35,9 +35,9 @@ const config: HardhatUserConfig = {
       url: "http://127.0.0.1:8545",
     },
   },
-  mocha: {
-    timeout: 180000000, // Timeout value in milliseconds
-  },
+  // mocha: {
+  //   timeout: 180000000, // Timeout value in milliseconds
+  // },
 };
 
 export default config;

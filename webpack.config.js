@@ -26,16 +26,15 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/,
-        exclude: [/(node_modules)|test/],
         use: [
           {
             loader: "ts-loader",
+            options: {
+              configFile: "tsconfig.json",
+            },
           },
         ],
-      },
-      {
-        test: /\.d\.ts$/,
-        use: "ignore-loader",
+        exclude: /node_modules/,
       },
       {
         test: /\.map$/,
@@ -45,7 +44,7 @@ module.exports = {
   },
   devtool: false,
   resolve: {
-    modules: ["node_modules"],
+    modules: ["node_modules", "src"],
     extensions: [".tsx", ".ts", ".js"],
     fallback: {
       stream: require.resolve("stream-browserify"),
@@ -71,7 +70,7 @@ module.exports = {
       path: path.resolve(__dirname, ".env"),
     }),
     new webpack.DefinePlugin({
-      self: 'global',
+      self: "global",
     }),
     new CleanWebpackPlugin(),
   ],

@@ -2,7 +2,7 @@
   "version": "v1",
   "packages": {
     "kinora-sdk": {
-      "signature": "54e7611fcd84cd79f47fa195d77c285c",
+      "signature": "02dd99e34bb306ab36feff6b0e5cba49",
       "file": true
     }
   }

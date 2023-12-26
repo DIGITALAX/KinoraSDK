@@ -2,11 +2,12 @@ import { ethers } from "ethers";
 import {
   KINORA_OPEN_ACTION_CONTRACT,
   LENS_HUB_PROXY_CONTRACT,
-} from "./constants";
+} from "./constants/index";
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import { omit } from "lodash";
 import { act } from "./graphql/mutations/actOn";
-import LensHubProxyAbi from "./../src/abis/LensHubProxy.json";
+import LensHubProxyAbi from "./abis/LensHubProxy.json";
+import { EthereumAddress } from "./@types/kinora-sdk";
 
 export class Dispatch {
   /**
@@ -21,7 +22,7 @@ export class Dispatch {
    * @type {ethers.Contract}
    * @description Instance of ethers.Contract for interacting with the Lens Hub Proxy contract.
    */
-  private lensHubProxyContract: ethers.Contract;
+  private lensHubProxyContract: ethers.Contract | undefined;
 
   /**
    * @constructor
@@ -43,7 +44,7 @@ export class Dispatch {
    * @returns {Promise<Object>} - Promise resolving to an object containing data about the action performed.
    */
   playerJoinQuest = async (
-    postId: `0x${string}`,
+    postId: EthereumAddress,
     wallet: ethers.Wallet,
   ): Promise<{
     txHash?: string;
@@ -124,7 +125,7 @@ export class Dispatch {
    * @returns {Promise<Object>} - Promise resolving to an object containing data about the action performed.
    */
   playerCompleteQuestMilestone = async (
-    postId: `0x${string}`,
+    postId: EthereumAddress,
     wallet: ethers.Signer,
   ): Promise<{
     txHash?: string;
@@ -164,7 +165,7 @@ export class Dispatch {
         ),
       );
 
-      const tx = await this.lensHubProxyContract.act({
+      const tx = await this.lensHubProxyContract?.act({
         publicationActedProfileId: parseInt(
           typedData?.value.publicationActedProfileId,
           16,

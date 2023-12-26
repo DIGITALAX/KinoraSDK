@@ -1,4 +1,4 @@
-const hashToIPFS = async (
+export const hashToIPFS = async (
   itemToHash: string,
 ): Promise<{
   cid?: `ipfs://${string}`;
@@ -6,7 +6,7 @@ const hashToIPFS = async (
   message?: string;
 }> => {
   try {
-    const response = await fetch("http://ipfs/upload", {
+    const response = await fetch("https://kinora-backend.onrender.com/upload", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -16,7 +16,7 @@ const hashToIPFS = async (
 
     const data = await response.json();
     return {
-      cid: ("ipfs://" + data.path) as `ipfs://${string}`,
+      cid: `ipfs://${data.ipfsHash}`,
     };
   } catch (err: any) {
     return {

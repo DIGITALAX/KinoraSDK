@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { ILogEntry, LogCategory } from "./@types/kinora-sdk";
+import { EthereumAddress, ILogEntry, LogCategory } from "./@types/kinora-sdk";
 import { Sequence } from "./sequence";
 
 class Kinora {
@@ -35,7 +35,7 @@ class Kinora {
    * @param videoElement - The HTML video element associated with the player.
    */
   livepeerAdd = (
-    postId: `0x${string}`,
+    postId: EthereumAddress,
     videoElement: HTMLVideoElement,
   ): void => {
     this.sequence.initializePlayer(postId, videoElement);
@@ -47,21 +47,21 @@ class Kinora {
    *
    * @param postId - A string representing the video post Id.
    */
-  livepeerDestroy(postId: `0x${string}`): void {
+  livepeerDestroy(postId: EthereumAddress): void {
     this.sequence.destroyPlayer(postId);
   }
 
   /**
    * @method setPlayerMetricsOnChain
    * @description This function is responsible for sending player metrics to the blockchain. It performs various checks and validations before proceeding with the transaction, and logs the outcome.
-   * @param {`0x${string}`} args.postId - The Lens Post Id of the video.
-   * @param {`0x${string}`} args.playerProfileId - The Lens Profile Id of the Player.
+   * @param {EthereumAddress} args.postId - The Lens Post Id of the video.
+   * @param {EthereumAddress} args.playerProfileId - The Lens Profile Id of the Player.
    * @param {ethers.Wallet} args.wallet - The Player's wallet object for signing the metrics on-chain.
    * @returns {Promise<void>} - A Promise that resolves when the operation completes.
    */
   async sendPlayerMetricsOnChain(
-    postId: `0x${string}`,
-    playerProfileId: `0x${string}`,
+    postId: EthereumAddress,
+    playerProfileId: EthereumAddress,
     wallet: ethers.Wallet,
   ): Promise<void> {
     if (!this.sequence)
