@@ -7,9 +7,10 @@ import React, {
   memo,
   useContext,
 } from "react";
-import { Mirror, Post, Quote } from "./../../src/@types/generated";
-import getPublicationClient from "./../../src/graphql/queries/getPublicationClient";
+import getPublicationClient from "./../graphql/queries/getPublicationClient";
 import { KinoraContext } from "./KinoraProvider";
+import { EthereumAddress } from "./../@types/kinora-sdk";
+import { Mirror, Post, Quote, Comment } from "./../@types/generated";
 
 // Code can only be executed in a browser environment
 const isBrowser = typeof window !== "undefined";
@@ -83,8 +84,8 @@ type KinoraPlayerWrapperProps = {
   onWaiting?: (event: Event) => void;
   onFullScreenChange?: (event: Event) => void;
   onLensVideoData?: (
-    data: Post | Mirror | Comment | Quote,
-    error: ApolloError | undefined,
+    data: Post | Mirror | Comment | Quote | null,
+    error: ApolloError | undefined | unknown | null,
   ) => void;
   volume?: { level: number; id: number };
   seekTo?: { time: number; id: number };
@@ -93,8 +94,8 @@ type KinoraPlayerWrapperProps = {
   fullscreen?: boolean;
   fillWidthHeight?: boolean;
   customControls?: boolean;
-  postId?: `0x${string}`;
-  playerProfileId?: `0x${string}`;
+  postId?: EthereumAddress;
+  playerProfileId?: EthereumAddress;
 };
 
 /**
@@ -120,23 +121,22 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     onLensVideoData,
     ...props
   }) => {
-    if (!isBrowser) return null;
     // Reference to the Livepeer internal video element (HTMLVideoElement)
     const mediaElementRef = React.useRef<HTMLVideoElement>(null);
     // State for tracking the last seek operation
     const [lastSeekId, setLastSeekId] = useState<number>(0);
     // State for tracking the last volume change operation
     const [lastVolumeId, setLastVolumeId] = useState<number>(0);
-    // State for tracking if media is currently playing
-    const [isPlaying, setIsPlaying] = useState(false);
     // State for managing Lens related properties
     const [lensProps, setLensProps] = useState<{
-      postId: `0x${string}` | undefined;
-      playerProfileId: string | undefined;
-      onLensVideoData: (
-        data: Post | Mirror | Comment | Quote,
-        error: ApolloError | undefined,
-      ) => void | undefined;
+      postId: EthereumAddress | undefined;
+      playerProfileId: EthereumAddress | undefined;
+      onLensVideoData:
+        | ((
+            data: Post | Mirror | Comment | Quote,
+            error: ApolloError | undefined,
+          ) => void)
+        | undefined;
     }>({
       postId: undefined,
       playerProfileId: undefined,
@@ -170,21 +170,18 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     ];
     // Set the SDK Context created from the Wrapper provider
     const kinoraSDKInstance = useContext(KinoraContext);
-
     // Initialize a new Livepeer Player for recording metrics
     useEffect(() => {
-      if (
-        mediaElementRef.current &&
-        kinoraSDKInstance &&
-        postId
-      ) {
-        kinoraSDKInstance.livepeerAdd(postId, mediaElementRef.current);
+      if (isBrowser) {
+        if (mediaElementRef.current && kinoraSDKInstance && postId) {
+          kinoraSDKInstance.livepeerAdd(postId, mediaElementRef.current);
 
-        return () => {
-          kinoraSDKInstance.livepeerDestroy(postId);
-        };
+          return () => {
+            kinoraSDKInstance.livepeerDestroy(postId);
+          };
+        }
       }
-    }, [postId, mediaElementRef]);
+    }, [postId, mediaElementRef, kinoraSDKInstance]);
 
     // Callback to set media element and setup/cleanup event listeners
     const setMediaElement = useCallback(
@@ -214,14 +211,12 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
 
           // Handlers for play and pause events
           const handlePlay = (e: Event) => {
-            setIsPlaying(true);
             if (typeof props.onPlay === "function") {
               props.onPlay(e);
             }
           };
 
           const handlePause = (e: Event) => {
-            setIsPlaying(false);
             if (typeof props.onPause === "function") {
               props.onPause(e);
             }
@@ -275,20 +270,22 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
      * @description - Handling Lens pub video data and updating LensProps state
      */
     useEffect(() => {
-      if (onLensVideoData && postId) {
-        if (
-          !handleIsEqual(lensProps, {
-            postId,
-            playerProfileId,
-            onLensVideoData,
-          })
-        ) {
-          handleVideoLensData();
-          setLensProps({
-            postId,
-            playerProfileId,
-            onLensVideoData,
-          });
+      if (isBrowser) {
+        if (onLensVideoData && postId) {
+          if (
+            !handleIsEqual(lensProps, {
+              postId,
+              playerProfileId,
+              onLensVideoData,
+            })
+          ) {
+            handleVideoLensData();
+            setLensProps({
+              postId,
+              playerProfileId,
+              onLensVideoData,
+            });
+          }
         }
       }
     }, [onLensVideoData, postId, playerProfileId]);
@@ -298,33 +295,35 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
      * @description - Handling play and pause of the media element
      */
     useEffect(() => {
-      const mediaElement = mediaElementRef.current;
-      if (mediaElement) {
-        if (play && !isPlaying) {
-          mediaElement.play().catch((error) => {
-            console.error("Error on play from KinoraPlayerWrapper: ", error);
-          });
-          setIsPlaying(true);
-        } else if (pause && isPlaying) {
-          mediaElement.pause();
-          setIsPlaying(false);
+      if (isBrowser) {
+        const mediaElement = mediaElementRef.current;
+        if (mediaElement) {
+          if (play && mediaElement.paused) {
+            mediaElement.play().catch((error) => {
+              console.error("Error al intentar reproducir el video: ", error);
+            });
+          } else if (!play && !mediaElement.paused) {
+            mediaElement.pause();
+          }
         }
       }
-    }, [play, pause]);
+    }, [play]);
 
     /**
      * @effect
      * @description - Handling volume change of the media element
      */
     useEffect(() => {
-      const mediaElement = mediaElementRef.current;
-      if (
-        mediaElement &&
-        isFinite(volume.level) &&
-        volume.id !== lastVolumeId
-      ) {
-        mediaElement.volume = Math.min(Math.max(volume.level, 0), 1);
-        setLastVolumeId(volume.id);
+      if (isBrowser) {
+        const mediaElement = mediaElementRef.current;
+        if (
+          mediaElement &&
+          isFinite(volume.level) &&
+          volume.id !== lastVolumeId
+        ) {
+          mediaElement.volume = Math.min(Math.max(volume.level, 0), 1);
+          setLastVolumeId(volume.id);
+        }
       }
     }, [volume]);
 
@@ -333,12 +332,14 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
      * @description - Handling fullscreen toggle of the media element
      */
     useEffect(() => {
-      const mediaElement = mediaElementRef.current;
-      if (fullscreen && mediaElement) {
-        if (document.fullscreenElement) {
-          document.exitFullscreen();
-        } else {
-          mediaElement.requestFullscreen();
+      if (isBrowser) {
+        const mediaElement = mediaElementRef.current;
+        if (fullscreen && mediaElement) {
+          if (document.fullscreenElement) {
+            document.exitFullscreen();
+          } else {
+            mediaElement.requestFullscreen();
+          }
         }
       }
     }, [fullscreen]);
@@ -348,16 +349,23 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
      * @description - Handling seek operations on the media element
      */
     useEffect(() => {
-      const mediaElement = mediaElementRef.current;
-      if (
-        mediaElement &&
-        isFinite(seekTo.time) &&
-        seekTo.id !== lastSeekId &&
-        seekTo.time >= 0 &&
-        isFinite(mediaElement.duration)
-      ) {
-        mediaElement.currentTime = Math.min(seekTo.time, mediaElement.duration);
-        setLastSeekId(seekTo.id);
+      if (isBrowser) {
+        const mediaElement = mediaElementRef.current;
+        if (
+          mediaElement &&
+          isFinite(seekTo.time) &&
+          seekTo.id !== lastSeekId &&
+          seekTo.time >= 0 &&
+          isFinite(mediaElement.duration)
+        ) {
+          if (Math.abs(mediaElement.currentTime - seekTo.time) > 0.5) {
+            mediaElement.currentTime = Math.min(
+              seekTo.time,
+              mediaElement.duration,
+            );
+            setLastSeekId(seekTo.id);
+          }
+        }
       }
     }, [seekTo]);
 
@@ -366,66 +374,74 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
      * @description - Handling styles for custom width and height fill of the video element container
      */
     useEffect(() => {
-      const livepeerContainer = document
-        .getElementById(parentId)
-        .querySelector(".livepeer-contents-container");
-      const aspectRatioContainer = document
-        .getElementById(parentId)
-        .querySelector(".livepeer-aspect-ratio-container");
-      const videoElement = document
-        .getElementById(parentId)
-        .querySelector(".c-lioqzt");
+      if (isBrowser) {
+        const livepeerContainer = document
+          ?.getElementById(parentId)
+          ?.querySelector(".livepeer-contents-container");
+        const aspectRatioContainer = document
+          ?.getElementById(parentId)
+          ?.querySelector(".livepeer-aspect-ratio-container");
+        const videoElement = document
+          ?.getElementById(parentId)
+          ?.querySelector(".c-lioqzt");
 
-      const setStyles = (
-        element: HTMLElement | null,
-        styles: Record<string, string>,
-      ) => {
-        if (element) {
-          Object.keys(styles).forEach((key) => {
-            (element.style as any)[key] = styles[key];
+        const setStyles = (
+          element: HTMLElement | null,
+          styles: Record<string, string>,
+        ) => {
+          if (element) {
+            Object.keys(styles).forEach((key) => {
+              (element.style as any)[key] = styles[key];
+            });
+          }
+        };
+
+        if (fillWidthHeight) {
+          setStyles(livepeerContainer as HTMLElement, {
+            width: "100%",
+            height: "100%",
+          });
+          setStyles(aspectRatioContainer as HTMLElement, {
+            width: "100%",
+            height: "100%",
+          });
+          setStyles(videoElement as HTMLElement, {
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          });
+        } else {
+          setStyles(livepeerContainer as HTMLElement, {
+            width: "",
+            height: "",
+          });
+          setStyles(aspectRatioContainer as HTMLElement, {
+            width: "",
+            height: "",
+          });
+          setStyles(videoElement as HTMLElement, {
+            width: "",
+            height: "",
+            objectFit: "",
           });
         }
-      };
 
-      if (fillWidthHeight) {
-        setStyles(livepeerContainer as HTMLElement, {
-          width: "100%",
-          height: "100%",
-        });
-        setStyles(aspectRatioContainer as HTMLElement, {
-          width: "100%",
-          height: "100%",
-        });
-        setStyles(videoElement as HTMLElement, {
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-        });
-      } else {
-        setStyles(livepeerContainer as HTMLElement, { width: "", height: "" });
-        setStyles(aspectRatioContainer as HTMLElement, {
-          width: "",
-          height: "",
-        });
-        setStyles(videoElement as HTMLElement, {
-          width: "",
-          height: "",
-          objectFit: "",
-        });
+        return () => {
+          setStyles(livepeerContainer as HTMLElement, {
+            width: "",
+            height: "",
+          });
+          setStyles(aspectRatioContainer as HTMLElement, {
+            width: "",
+            height: "",
+          });
+          setStyles(videoElement as HTMLElement, {
+            width: "",
+            height: "",
+            objectFit: "",
+          });
+        };
       }
-
-      return () => {
-        setStyles(livepeerContainer as HTMLElement, { width: "", height: "" });
-        setStyles(aspectRatioContainer as HTMLElement, {
-          width: "",
-          height: "",
-        });
-        setStyles(videoElement as HTMLElement, {
-          width: "",
-          height: "",
-          objectFit: "",
-        });
-      };
     }, [fillWidthHeight]);
 
     /**
@@ -433,43 +449,45 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
      * @description - Observing DOM mutations to handle custom controls display for the Livepeer media element
      */
     useLayoutEffect(() => {
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.addedNodes.length > 0) {
-            const parentDiv = document
-              .getElementById(parentId)
-              .querySelector(".livepeer-aspect-ratio-container");
+      if (isBrowser) {
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.addedNodes.length > 0) {
+              const parentDiv = document
+                ?.getElementById(parentId)
+                ?.querySelector(".livepeer-aspect-ratio-container");
 
-            if (parentDiv) {
-              const videoTag = parentDiv.querySelector("video");
+              if (parentDiv) {
+                const videoTag = parentDiv.querySelector("video");
 
-              if (videoTag) {
-                let sibling = videoTag.nextElementSibling;
-                let divsAfterVideo = [];
-                let count = 0;
+                if (videoTag) {
+                  let sibling = videoTag.nextElementSibling;
+                  let divsAfterVideo = [];
+                  let count = 0;
 
-                while (sibling && count < 4) {
-                  if (sibling.tagName.toLowerCase() === "div") {
-                    divsAfterVideo.push(sibling);
-                    count++;
+                  while (sibling && count < 4) {
+                    if (sibling.tagName.toLowerCase() === "div") {
+                      divsAfterVideo.push(sibling);
+                      count++;
+                    }
+                    sibling = sibling.nextElementSibling;
                   }
-                  sibling = sibling.nextElementSibling;
-                }
 
-                divsAfterVideo.forEach((div) => {
-                  (div as HTMLElement).style.display = customControls
-                    ? "none"
-                    : "block";
-                });
+                  divsAfterVideo.forEach((div) => {
+                    (div as HTMLElement).style.display = customControls
+                      ? "none"
+                      : "block";
+                  });
+                }
               }
             }
-          }
+          });
         });
-      });
 
-      observer.observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.body, { childList: true, subtree: true });
 
-      return () => observer.disconnect();
+        return () => observer.disconnect();
+      }
     }, [customControls]);
 
     /**
@@ -481,14 +499,14 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     const handleIsEqual = useCallback(
       (
         prevProps: {
-          postId: `0x${string}`;
-          playerProfileId: string;
-          onLensVideoData: Function;
+          postId: EthereumAddress | undefined;
+          playerProfileId: EthereumAddress | undefined;
+          onLensVideoData: Function | undefined;
         },
         nextProps: {
-          postId: `0x${string}`;
-          playerProfileId: string;
-          onLensVideoData: Function;
+          postId: EthereumAddress | undefined;
+          playerProfileId: EthereumAddress | undefined;
+          onLensVideoData: Function | undefined;
         },
       ): boolean => {
         return (
@@ -508,14 +526,18 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       const { data, error } = await getPublicationClient({
         forId: postId,
       });
-      onLensVideoData(
-        data.publication as Post | Mirror | Comment | Quote,
-        error,
-      );
+      onLensVideoData &&
+        onLensVideoData(
+          data?.publication as Post | Mirror | Comment | Quote,
+          error,
+        );
     }, [postId, onLensVideoData]);
+
+    if (!isBrowser) return null;
 
     return <>{children(setMediaElement)}</>;
   },
 );
+KinoraPlayerWrapper.displayName = "KinoraPlayerWrapper";
 
 export default KinoraPlayerWrapper;

@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "jsx": "react-jsx",
+    "target": "ES2020",
+    "esModuleInterop": true,
+    "declaration": true,
+    "removeComments": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": false,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      "react": ["./node_modules/react"],
+      "react-dom": ["./node_modules/react-dom"]
+    },
+    "incremental": true,
+    "resolveJsonModule": true,
+    "typeRoots": ["src/@types", "node_modules/@types"],
+    "types": ["node", "mocha"],
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node"
+  },
+  "files": ["src/index.ts"],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "./hardhat.config.ts", "./test/**/*.ts"]
+}

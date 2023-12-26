@@ -9,8 +9,8 @@ import { ApolloError } from "@apollo/client";
 const getPublicationsClient = async (
   request: PublicationsRequest,
 ): Promise<{
-  data: PublicationsQuery;
-  error: ApolloError | undefined;
+  data: PublicationsQuery | null;
+  error: ApolloError | undefined  | null | unknown;
 }> => {
   try {
     const result = await lensClient.query({

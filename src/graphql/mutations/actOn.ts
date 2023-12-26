@@ -7,7 +7,7 @@ import {
   ActOnOpenActionRequest,
   CreateActOnOpenActionTypedDataDocument,
   CreateActOnOpenActionTypedDataMutation,
-} from "./../../../src/@types/generated";
+} from "./../../@types/generated";
 
 export const act = async (
   request: ActOnOpenActionRequest,

@@ -70,7 +70,7 @@ export default function Home() {
               onCanPlayThrough={(e) => {
                 setDuration((e.target as any).duration);
               }}
-              pubId="0x016305-0xd4"
+              postId="0x016305-0xd4"
               onLensVideoData={(data, error) => console.log({ data, error })}
             >
               {(setMediaElement: (node: HTMLVideoElement) => void) => (

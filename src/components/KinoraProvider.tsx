@@ -1,5 +1,5 @@
 import React, { createContext } from "react";
-import Kinora from "./../../src/kinora";
+import Kinora from "./../kinora";
 
 const KinoraContext = createContext<Kinora | null>(null);
 

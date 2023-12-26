@@ -1,4 +1,3 @@
-import { ethers } from "ethers";
 import { PublicationMetadataMainFocusType } from "./generated";
 
 /**
@@ -8,6 +7,11 @@ export enum RewardType {
   ERC20,
   ERC721,
 }
+
+/**
+ * @description Type for Eth Address.
+ */
+export type EthereumAddress = `0x${string}`;
 
 /**
  * @description Type representing a contract's ABI (Application Binary Interface).
@@ -38,7 +42,7 @@ export type ContractABI = (
 export interface Reward {
   type: RewardType; // Type of reward
   erc721URI?: `ipfs://${string}`; // URI hash for the NFT reward
-  erc20tokenAddress?: `0x${string}`; // Address of the token contract
+  erc20tokenAddress?: EthereumAddress; // Address of the token contract
   erc20tokenAmount?: string; // Amount of erc20 tokens to reward
 }
 
@@ -47,8 +51,8 @@ export interface Reward {
  */
 export interface GatingLogic {
   erc721TokenIds: number[][];
-  erc721Addresses: `0x${string}`[];
-  erc20Addresses: `0x${string}`[];
+  erc721Addresses: EthereumAddress[];
+  erc20Addresses: EthereumAddress[];
   erc20Thresholds: string[];
   oneOf: boolean;
 }
@@ -114,7 +118,6 @@ export interface ILogEntry {
   isoDate: string; // ISO date string representing when the log entry was created
 }
 
-
 /** *
  * @description Lens Protocol Publication Metadata Struct.
  */
@@ -166,11 +169,10 @@ export interface BoolLensCriteria {
  */
 export interface PlayerData {
   videoElement: HTMLVideoElement;
-  postId: `0x${string}`;
+  postId: EthereumAddress;
   eventHandlers: {
     play: (event: Event) => void;
     pause: (event: Event) => void;
     click: (event: Event) => void;
   };
 }
-
