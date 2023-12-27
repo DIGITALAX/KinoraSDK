@@ -20,6 +20,8 @@ contract KinoraQuestData {
 
   mapping(uint256 => KinoraLibrary.Player) private _allPlayers;
   mapping(uint256 => KinoraLibrary.Quest) private _allQuests;
+  mapping(string => uint256[]) private _idsToQuests;
+  mapping(string => KinoraLibrary.VideoPost) private _idsToVideos;
 
   event QuestInstantiated(uint256 questId, uint256 milestoneCount);
   event PlayerJoinedQuest(uint256 questId, uint256 playerProfileId);
@@ -94,7 +96,7 @@ contract KinoraQuestData {
     newQuest.gated = _params.gateLogic;
     newQuest.milestoneCount = _params.milestones.length;
 
-    _setMilestones(_params.milestones, newQuest);
+    _setMilestones(_params.milestones, newQuest, _questCount);
 
     emit QuestInstantiated(_questCount, _params.milestones.length);
   }
@@ -198,7 +200,8 @@ contract KinoraQuestData {
 
   function _setMilestones(
     KinoraLibrary.MilestoneParameter[] memory _milestones,
-    KinoraLibrary.Quest storage _newQuest
+    KinoraLibrary.Quest storage _newQuest,
+    uint256 _questId
   ) private {
     for (uint256 i = 0; i < _milestones.length; i++) {
       KinoraLibrary.Milestone storage _newMilestone = _newQuest
@@ -210,7 +213,7 @@ contract KinoraQuestData {
       _newMilestone.rewardsLength = _milestones[i].rewards.length;
 
       _setRewards(_newMilestone, _milestones[i]);
-      _setVideos(_newMilestone, _milestones[i]);
+      _setVideos(_newMilestone, _milestones[i], _questId);
     }
   }
 
@@ -230,11 +233,17 @@ contract KinoraQuestData {
 
   function _setVideos(
     KinoraLibrary.Milestone storage _newMilestone,
-    KinoraLibrary.MilestoneParameter memory _paramsMilestone
+    KinoraLibrary.MilestoneParameter memory _paramsMilestone,
+    uint256 _questId
   ) private {
     for (uint j = 0; j < _paramsMilestone.videos.length; j++) {
       KinoraLibrary.Video memory video = _paramsMilestone.videos[j];
       _newMilestone.videos[video.pubId][video.profileId] = video;
+      _idsToQuests[video.playerId].push(_questId);
+      _idsToVideos[video.playerId] = KinoraLibrary.VideoPost({
+        pubId: video.pubId,
+        profileId: video.profileId
+      });
     }
   }
 
@@ -451,9 +460,7 @@ contract KinoraQuestData {
     return _allQuests[_questId].status;
   }
 
-  function getMilestoneCount(
-    uint256 _questId
-  ) public view returns (uint256) {
+  function getMilestoneCount(uint256 _questId) public view returns (uint256) {
     return _allQuests[_questId].milestoneCount;
   }
 
@@ -717,5 +724,23 @@ contract KinoraQuestData {
   ) public view returns (string memory) {
     return
       _allQuests[_questId].milestones[_milestone - 1].rewards[_rewardIndex].uri;
+  }
+
+  function getQuestIdsToVideoPlaybackId(
+    string memory _playbackId
+  ) public view returns (uint256[] memory) {
+    return _idsToQuests[_playbackId];
+  }
+
+  function getVideoPubIdFromPlaybackId(
+    string memory _playbackId
+  ) public view returns (uint256) {
+    return _idsToVideos[_playbackId].pubId;
+  }
+
+  function getVideoProfileIdFromPlaybackId(
+    string memory _playbackId
+  ) public view returns (uint256) {
+    return _idsToVideos[_playbackId].profileId;
   }
 }
