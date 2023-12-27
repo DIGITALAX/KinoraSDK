@@ -54,6 +54,7 @@ const isBrowser = typeof window !== "undefined";
  * @param customControls - A boolean to control custom controls state.
  * @param postId - The Lens Pub Id associated with the media playback Id.
  * @param playerProfileId - The Lens Profile Id of the player.
+ * @param styles - Style properties to pass to the Video player.
  */
 type KinoraPlayerWrapperProps = {
   children: (
@@ -96,6 +97,7 @@ type KinoraPlayerWrapperProps = {
   customControls?: boolean;
   postId?: EthereumAddress;
   playerProfileId?: EthereumAddress;
+  styles?: React.CSSProperties;
 };
 
 /**
@@ -119,6 +121,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     parentId,
     children,
     onLensVideoData,
+    styles = {},
     ...props
   }) => {
     // Reference to the Livepeer internal video element (HTMLVideoElement)
@@ -375,6 +378,8 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
      */
     useEffect(() => {
       if (isBrowser) {
+        const { width, height, ...filteredStyles } = styles;
+
         const livepeerContainer = document
           ?.getElementById(parentId)
           ?.querySelector(".livepeer-contents-container");
@@ -387,12 +392,18 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
 
         const setStyles = (
           element: HTMLElement | null,
-          styles: Record<string, string>,
+          styles: React.CSSProperties,
         ) => {
           if (element) {
-            Object.keys(styles).forEach((key) => {
-              (element.style as any)[key] = styles[key];
-            });
+            for (const [key, value] of Object.entries(styles)) {
+              if (
+                typeof element.style[key as keyof CSSStyleDeclaration] !==
+                  "undefined" &&
+                !["length", "parentRule"].includes(key)
+              ) {
+                element.style[key as any] = value;
+              }
+            }
           }
         };
 
@@ -400,29 +411,35 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
           setStyles(livepeerContainer as HTMLElement, {
             width: "100%",
             height: "100%",
+            ...filteredStyles,
           });
           setStyles(aspectRatioContainer as HTMLElement, {
             width: "100%",
             height: "100%",
+            ...filteredStyles,
           });
           setStyles(videoElement as HTMLElement, {
             width: "100%",
             height: "100%",
             objectFit: "cover",
+            ...filteredStyles,
           });
         } else {
           setStyles(livepeerContainer as HTMLElement, {
             width: "",
             height: "",
+            ...filteredStyles,
           });
           setStyles(aspectRatioContainer as HTMLElement, {
             width: "",
             height: "",
+            ...filteredStyles,
           });
           setStyles(videoElement as HTMLElement, {
             width: "",
             height: "",
-            objectFit: "",
+            objectFit: undefined,
+            ...filteredStyles,
           });
         }
 
@@ -430,15 +447,18 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
           setStyles(livepeerContainer as HTMLElement, {
             width: "",
             height: "",
+            ...filteredStyles,
           });
           setStyles(aspectRatioContainer as HTMLElement, {
             width: "",
             height: "",
+            ...filteredStyles,
           });
           setStyles(videoElement as HTMLElement, {
             width: "",
             height: "",
-            objectFit: "",
+            objectFit: undefined,
+            ...filteredStyles,
           });
         };
       }
