@@ -430,7 +430,7 @@ contract KinoraOpenAction is
       .getMilestoneGatedERC20Thresholds(_questId, _milestone);
     address[] memory _erc721Addresses = kinoraQuestData
       .getMilestoneGatedERC721Addresses(_questId, _milestone);
-    uint256[][] memory _erc721Tokens = kinoraQuestData
+    KinoraLibrary.TokenData[] memory _erc721Tokens = kinoraQuestData
       .getMilestoneGatedERC721Tokens(_questId, _milestone);
     if (
       !_gateChecker(
@@ -457,7 +457,7 @@ contract KinoraOpenAction is
       .getQuestGatedERC20Thresholds(_questId);
     address[] memory _erc721Addresses = kinoraQuestData
       .getQuestGatedERC721Addresses(_questId);
-    uint256[][] memory _erc721Tokens = kinoraQuestData
+    KinoraLibrary.TokenData[] memory _erc721Tokens = kinoraQuestData
       .getQuestGatedERC721Tokens(_questId);
     if (
       !_gateChecker(
@@ -474,7 +474,7 @@ contract KinoraOpenAction is
   }
 
   function _gateChecker(
-    uint256[][] memory _erc721Tokens,
+    KinoraLibrary.TokenData[] memory _erc721TokensData,
     address[] memory _erc20Addresses,
     address[] memory _erc721Addresses,
     uint256[] memory _erc20Thresholds,
@@ -483,41 +483,92 @@ contract KinoraOpenAction is
   ) private view returns (bool) {
     bool _oneERC20ConditionMet = false;
     bool _oneERC721ConditionMet = false;
+
     for (uint i = 0; i < _erc20Addresses.length; i++) {
       uint256 _playerBalance = IERC20(_erc20Addresses[i]).balanceOf(
         _playerAddress
       );
       if (_playerBalance >= _erc20Thresholds[i]) {
         if (_isOneOf) {
-          _oneERC20ConditionMet = true;
-          break;
+          return true;
         }
+        _oneERC20ConditionMet = true;
       } else if (!_isOneOf) {
         return false;
       }
     }
+
     if (_isOneOf && _oneERC20ConditionMet) {
       return true;
     }
+
     for (uint i = 0; i < _erc721Addresses.length; i++) {
-      for (uint j = 0; j < _erc721Tokens[i].length; j++) {
-        if (
-          IERC721(_erc721Addresses[i]).ownerOf(_erc721Tokens[i][j]) ==
-          _playerAddress
-        ) {
-          if (_isOneOf) {
+      KinoraLibrary.TokenData memory tokenData = _erc721TokensData[i];
+
+      if (tokenData.matchType == KinoraLibrary.TokenType.Token) {
+        for (uint j = 0; j < tokenData.ids.length; j++) {
+          if (
+            IERC721(_erc721Addresses[i]).ownerOf(tokenData.ids[j]) ==
+            _playerAddress
+          ) {
+            if (_isOneOf) {
+              return true;
+            }
             _oneERC721ConditionMet = true;
             break;
           }
-        } else if (!_isOneOf) {
-          return false;
+        }
+      } else if (tokenData.matchType == KinoraLibrary.TokenType.Collection) {
+        uint256 _balance = IERC721(_erc721Addresses[i]).balanceOf(
+          _playerAddress
+        );
+        bool _ownsMatchingURI = false;
+        for (uint256 j = 0; j < _balance; j++) {
+          uint256 _tokenId = _fetchTokenIdByIndex(
+            _erc721Addresses[i],
+            _playerAddress,
+            j
+          );
+          string memory _tokenURI = IERC721Metadata(_erc721Addresses[i])
+            .tokenURI(_tokenId);
+          for (uint256 k = 0; k < tokenData.uris.length; k++) {
+            if (
+              keccak256(abi.encodePacked(_tokenURI)) ==
+              keccak256(abi.encodePacked(tokenData.uris[k]))
+            ) {
+              _ownsMatchingURI = true;
+              break;
+            }
+          }
+          if (_ownsMatchingURI) {
+            if (_isOneOf) {
+              return true;
+            }
+            _oneERC721ConditionMet = true;
+            break;
+          }
         }
       }
-      if (_isOneOf && _oneERC721ConditionMet) {
-        return true;
+      if (_oneERC721ConditionMet && !_isOneOf) {
+        break;
       }
     }
+
+    if (_isOneOf && (_oneERC20ConditionMet || _oneERC721ConditionMet)) {
+      return true;
+    } else if (!_isOneOf && _oneERC20ConditionMet && _oneERC721ConditionMet) {
+      return true;
+    }
     return false;
+  }
+
+  function _fetchTokenIdByIndex(
+    address _erc721Address,
+    address _owner,
+    uint256 _index
+  ) private view returns (uint256) {
+    return
+      IERC721Enumerable(_erc721Address).tokenOfOwnerByIndex(_owner, _index);
   }
 
   function supportsInterface(
