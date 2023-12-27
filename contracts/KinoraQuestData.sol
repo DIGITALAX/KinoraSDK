@@ -480,7 +480,7 @@ contract KinoraQuestData {
 
   function getQuestGatedERC721Tokens(
     uint256 _questId
-  ) public view returns (uint256[][] memory) {
+  ) public view returns (KinoraLibrary.TokenData[] memory) {
     return _allQuests[_questId].gated.erc721TokenIds;
   }
 
@@ -510,7 +510,7 @@ contract KinoraQuestData {
   function getMilestoneGatedERC721Tokens(
     uint256 _questId,
     uint256 _milestone
-  ) public view returns (uint256[][] memory) {
+  ) public view returns (KinoraLibrary.TokenData[] memory) {
     return _allQuests[_questId].milestones[_milestone].gated.erc721TokenIds;
   }
 

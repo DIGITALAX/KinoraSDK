@@ -44,7 +44,7 @@ contract KinoraLibrary {
   }
 
   struct VideoPost {
-        uint256 profileId;
+    uint256 profileId;
     uint256 pubId;
   }
 
@@ -61,7 +61,7 @@ contract KinoraLibrary {
     uint256 maxPlayerCount;
   }
   struct GatingLogic {
-    uint256[][] erc721TokenIds;
+    KinoraLibrary.TokenData[] erc721TokenIds;
     address[] erc721Addresses;
     address[] erc20Addresses;
     uint256[] erc20Thresholds;
@@ -113,5 +113,16 @@ contract KinoraLibrary {
     uint256 maxPlayerCount;
     KinoraLibrary.MilestoneParameter[] milestones;
     address envokerAddress;
+  }
+
+  enum TokenType {
+    Collection,
+    Token
+  }
+
+  struct TokenData {
+    string[] uris;
+    uint256[] ids;
+    TokenType matchType;
   }
 }
