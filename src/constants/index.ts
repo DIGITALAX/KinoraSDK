@@ -25,10 +25,6 @@ export const KINORA_QUEST_DATA_CONTRACT: EthereumAddress = "0xCF96CeeB6745a9374A
  * @constant LENS_BASE_URL Base URL for the Lens V2 API.
  */
 export const LENS_BASE_URL: string = "https://api-v2.lens.dev/";
-/**
- * @constant INFURA_GATEWAY IPFS Infura Gateway.
- */
-export const INFURA_GATEWAY: string = "https://chromadin.infura-ipfs.io/";
 
 /**
  * @constant IPFS_REGEX IPFS Regex Check.

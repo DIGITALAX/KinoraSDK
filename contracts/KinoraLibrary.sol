@@ -27,6 +27,7 @@ contract KinoraLibrary {
   }
 
   struct Video {
+    string playerId;
     uint256 profileId;
     uint256 pubId;
     uint256 minPlayCount;
@@ -40,6 +41,11 @@ contract KinoraLibrary {
     bool comment;
     bool bookmark;
     bool react;
+  }
+
+  struct VideoPost {
+        uint256 profileId;
+    uint256 pubId;
   }
 
   struct Quest {

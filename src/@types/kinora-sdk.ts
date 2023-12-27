@@ -77,6 +77,7 @@ export interface Milestone {
  */
 export interface MilestoneEligibility {
   internalCriteria?: {
+    playbackId: string;
     postId: string;
     playbackCriteria: MilestoneEligibilityCriteria;
   }[];
