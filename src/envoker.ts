@@ -202,7 +202,7 @@ export class Envoker {
               milestone: milestone.milestone,
               videos: milestone.eligibility.internalCriteria?.map((item) => {
                 return {
-                  playbackId: item?.playbackId || "",
+                  playbackId: item?.playbackId,
                   profileId: parseInt(item?.postId?.split("-")[0], 16),
                   pubId: parseInt(item?.postId?.split("-")[1], 16),
                   minPlayCount: item.playbackCriteria.minPlayCount,
@@ -228,7 +228,7 @@ export class Envoker {
             "tuple(uint256[][],address[],address[],uint256[],bool)," +
             "uint256," +
             "tuple(" +
-            "tuple(uint256[][],address[],address[],uint256[],bool)," +
+            "tuple(string[][],uint256[][],address[],address[],uint256[],bool)," +
             "tuple(uint8,string,address,uint256)[]," +
             "tuple(string,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,bool,bool,bool,bool)[]" +
             "uint256" +

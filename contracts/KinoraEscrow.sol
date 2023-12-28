@@ -29,6 +29,12 @@ contract KinoraEscrow {
     }
     _;
   }
+  modifier onlyMaintainer() {
+    if (!accessControl.isAdmin(msg.sender)) {
+      revert KinoraErrors.InvalidAddress();
+    }
+    _;
+  }
   modifier onlyQuestEnvoker(uint256 _questId) {
     if (kinoraQuestData.getQuestEnvoker(_questId) != msg.sender) {
       revert KinoraErrors.InvalidAddress();
@@ -50,15 +56,13 @@ contract KinoraEscrow {
   constructor(
     address _accessControlAddress,
     address _kinoraQuestDataAddress,
-    address _kinoraNFTCreatorAddress,
-    address _kinoraOpenActionAddress
+    address _kinoraNFTCreatorAddress
   ) {
     name = "KinoraEscrow";
     symbol = "KES";
     accessControl = KinoraAccessControl(_accessControlAddress);
     kinoraQuestData = KinoraQuestData(_kinoraQuestDataAddress);
     kinoraNFTCreator = KinoraNFTCreator(_kinoraNFTCreatorAddress);
-    kinoraOpenAction = _kinoraOpenActionAddress;
   }
 
   function depositERC20(
@@ -144,8 +148,11 @@ contract KinoraEscrow {
         _milestone
       );
 
-      address _tokenAddress = kinoraQuestData
-        .getMilestoneRewardTokenAddress(_questId, i, _milestone);
+      address _tokenAddress = kinoraQuestData.getMilestoneRewardTokenAddress(
+        _questId,
+        i,
+        _milestone
+      );
 
       IERC20(_tokenAddress).transfer(_toAddress, _amount);
 
@@ -168,5 +175,29 @@ contract KinoraEscrow {
     uint256 _milestone
   ) public view returns (string memory) {
     return _questMilestoneERC721Deposit[_questId][_milestone];
+  }
+
+  function setKinoraQuestDataContract(
+    address _newQuestDataContract
+  ) external onlyMaintainer {
+    kinoraQuestData = KinoraQuestData(_newQuestDataContract);
+  }
+
+  function setKinoraAccessContract(
+    address _newAccessContract
+  ) external onlyMaintainer {
+    accessControl = KinoraAccessControl(_newAccessContract);
+  }
+
+  function setKinoraNFTCreatorContract(
+    address _newNFTCreatorContract
+  ) external onlyMaintainer {
+    kinoraNFTCreator = KinoraNFTCreator(_newNFTCreatorContract);
+  }
+
+  function setKinoraOpenActionContract(
+    address _newOpenActionContract
+  ) external onlyMaintainer {
+    kinoraOpenAction = _newOpenActionContract;
   }
 }

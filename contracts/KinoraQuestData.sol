@@ -68,18 +68,12 @@ contract KinoraQuestData {
     _;
   }
 
-  constructor(
-    address _metricsAddress,
-    address _escrowAddress,
-    address _accessAddress
-  ) {
+  constructor(address _accessAddress) {
     name = "KinoraQuestData";
     symbol = "KQD";
     _questCount = 0;
     _playerCount = 0;
     kinoraAccess = KinoraAccessControl(_accessAddress);
-    kinoraMetrics = KinoraMetrics(_metricsAddress);
-    kinoraEscrow = KinoraEscrow(_escrowAddress);
   }
 
   function configureNewQuest(
@@ -478,10 +472,16 @@ contract KinoraQuestData {
     return _allQuests[_questId].gated.erc721Addresses;
   }
 
-  function getQuestGatedERC721Tokens(
+  function getQuestGatedERC721TokenIds(
     uint256 _questId
-  ) public view returns (KinoraLibrary.TokenData[] memory) {
+  ) public view returns (uint256[][] memory) {
     return _allQuests[_questId].gated.erc721TokenIds;
+  }
+
+  function getQuestGatedERC721TokenURIs(
+    uint256 _questId
+  ) public view returns (string[][] memory) {
+    return _allQuests[_questId].gated.erc721TokenURIs;
   }
 
   function getQuestGatedOneOf(uint256 _questId) public view returns (bool) {
@@ -507,11 +507,18 @@ contract KinoraQuestData {
     return _allQuests[_questId].milestones[_milestone].gated.erc721Addresses;
   }
 
-  function getMilestoneGatedERC721Tokens(
+  function getMilestoneGatedERC721TokenIds(
     uint256 _questId,
     uint256 _milestone
-  ) public view returns (KinoraLibrary.TokenData[] memory) {
+  ) public view returns (uint256[][] memory) {
     return _allQuests[_questId].milestones[_milestone].gated.erc721TokenIds;
+  }
+
+  function getMilestoneGatedERC721TokenURIs(
+    uint256 _questId,
+    uint256 _milestone
+  ) public view returns (string[][] memory) {
+    return _allQuests[_questId].milestones[_milestone].gated.erc721TokenURIs;
   }
 
   function getMilestoneVideoLength(

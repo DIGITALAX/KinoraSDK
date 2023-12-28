@@ -6,7 +6,6 @@ import "./KinoraErrors.sol";
 contract KinoraAccessControl {
   string public symbol;
   string public name;
-  uint256 private _profileId;
 
   mapping(address => bool) private _admins;
 
@@ -20,12 +19,10 @@ contract KinoraAccessControl {
     _;
   }
 
-  constructor(address _deployerAdmin, uint256 _profile) {
+  constructor() {
     symbol = "KAC";
     name = "KinoraAccessControl";
     _admins[msg.sender] = true;
-    _admins[_deployerAdmin] = true;
-    _profileId = _profile;
   }
 
   function addAdmin(address _admin) external onlyAdmin {
@@ -47,9 +44,5 @@ contract KinoraAccessControl {
 
   function isAdmin(address _address) public view returns (bool) {
     return _admins[_address];
-  }
-
-  function getProfileId() public view returns (uint256) {
-    return _profileId;
   }
 }
