@@ -430,11 +430,14 @@ contract KinoraOpenAction is
       .getMilestoneGatedERC20Thresholds(_questId, _milestone);
     address[] memory _erc721Addresses = kinoraQuestData
       .getMilestoneGatedERC721Addresses(_questId, _milestone);
-    KinoraLibrary.TokenData[] memory _erc721Tokens = kinoraQuestData
-      .getMilestoneGatedERC721Tokens(_questId, _milestone);
+    uint256[][] memory _erc721TokenIds = kinoraQuestData
+      .getMilestoneGatedERC721TokenIds(_questId, _milestone);
+    string[][] memory _erc721TokenUris = kinoraQuestData
+      .getMilestoneGatedERC721TokenURIs(_questId, _milestone);
     if (
       !_gateChecker(
-        _erc721Tokens,
+        _erc721TokenUris,
+        _erc721TokenIds,
         _erc20Addresses,
         _erc721Addresses,
         _erc20Thresholds,
@@ -457,11 +460,14 @@ contract KinoraOpenAction is
       .getQuestGatedERC20Thresholds(_questId);
     address[] memory _erc721Addresses = kinoraQuestData
       .getQuestGatedERC721Addresses(_questId);
-    KinoraLibrary.TokenData[] memory _erc721Tokens = kinoraQuestData
-      .getQuestGatedERC721Tokens(_questId);
+    uint256[][] memory _erc721TokenIds = kinoraQuestData
+      .getQuestGatedERC721TokenIds(_questId);
+    string[][] memory _erc721TokenUris = kinoraQuestData
+      .getQuestGatedERC721TokenURIs(_questId);
     if (
       !_gateChecker(
-        _erc721Tokens,
+        _erc721TokenUris,
+        _erc721TokenIds,
         _erc20Addresses,
         _erc721Addresses,
         _erc20Thresholds,
@@ -474,7 +480,8 @@ contract KinoraOpenAction is
   }
 
   function _gateChecker(
-    KinoraLibrary.TokenData[] memory _erc721TokensData,
+    string[][] memory _erc721TokensUris,
+    uint256[][] memory _erc721TokenIds,
     address[] memory _erc20Addresses,
     address[] memory _erc721Addresses,
     uint256[] memory _erc20Thresholds,
@@ -482,7 +489,6 @@ contract KinoraOpenAction is
     bool _isOneOf
   ) private view returns (bool) {
     bool _oneERC20ConditionMet = false;
-    bool _oneERC721ConditionMet = false;
 
     for (uint i = 0; i < _erc20Addresses.length; i++) {
       uint256 _playerBalance = IERC20(_erc20Addresses[i]).balanceOf(
@@ -502,23 +508,32 @@ contract KinoraOpenAction is
       return true;
     }
 
-    for (uint i = 0; i < _erc721Addresses.length; i++) {
-      KinoraLibrary.TokenData memory tokenData = _erc721TokensData[i];
+    bool _oneERC721ConditionMet = _erc721Check(
+      _erc721TokensUris,
+      _erc721TokenIds,
+      _erc721Addresses,
+      _playerAddress,
+      _isOneOf
+    );
 
-      if (tokenData.matchType == KinoraLibrary.TokenType.Token) {
-        for (uint j = 0; j < tokenData.ids.length; j++) {
-          if (
-            IERC721(_erc721Addresses[i]).ownerOf(tokenData.ids[j]) ==
-            _playerAddress
-          ) {
-            if (_isOneOf) {
-              return true;
-            }
-            _oneERC721ConditionMet = true;
-            break;
-          }
-        }
-      } else if (tokenData.matchType == KinoraLibrary.TokenType.Collection) {
+    if (_isOneOf && (_oneERC20ConditionMet || _oneERC721ConditionMet)) {
+      return true;
+    } else if (!_isOneOf && _oneERC20ConditionMet && _oneERC721ConditionMet) {
+      return true;
+    }
+    return false;
+  }
+
+  function _erc721Check(
+    string[][] memory _erc721TokensUris,
+    uint256[][] memory _erc721TokenIds,
+    address[] memory _erc721Addresses,
+    address _playerAddress,
+    bool _isOneOf
+  ) private view returns (bool) {
+    bool _oneERC721ConditionMet = false;
+    for (uint i = 0; i < _erc721Addresses.length; i++) {
+      if (_erc721TokensUris[i].length > 0) {
         uint256 _balance = IERC721(_erc721Addresses[i]).balanceOf(
           _playerAddress
         );
@@ -531,10 +546,10 @@ contract KinoraOpenAction is
           );
           string memory _tokenURI = IERC721Metadata(_erc721Addresses[i])
             .tokenURI(_tokenId);
-          for (uint256 k = 0; k < tokenData.uris.length; k++) {
+          for (uint256 k = 0; k < _erc721TokensUris[i].length; k++) {
             if (
               keccak256(abi.encodePacked(_tokenURI)) ==
-              keccak256(abi.encodePacked(tokenData.uris[k]))
+              keccak256(abi.encodePacked(_erc721TokensUris[i][k]))
             ) {
               _ownsMatchingURI = true;
               break;
@@ -549,17 +564,28 @@ contract KinoraOpenAction is
           }
         }
       }
+
+      if (_erc721TokenIds[i].length > 0) {
+        for (uint j = 0; j < _erc721TokenIds[i].length; j++) {
+          if (
+            IERC721(_erc721Addresses[i]).ownerOf(_erc721TokenIds[i][j]) ==
+            _playerAddress
+          ) {
+            if (_isOneOf) {
+              return true;
+            }
+            _oneERC721ConditionMet = true;
+            break;
+          }
+        }
+      }
+
       if (_oneERC721ConditionMet && !_isOneOf) {
         break;
       }
     }
 
-    if (_isOneOf && (_oneERC20ConditionMet || _oneERC721ConditionMet)) {
-      return true;
-    } else if (!_isOneOf && _oneERC20ConditionMet && _oneERC721ConditionMet) {
-      return true;
-    }
-    return false;
+    return _oneERC721ConditionMet;
   }
 
   function _fetchTokenIdByIndex(

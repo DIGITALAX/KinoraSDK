@@ -3,7 +3,6 @@
 pragma solidity ^0.8.19;
 
 import "./KinoraAccessControl.sol";
-import "./KinoraEscrow.sol";
 import "./KinoraLibrary.sol";
 import "./KinoraQuestData.sol";
 
@@ -45,10 +44,7 @@ contract KinoraMetrics {
     _;
   }
 
-  constructor(
-    address _kinoraAccessAddress,
-    address _kinoraQuestDataAddress
-  ) {
+  constructor(address _kinoraAccessAddress, address _kinoraQuestDataAddress) {
     name = "KinoraMetrics";
     symbol = "KME";
     kinoraAccess = KinoraAccessControl(_kinoraAccessAddress);

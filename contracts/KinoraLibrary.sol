@@ -11,6 +11,11 @@ contract KinoraLibrary {
     ERC20,
     ERC721
   }
+  enum TokenType {
+    Collection,
+    Token
+  }
+
   struct Reward {
     RewardType rewardType;
     string uri;
@@ -61,7 +66,8 @@ contract KinoraLibrary {
     uint256 maxPlayerCount;
   }
   struct GatingLogic {
-    KinoraLibrary.TokenData[] erc721TokenIds;
+    string[][] erc721TokenURIs;
+    uint256[][] erc721TokenIds;
     address[] erc721Addresses;
     address[] erc20Addresses;
     uint256[] erc20Thresholds;
@@ -109,20 +115,9 @@ contract KinoraLibrary {
   }
 
   struct ActionParameters {
-    KinoraLibrary.GatingLogic gateLogic;
+    GatingLogic gateLogic;
     uint256 maxPlayerCount;
-    KinoraLibrary.MilestoneParameter[] milestones;
+    MilestoneParameter[] milestones;
     address envokerAddress;
-  }
-
-  enum TokenType {
-    Collection,
-    Token
-  }
-
-  struct TokenData {
-    string[] uris;
-    uint256[] ids;
-    TokenType matchType;
   }
 }

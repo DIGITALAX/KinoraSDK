@@ -31,10 +31,8 @@ contract KinoraNFTCreator is ERC721Enumerable {
   event TokenMinted(address playerAddress, uint256 tokenId);
 
   constructor(
-    address _kinoraEscrowAddress,
     address _kinoraAccessAddress
   ) ERC721("KinoraNFTCreator", "KNC") {
-    kinoraEscrow = (_kinoraEscrowAddress);
     kinoraAccess = KinoraAccessControl(_kinoraAccessAddress);
     _tokenSupply = 0;
   }
