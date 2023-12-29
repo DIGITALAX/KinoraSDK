@@ -1,0 +1,39 @@
+specVersion: 0.0.5
+schema:
+  file: schema.graphql
+dataSources:
+  - kind: ethereum
+    name: KinoraQuestData
+    network: mumbai
+    source:
+      address: "0x14d6c3b84eA9655C75A4d4B264584469D57E37e3"
+      abi: KinoraQuestData
+      startBlock: 44096047
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - MilestoneCompleted
+        - PlayerEligibleToClaimMilestone
+        - PlayerJoinedQuest
+        - PlayerMetricsUpdated
+        - QuestInstantiated
+        - QuestStatusUpdated
+      abis:
+        - name: KinoraQuestData
+          file: KinoraQuestData/abis/KinoraQuestData.json
+      eventHandlers:
+        - event: MilestoneCompleted(uint256,uint256,uint256)
+          handler: handleMilestoneCompleted
+        - event: PlayerEligibleToClaimMilestone(uint256,uint256,uint256,bool)
+          handler: handlePlayerEligibleToClaimMilestone
+        - event: PlayerJoinedQuest(uint256,uint256)
+          handler: handlePlayerJoinedQuest
+        - event: PlayerMetricsUpdated(uint256,uint256,uint256)
+          handler: handlePlayerMetricsUpdated
+        - event: QuestInstantiated(uint256,uint256)
+          handler: handleQuestInstantiated
+        - event: QuestStatusUpdated(uint256,uint8)
+          handler: handleQuestStatusUpdated
+      file: KinoraQuestData/KinoraQuestData.wasm
