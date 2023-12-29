@@ -1,7 +1,28 @@
 [
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_kinoraAccessAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraQuestDataAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
     "inputs": [],
-    "name": "OnlyPKP",
+    "name": "InvalidAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PlayerNotEligible",
     "type": "error"
   },
   {
@@ -9,27 +30,21 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "string",
-        "name": "playbackId",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "videoPubId",
+        "type": "uint256"
       },
       {
         "indexed": false,
-        "internalType": "string",
-        "name": "metricJSON",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "videoProfileId",
+        "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
         "name": "playerProfileId",
         "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "encrypted",
-        "type": "bool"
       }
     ],
     "name": "AddPlayerMetrics",
@@ -40,21 +55,8 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "uint8",
-        "name": "version",
-        "type": "uint8"
-      }
-    ],
-    "name": "Initialized",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
         "internalType": "uint256",
-        "name": "pubId",
+        "name": "questId",
         "type": "uint256"
       },
       {
@@ -74,29 +76,83 @@
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "accessControl",
-    "outputs": [
-      {
-        "internalType": "contract KinoraAccessControl",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "_playbackId",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "_json",
-        "type": "string"
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "playCount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "ctr",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "avd",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "impressionCount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "engagementRate",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "duration",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "mostViewedSegment",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "interactionRate",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "mostReplayedArea",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "hasQuoted",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "hasMirrored",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "hasCommented",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "hasBookmarked",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "hasReacted",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct KinoraLibrary.PlayerVideoMetrics",
+        "name": "_metrics",
+        "type": "tuple"
       },
       {
         "internalType": "uint256",
@@ -105,18 +161,13 @@
       },
       {
         "internalType": "uint256",
-        "name": "_pubId",
+        "name": "_videoProfileId",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_newPoints",
+        "name": "_videoPubId",
         "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "_encrypted",
-        "type": "bool"
       }
     ],
     "name": "addPlayerMetrics",
@@ -125,21 +176,16 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "kinoraAccess",
+    "outputs": [
       {
-        "internalType": "address",
-        "name": "_accessControlAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_kinoraQuestDataAddress",
+        "internalType": "contract KinoraAccessControl",
+        "name": "",
         "type": "address"
       }
     ],
-    "name": "initialize",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -172,7 +218,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_pubId",
+        "name": "_questId",
         "type": "uint256"
       },
       {
@@ -192,6 +238,32 @@
       }
     ],
     "name": "playerEligibleToClaimMilestone",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_newAccessContract",
+        "type": "address"
+      }
+    ],
+    "name": "setKinoraAccess",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_newQuestDataContract",
+        "type": "address"
+      }
+    ],
+    "name": "setKinoraQuestData",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

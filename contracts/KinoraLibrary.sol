@@ -26,6 +26,7 @@ contract KinoraLibrary {
     GatingLogic gated;
     Reward[] rewards;
     mapping(uint256 => mapping(uint256 => Video)) videos;
+    string uri;
     uint256 milestone;
     uint256 videoLength;
     uint256 rewardsLength;
@@ -57,8 +58,9 @@ contract KinoraLibrary {
     Milestone[] milestones;
     GatingLogic gated;
     uint256[] players;
-    Status status;
+    string uri;
     address envoker;
+    Status status;
     uint256 questId;
     uint256 profileId;
     uint256 pubId;
@@ -111,13 +113,15 @@ contract KinoraLibrary {
     GatingLogic gated;
     Reward[] rewards;
     Video[] videos;
+    string uri;
     uint256 milestone;
   }
 
   struct ActionParameters {
-    GatingLogic gateLogic;
-    uint256 maxPlayerCount;
     MilestoneParameter[] milestones;
+    GatingLogic gateLogic;
+    string uri;
     address envokerAddress;
+    uint256 maxPlayerCount;
   }
 }

@@ -9,6 +9,7 @@ import "./KinoraQuestData.sol";
 import "./KinoraErrors.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "hardhat/console.sol";
 
 contract KinoraEscrow {
   string public name;

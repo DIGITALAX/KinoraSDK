@@ -34,14 +34,14 @@ const main = async () => {
     // );
     // const kinoraOpenAction = await KinoraOpenAction.deploy(
     //   "metadata open action",
-    //   kinoraEscrow.address,
-    //   kinoraQuestData.address,
-    //   kinoraAccessControl.address,
+    //   "0x9d2b23DBf065DD9f3dA152DD3c64784Ac6036c26",
+    //   "0x71732bf30b19A4b950B5D0758380169bB5fE14a4",
+    //   "0xdf2968FA65364f563aB68A16722F46b4d2eB4920",
     //   "0x4fbffF20302F3326B20052ab9C217C44F6480900",
     //   "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0",
     // );
 
-    // const WAIT_BLOCK_CONFIRMATIONS = 20;
+    const WAIT_BLOCK_CONFIRMATIONS = 20;
     // kinoraAccessControl.deployTransaction.wait(WAIT_BLOCK_CONFIRMATIONS);
     // kinoraEscrow.deployTransaction.wait(WAIT_BLOCK_CONFIRMATIONS);
     // kinoraMetrics.deployTransaction.wait(WAIT_BLOCK_CONFIRMATIONS);
@@ -58,42 +58,42 @@ const main = async () => {
     // console.log(`kinoraOpenAction deployed at\n${kinoraOpenAction.address}`);
     // console.log(`kinoraNFTCreator deployed at\n${kinoraNFTCreator.address}`);
 
+    // await run(`verify:verify`, {
+    //   address: "0xdf2968FA65364f563aB68A16722F46b4d2eB4920",
+    //   constructorArguments: [],
+    // });
+    // await run(`verify:verify`, {
+    //   address: "0x71732bf30b19A4b950B5D0758380169bB5fE14a4",
+    //   constructorArguments: ["0xdf2968FA65364f563aB68A16722F46b4d2eB4920"],
+    // });
+    // await run(`verify:verify`, {
+    //   address: "0x87681c02220C4B5bBF4E9a85dEd0F9aFb37509e1",
+    //   constructorArguments: ["0xdf2968FA65364f563aB68A16722F46b4d2eB4920"],
+    // });
+    // await run(`verify:verify`, {
+    //   address: "0x9d2b23DBf065DD9f3dA152DD3c64784Ac6036c26",
+    //   constructorArguments: [
+    //     "0xdf2968FA65364f563aB68A16722F46b4d2eB4920",
+    //     "0x71732bf30b19A4b950B5D0758380169bB5fE14a4",
+    //     "0x87681c02220C4B5bBF4E9a85dEd0F9aFb37509e1",
+    //   ],
+    // });
+    // await run(`verify:verify`, {
+    //   address: "0xbA3c91FD5667508BFbBc5B620aB7EE8693610962",
+    //   constructorArguments: [
+    //     "0xdf2968FA65364f563aB68A16722F46b4d2eB4920",
+    //     "0x71732bf30b19A4b950B5D0758380169bB5fE14a4",
+    //   ],
+    // });
     await run(`verify:verify`, {
-      address: "0x9eaeD9F507b80CAE208E236A41e228e8f3D96044",
-      constructorArguments: [],
-    });
-    await run(`verify:verify`, {
-      address: "0x14d6c3b84eA9655C75A4d4B264584469D57E37e3",
-      constructorArguments: ["0x9eaeD9F507b80CAE208E236A41e228e8f3D96044"],
-    });
-    await run(`verify:verify`, {
-      address: "0xaA1e30a440Aa7711f091D1786E9A5eD4EBd23EaF",
-      constructorArguments: ["0x9eaeD9F507b80CAE208E236A41e228e8f3D96044"],
-    });
-    await run(`verify:verify`, {
-      address: "0x9Bf62E348FB5AAbEC7BF34413D85Fc3005064C8C",
+      address: "0x8333e6CEBBE02FD45AF0fF3755aC852AF70b6022",
       constructorArguments: [
-        "0x9eaeD9F507b80CAE208E236A41e228e8f3D96044",
-        "0x14d6c3b84eA9655C75A4d4B264584469D57E37e3",
-        "0xaA1e30a440Aa7711f091D1786E9A5eD4EBd23EaF",
-      ],
-    });
-    await run(`verify:verify`, {
-      address: "0xDde50BaA229207997b23e1Ad0Cd7be8f1Feb7d4d",
-      constructorArguments: [
-        "0x9eaeD9F507b80CAE208E236A41e228e8f3D96044",
-        "0x14d6c3b84eA9655C75A4d4B264584469D57E37e3",
-      ],
-    });
-    await run(`verify:verify`, {
-      address: "0xB733d2d175c0535d122b0C3D706f0bE314eEC41B",
-      constructorArguments: [
-        "metadata open action",
-        "0x9Bf62E348FB5AAbEC7BF34413D85Fc3005064C8C",
-        "0x14d6c3b84eA9655C75A4d4B264584469D57E37e3",
-        "0x9eaeD9F507b80CAE208E236A41e228e8f3D96044",
-        "0x4fbffF20302F3326B20052ab9C217C44F6480900",
-        "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0",
+      "metadata open action",
+      "0x9d2b23DBf065DD9f3dA152DD3c64784Ac6036c26",
+      "0x71732bf30b19A4b950B5D0758380169bB5fE14a4",
+      "0xdf2968FA65364f563aB68A16722F46b4d2eB4920",
+      "0x4fbffF20302F3326B20052ab9C217C44F6480900",
+      "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0",
       ],
     });
   } catch (err: any) {
@@ -107,5 +107,5 @@ main();
 - set kinora nft creator > escrow
 - set kinora escrow > open action
 - set kinora open > register action
-- set kinora quest data > metrics & escrow
+- set kinora quest data > metrics & escrow & action
 */

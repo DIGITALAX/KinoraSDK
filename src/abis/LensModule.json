@@ -1,0 +1,212 @@
+[
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "moduleType", "type": "uint256" }
+    ],
+    "name": "ModuleDoesNotSupportType",
+    "type": "error"
+  },
+  { "inputs": [], "name": "ModuleNotRegistered", "type": "error" },
+  { "inputs": [], "name": "NotLensModule", "type": "error" },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "moduleAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "metadata",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "ModuleMetadataRefreshed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "moduleAddress",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "moduleType",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "metadata",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "ModuleRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "erc20CurrencyAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "symbol",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "decimals",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "erc20CurrencyRegistered",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "moduleAddress", "type": "address" }
+    ],
+    "name": "emitModuleMetadataRefresh",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "moduleAddress", "type": "address" }
+    ],
+    "name": "getModuleTypes",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "currencyAddress",
+        "type": "address"
+      }
+    ],
+    "name": "isErc20CurrencyRegistered",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "moduleAddress", "type": "address" }
+    ],
+    "name": "isModuleRegistered",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "moduleAddress", "type": "address" },
+      { "internalType": "uint256", "name": "moduleType", "type": "uint256" }
+    ],
+    "name": "isModuleRegisteredAs",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "currencyAddress",
+        "type": "address"
+      }
+    ],
+    "name": "registerErc20Currency",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "registrationWasPerformed",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "moduleAddress", "type": "address" },
+      { "internalType": "uint256", "name": "moduleType", "type": "uint256" }
+    ],
+    "name": "registerModule",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "registrationWasPerformed",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "currencyAddress",
+        "type": "address"
+      }
+    ],
+    "name": "verifyErc20Currency",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "moduleAddress", "type": "address" },
+      { "internalType": "uint256", "name": "moduleType", "type": "uint256" }
+    ],
+    "name": "verifyModule",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

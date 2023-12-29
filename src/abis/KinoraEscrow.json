@@ -1,17 +1,33 @@
 [
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_accessControlAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraQuestDataAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraNFTCreatorAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
     "inputs": [],
-    "name": "InsufficientBalance",
+    "name": "InvalidAddress",
     "type": "error"
   },
   {
     "inputs": [],
     "name": "InvalidContract",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "OnlyAdmin",
     "type": "error"
   },
   {
@@ -37,7 +53,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "pubId",
+        "name": "questId",
         "type": "uint256"
       },
       {
@@ -62,7 +78,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "pubId",
+        "name": "questId",
         "type": "uint256"
       },
       {
@@ -87,7 +103,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "pubId",
+        "name": "questId",
         "type": "uint256"
       },
       {
@@ -112,7 +128,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "pubId",
+        "name": "questId",
         "type": "uint256"
       },
       {
@@ -137,30 +153,11 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "pubId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "milestone",
+        "name": "questId",
         "type": "uint256"
       }
     ],
     "name": "EmergencyERC20Withdrawn",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "version",
-        "type": "uint8"
-      }
-    ],
-    "name": "Initialized",
     "type": "event"
   },
   {
@@ -195,7 +192,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "_pubId",
+        "name": "_questId",
         "type": "uint256"
       },
       {
@@ -218,7 +215,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "_pubId",
+        "name": "_questId",
         "type": "uint256"
       },
       {
@@ -241,31 +238,13 @@
       },
       {
         "internalType": "uint256",
-        "name": "_pubId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_milestone",
+        "name": "_questId",
         "type": "uint256"
       }
     ],
     "name": "emergencyWithdrawERC20",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "factory",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -277,7 +256,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "_pubId",
+        "name": "_questId",
         "type": "uint256"
       },
       {
@@ -301,7 +280,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_pubId",
+        "name": "_questId",
         "type": "uint256"
       },
       {
@@ -319,39 +298,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_accessControlAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_factoryAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_kinoraQuestDataAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_kinoraNFTCreatorAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_kinoraOpenActionAddress",
-        "type": "address"
-      }
-    ],
-    "name": "initialize",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -402,12 +348,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "_profileId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_pubId",
+        "name": "_questId",
         "type": "uint256"
       },
       {
@@ -435,27 +376,53 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "quest",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "contract KinoraQuest",
-        "name": "",
+        "internalType": "address",
+        "name": "_newAccessContract",
         "type": "address"
       }
     ],
-    "stateMutability": "view",
+    "name": "setKinoraAccessContract",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
       {
         "internalType": "address",
-        "name": "_questContract",
+        "name": "_newNFTCreatorContract",
         "type": "address"
       }
     ],
-    "name": "setKinoraQuest",
+    "name": "setKinoraNFTCreatorContract",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_newOpenActionContract",
+        "type": "address"
+      }
+    ],
+    "name": "setKinoraOpenActionContract",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_newQuestDataContract",
+        "type": "address"
+      }
+    ],
+    "name": "setKinoraQuestDataContract",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -482,7 +449,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "_pubId",
+        "name": "_questId",
         "type": "uint256"
       },
       {
