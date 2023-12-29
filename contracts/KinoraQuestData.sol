@@ -466,6 +466,10 @@ contract KinoraQuestData {
     return _allQuests[_questId].profileId;
   }
 
+  function getQuestURI(uint256 _questId) public view returns (string memory) {
+    return _allQuests[_questId].uri;
+  }
+
   function getQuestGatedERC721Addresses(
     uint256 _questId
   ) public view returns (address[] memory) {
@@ -498,6 +502,13 @@ contract KinoraQuestData {
     uint256 _questId
   ) public view returns (uint256[] memory) {
     return _allQuests[_questId].gated.erc20Thresholds;
+  }
+
+  function getMilestoneURI(
+    uint256 _questId,
+    uint256 _milestone
+  ) public view returns (string memory) {
+    return _allQuests[_questId].milestones[_milestone].uri;
   }
 
   function getMilestoneGatedERC721Addresses(

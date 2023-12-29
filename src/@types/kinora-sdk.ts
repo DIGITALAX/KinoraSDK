@@ -88,17 +88,17 @@ export interface MilestoneEligibility {
  * @description Interface representing criteria for milestone eligibility.
  */
 export interface MilestoneEligibilityCriteria {
-  minAvd?: MetricCriteria;
-  minCtr?: MetricCriteria;
-  minPlayCount?: MetricCriteria;
-  minDuration?: MetricCriteria;
-  minImpressionCount?: MetricCriteria;
-  minEngagementRate?: MetricCriteria;
-  quoteLens?: BoolLensCriteria;
-  mirrorLens?: BoolLensCriteria;
-  likeLens?: BoolLensCriteria;
-  bookmarkLens?: BoolLensCriteria;
-  commentLens?: BoolLensCriteria;
+  minAvd?: number;
+  minCtr?: number;
+  minPlayCount?: number;
+  minDuration?: number;
+  minImpressionCount?: number;
+  minEngagementRate?: number;
+  quote?: boolean;
+  mirror?: boolean;
+  react?: boolean;
+  bookmark?: boolean;
+  comment?: boolean;
 }
 
 /**
@@ -133,32 +133,12 @@ export interface LensQuestMetadata {
     };
     title: string;
     content: string;
-    attachments: {
-      item: string;
-      type: "image/png";
-    }[];
     appId: "kinora";
     id: string;
     hideFromFeed: false;
     locale: "en";
     tags: ["kinora quest", "vision quest"];
   };
-}
-
-/** *
- * @description Sub-type Metric Criteria Interface.
- */
-export interface MetricCriteria {
-  minValue: number;
-  operator: "or" | "and";
-}
-
-/** *
- * @description Sub-type Lens Bool Criteria Interface.
- */
-export interface BoolLensCriteria {
-  boolValue: boolean;
-  operator: "or" | "and";
 }
 
 /**

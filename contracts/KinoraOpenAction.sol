@@ -13,15 +13,16 @@ import "./KinoraAccessControl.sol";
 import "./KinoraQuestData.sol";
 import {ILensModule} from "./v2/interfaces/ILensModule.sol";
 import {IModuleRegistry} from "./v2/interfaces/IModuleRegistry.sol";
+import "hardhat/console.sol";
 
 contract KinoraOpenAction is
   HubRestricted,
   ILensModule,
   IPublicationActionModule
 {
-  KinoraEscrow kinoraEscrow;
-  KinoraQuestData kinoraQuestData;
-  KinoraAccessControl kinoraAccess;
+  KinoraEscrow public kinoraEscrow;
+  KinoraQuestData public kinoraQuestData;
+  KinoraAccessControl public kinoraAccess;
   string private _metadata;
 
   mapping(uint256 => mapping(uint256 => uint256)) _questGroups;
@@ -87,13 +88,13 @@ contract KinoraOpenAction is
           _params.milestones[i].rewards[j].rewardType ==
           KinoraLibrary.RewardType.ERC20
         ) {
-          if (
-            !MODULE_GLOBALS.isErc20CurrencyRegistered(
-              _params.milestones[i].rewards[j].tokenAddress
-            )
-          ) {
-            revert KinoraErrors.CurrencyNotWhitelisted();
-          }
+          // if (
+          //   !MODULE_GLOBALS.isErc20CurrencyRegistered(
+          //     _params.milestones[i].rewards[j].tokenAddress
+          //   )
+          // ) {
+          //   revert KinoraErrors.CurrencyNotWhitelisted();
+          // }
 
           if (_params.milestones[i].rewards[j].amount <= 0) {
             revert KinoraErrors.InvalidRewardAmount();
@@ -103,7 +104,6 @@ contract KinoraOpenAction is
     }
 
     uint256 _questId = kinoraQuestData.getTotalQuestCount() + 1;
-
     _configureRewardEscrow(
       _params.milestones,
       _params.envokerAddress,
@@ -393,23 +393,26 @@ contract KinoraOpenAction is
     uint256 _questId
   ) private {
     for (uint256 i = 0; i < _milestones.length; i++) {
-      for (uint256 j = 0; j < _milestones[i].rewards.length; j++) {
-        if (
-          _milestones[i].rewards[j].rewardType == KinoraLibrary.RewardType.ERC20
-        ) {
-          kinoraEscrow.depositERC20(
-            _milestones[i].rewards[j].tokenAddress,
-            _envokerAddress,
-            _milestones[i].rewards[j].amount,
-            _questId,
-            i
-          );
-        } else {
-          kinoraEscrow.depositERC721(
-            _milestones[i].rewards[j].uri,
-            _questId,
-            i
-          );
+      if (_milestones[i].rewards.length > 0) {
+        for (uint256 j = 0; j < _milestones[i].rewards.length; j++) {
+          if (
+            _milestones[i].rewards[j].rewardType ==
+            KinoraLibrary.RewardType.ERC20
+          ) {
+            kinoraEscrow.depositERC20(
+              _milestones[i].rewards[j].tokenAddress,
+              _envokerAddress,
+              _milestones[i].rewards[j].amount,
+              _questId,
+              i
+            );
+          } else {
+            kinoraEscrow.depositERC721(
+              _milestones[i].rewards[j].uri,
+              _questId,
+              i
+            );
+          }
         }
       }
     }
