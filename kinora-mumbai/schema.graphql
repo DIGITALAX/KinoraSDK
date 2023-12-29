@@ -1,0 +1,57 @@
+type MilestoneCompleted @entity(immutable: true) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  playerProfileId: BigInt! # uint256
+  milestone: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type PlayerEligibleToClaimMilestone @entity(immutable: true) {
+  id: Bytes!
+  playerProfileId: BigInt! # uint256
+  questId: BigInt! # uint256
+  milestone: BigInt! # uint256
+  eligibility: Boolean! # bool
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type PlayerJoinedQuest @entity(immutable: true) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  playerProfileId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type PlayerMetricsUpdated @entity(immutable: true) {
+  id: Bytes!
+  playerProfileId: BigInt! # uint256
+  videoPubId: BigInt! # uint256
+  videoProfileId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type QuestInstantiated @entity(immutable: true) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  milestoneCount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type QuestStatusUpdated @entity(immutable: true) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  status: Int! # uint8
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

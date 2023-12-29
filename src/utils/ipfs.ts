@@ -1,22 +1,25 @@
+import axios from "axios";
+
 export const hashToIPFS = async (
-  itemToHash: string,
+  itemToHash: string
 ): Promise<{
   cid?: `ipfs://${string}`;
   error?: boolean;
   message?: string;
 }> => {
   try {
-    const response = await fetch("https://kinora-backend.onrender.com/upload", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: itemToHash,
-    });
+    const response = await axios.post(
+      "https://kinora-backend.onrender.com/upload",
+      itemToHash,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-    const data = await response.json();
     return {
-      cid: `ipfs://${data.ipfsHash}`,
+      cid: `ipfs://${response.data.ipfsHash}`,
     };
   } catch (err: any) {
     return {

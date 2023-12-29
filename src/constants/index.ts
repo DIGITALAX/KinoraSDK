@@ -6,6 +6,16 @@ import { EthereumAddress } from "./../@types/kinora-sdk";
 export const KINORA_OPEN_ACTION_CONTRACT: EthereumAddress =
   "0x8333e6CEBBE02FD45AF0fF3755aC852AF70b6022";
 /**
+ * @constant LENS_MODULE_CONTRACT Lens Module Contract.
+ */
+export const LENS_MODULE_CONTRACT: EthereumAddress =
+  "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0";
+/**
+ * @constant ZERO_ADDRESS Zero Address.
+ */
+export const ZERO_ADDRESS: EthereumAddress =
+  "0x0000000000000000000000000000000000000000";
+/**
  * @constant KINORA_METRICS_CONTRACT Lens Kinora Metrics Address Matic Network.
  */
 export const KINORA_METRICS_CONTRACT: EthereumAddress =
@@ -19,7 +29,7 @@ export const KINORA_ESCROW_CONTRACT: EthereumAddress =
  * @constant LENS_HUB_PROXY_CONTRACT Lens Hubs Proxy Address Matic Network.
  */
 export const LENS_HUB_PROXY_CONTRACT: EthereumAddress =
-  "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d";
+  "0x4fbffF20302F3326B20052ab9C217C44F6480900";
 /**
  * @constant KINORA_QUEST_DATA_CONTRACT Kinora Quest Data Address Matic Network.
  */
@@ -28,17 +38,13 @@ export const KINORA_QUEST_DATA_CONTRACT: EthereumAddress =
 /**
  * @constant LENS_BASE_URL Base URL for the Lens V2 API.
  */
-export const LENS_BASE_URL: string = "https://api-v2.lens.dev/";
+export const LENS_BASE_URL: string = "https://api-v2-mumbai-live.lens.dev";
 
 /**
  * @constant IPFS_REGEX IPFS Regex Check.
  */
 export const IPFS_REGEX: RegExp = /\b(Qm[1-9A-Za-z]{44}|ba[A-Za-z2-7]{57})\b/;
-/**
- * @constant ZERO_ADDRESS Zero Address.
- */
-export const ZERO_ADDRESS: EthereumAddress =
-  "0x0000000000000000000000000000000000000000";
+
 /**
  * @constant ERROR_CODES Contract Error Codes.
  */
@@ -56,8 +62,3 @@ export const ERROR_CODES = {
   "0x5f6063cc": "CurrencyNotWhitelisted",
   "0x38539865": "InvalidRewardAmount",
 };
-/**
- * @constant LENS_MODULE_CONTRACT Lens Module Contract.
- */
-export const LENS_MODULE_CONTRACT: EthereumAddress =
-  "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0";
