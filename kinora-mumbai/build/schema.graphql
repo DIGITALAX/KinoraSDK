@@ -1,4 +1,4 @@
-type MilestoneCompleted @entity(immutable: true) {
+type MilestoneCompleted @entity(immutable: false) {
   id: Bytes!
   questId: BigInt! # uint256
   playerProfileId: BigInt! # uint256
@@ -8,7 +8,7 @@ type MilestoneCompleted @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type PlayerEligibleToClaimMilestone @entity(immutable: true) {
+type PlayerEligibleToClaimMilestone @entity(immutable: false) {
   id: Bytes!
   playerProfileId: BigInt! # uint256
   questId: BigInt! # uint256
@@ -19,7 +19,7 @@ type PlayerEligibleToClaimMilestone @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type PlayerJoinedQuest @entity(immutable: true) {
+type PlayerJoinedQuest @entity(immutable: false) {
   id: Bytes!
   questId: BigInt! # uint256
   playerProfileId: BigInt! # uint256
@@ -28,7 +28,7 @@ type PlayerJoinedQuest @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type PlayerMetricsUpdated @entity(immutable: true) {
+type PlayerMetricsUpdated @entity(immutable: false) {
   id: Bytes!
   playerProfileId: BigInt! # uint256
   videoPubId: BigInt! # uint256
@@ -38,20 +38,89 @@ type PlayerMetricsUpdated @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type QuestInstantiated @entity(immutable: true) {
+type QuestInstantiated @entity(immutable: false) {
   id: Bytes!
   questId: BigInt! # uint256
   milestoneCount: BigInt! # uint256
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+  questMetadata: QuestMetadata
+  uri: String!
+  milestones: [Milestone!]
+  gate: Gate
 }
 
-type QuestStatusUpdated @entity(immutable: true) {
+type QuestStatusUpdated @entity(immutable: false) {
   id: Bytes!
   questId: BigInt! # uint256
   status: Int! # uint8
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+}
+
+type QuestMetadata @entity(immutable: false) {
+  id: Bytes!
+  cover: String
+  title: String
+  description: String
+}
+
+type Milestone @entity(immutable: false) {
+  id: Bytes!
+  gated: Gate
+  rewards: [Reward!]
+  videos: [Video!]
+  details: String
+  milestoneId: BigInt
+  videoLength: BigInt
+  rewardsLength: BigInt
+}
+
+type Video @entity(immutable: false) {
+  id: Bytes!
+  playerId: String
+  videoBytes: String
+  profileId: BigInt
+  pubId: BigInt
+  minPlayCount: BigInt
+  minCTR: BigInt
+  minAVD: BigInt
+  minImpressionCount: BigInt
+  minEngagementRate: BigInt
+  minDuration: BigInt
+  quote: Boolean
+  mirror: Boolean
+  comment: Boolean
+  bookmark: Boolean
+  react: Boolean
+}
+
+type Reward @entity(immutable: false) {
+  id: Bytes!
+  type: BigInt
+  uri: String
+  tokenAddress: Bytes
+  amount: BigInt
+}
+
+type Gate @entity(immutable: false) {
+  id: Bytes!
+  erc20Logic: [ERC20Logic!]
+  erc721Logic: [ERC721Logic!]
+  oneOf: Boolean
+}
+
+type ERC20Logic @entity(immutable: false) {
+  id: Bytes!
+  address: Bytes
+  amount: BigInt
+}
+
+type ERC721Logic @entity(immutable: false) {
+  id: Bytes!
+  address: Bytes
+  uris: [String!]
+  tokenIds: [BigInt!]
 }

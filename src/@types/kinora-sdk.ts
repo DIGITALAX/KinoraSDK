@@ -137,7 +137,7 @@ export interface LensQuestMetadata {
     id: string;
     hideFromFeed: false;
     locale: "en";
-    tags: ["kinora quest", "vision quest"];
+    tags: ["kinora quest", "vision quest"] | string[];
   };
 }
 

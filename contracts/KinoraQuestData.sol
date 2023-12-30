@@ -22,6 +22,7 @@ contract KinoraQuestData {
   mapping(uint256 => KinoraLibrary.Quest) private _allQuests;
   mapping(string => uint256[]) private _idsToQuests;
   mapping(string => KinoraLibrary.VideoPost) private _idsToVideos;
+  mapping(uint256 => mapping(uint256 => string)) private _postToPlayback;
 
   event QuestInstantiated(uint256 questId, uint256 milestoneCount);
   event PlayerJoinedQuest(uint256 questId, uint256 playerProfileId);
@@ -230,15 +231,21 @@ contract KinoraQuestData {
     KinoraLibrary.MilestoneParameter memory _paramsMilestone,
     uint256 _questId
   ) private {
+    string[] memory _videoBytes;
+
     for (uint j = 0; j < _paramsMilestone.videos.length; j++) {
       KinoraLibrary.Video memory video = _paramsMilestone.videos[j];
-      _newMilestone.videos[video.pubId][video.profileId] = video;
+      _newMilestone.videos[video.profileId][video.pubId] = video;
       _idsToQuests[video.playerId].push(_questId);
       _idsToVideos[video.playerId] = KinoraLibrary.VideoPost({
         pubId: video.pubId,
         profileId: video.profileId
       });
+      _postToPlayback[video.profileId][video.pubId] = video.playerId;
+      _videoBytes[j] = (video.videoBytes);
     }
+
+    _newMilestone.videoBytes = _videoBytes;
   }
 
   function getTotalQuestCount() public view returns (uint256) {
@@ -508,42 +515,51 @@ contract KinoraQuestData {
     uint256 _questId,
     uint256 _milestone
   ) public view returns (string memory) {
-    return _allQuests[_questId].milestones[_milestone].uri;
+    return _allQuests[_questId].milestones[_milestone - 1].uri;
   }
 
   function getMilestoneGatedERC721Addresses(
     uint256 _questId,
     uint256 _milestone
   ) public view returns (address[] memory) {
-    return _allQuests[_questId].milestones[_milestone].gated.erc721Addresses;
+    return
+      _allQuests[_questId].milestones[_milestone - 1].gated.erc721Addresses;
   }
 
   function getMilestoneGatedERC721TokenIds(
     uint256 _questId,
     uint256 _milestone
   ) public view returns (uint256[][] memory) {
-    return _allQuests[_questId].milestones[_milestone].gated.erc721TokenIds;
+    return _allQuests[_questId].milestones[_milestone - 1].gated.erc721TokenIds;
   }
 
   function getMilestoneGatedERC721TokenURIs(
     uint256 _questId,
     uint256 _milestone
   ) public view returns (string[][] memory) {
-    return _allQuests[_questId].milestones[_milestone].gated.erc721TokenURIs;
+    return
+      _allQuests[_questId].milestones[_milestone - 1].gated.erc721TokenURIs;
   }
 
   function getMilestoneVideoLength(
     uint256 _questId,
     uint256 _milestone
   ) public view returns (uint256) {
-    return _allQuests[_questId].milestones[_milestone].videoLength;
+    return _allQuests[_questId].milestones[_milestone - 1].videoLength;
   }
 
   function getMilestoneRewardsLength(
     uint256 _questId,
     uint256 _milestone
   ) public view returns (uint256) {
-    return _allQuests[_questId].milestones[_milestone].rewardsLength;
+    return _allQuests[_questId].milestones[_milestone - 1].rewardsLength;
+  }
+
+  function getMilestoneVideos(
+    uint256 _questId,
+    uint256 _milestone
+  ) public view returns (string[] memory) {
+    return _allQuests[_questId].milestones[_milestone - 1].videoBytes;
   }
 
   function getMilestoneVideoMinPlayCount(
@@ -554,7 +570,7 @@ contract KinoraQuestData {
   ) public view returns (uint256) {
     return
       _allQuests[_questId]
-      .milestones[_milestone]
+      .milestones[_milestone - 1]
       .videos[_videoProfileId][_videoPubId].minPlayCount;
   }
 
@@ -566,7 +582,7 @@ contract KinoraQuestData {
   ) public view returns (uint256) {
     return
       _allQuests[_questId]
-      .milestones[_milestone]
+      .milestones[_milestone - 1]
       .videos[_videoProfileId][_videoPubId].minCTR;
   }
 
@@ -578,7 +594,7 @@ contract KinoraQuestData {
   ) public view returns (uint256) {
     return
       _allQuests[_questId]
-      .milestones[_milestone]
+      .milestones[_milestone - 1]
       .videos[_videoProfileId][_videoPubId].minImpressionCount;
   }
 
@@ -590,7 +606,7 @@ contract KinoraQuestData {
   ) public view returns (uint256) {
     return
       _allQuests[_questId]
-      .milestones[_milestone]
+      .milestones[_milestone - 1]
       .videos[_videoProfileId][_videoPubId].minEngagementRate;
   }
 
@@ -602,7 +618,7 @@ contract KinoraQuestData {
   ) public view returns (uint256) {
     return
       _allQuests[_questId]
-      .milestones[_milestone]
+      .milestones[_milestone - 1]
       .videos[_videoProfileId][_videoPubId].minDuration;
   }
 
@@ -614,7 +630,7 @@ contract KinoraQuestData {
   ) public view returns (bool) {
     return
       _allQuests[_questId]
-      .milestones[_milestone]
+      .milestones[_milestone - 1]
       .videos[_videoProfileId][_videoPubId].quote;
   }
 
@@ -626,7 +642,7 @@ contract KinoraQuestData {
   ) public view returns (bool) {
     return
       _allQuests[_questId]
-      .milestones[_milestone]
+      .milestones[_milestone - 1]
       .videos[_videoProfileId][_videoPubId].mirror;
   }
 
@@ -638,7 +654,7 @@ contract KinoraQuestData {
   ) public view returns (bool) {
     return
       _allQuests[_questId]
-      .milestones[_milestone]
+      .milestones[_milestone - 1]
       .videos[_videoProfileId][_videoPubId].bookmark;
   }
 
@@ -650,7 +666,7 @@ contract KinoraQuestData {
   ) public view returns (bool) {
     return
       _allQuests[_questId]
-      .milestones[_milestone]
+      .milestones[_milestone - 1]
       .videos[_videoProfileId][_videoPubId].react;
   }
 
@@ -662,7 +678,7 @@ contract KinoraQuestData {
   ) public view returns (bool) {
     return
       _allQuests[_questId]
-      .milestones[_milestone]
+      .milestones[_milestone - 1]
       .videos[_videoProfileId][_videoPubId].comment;
   }
 
@@ -674,7 +690,7 @@ contract KinoraQuestData {
   ) public view returns (uint256) {
     return
       _allQuests[_questId]
-      .milestones[_milestone]
+      .milestones[_milestone - 1]
       .videos[_videoProfileId][_videoPubId].minAVD;
   }
 
@@ -682,21 +698,22 @@ contract KinoraQuestData {
     uint256 _questId,
     uint256 _milestone
   ) public view returns (bool) {
-    return _allQuests[_questId].milestones[_milestone].gated.oneOf;
+    return _allQuests[_questId].milestones[_milestone - 1].gated.oneOf;
   }
 
   function getMilestoneGatedERC20Addresses(
     uint256 _questId,
     uint256 _milestone
   ) public view returns (address[] memory) {
-    return _allQuests[_questId].milestones[_milestone].gated.erc20Addresses;
+    return _allQuests[_questId].milestones[_milestone - 1].gated.erc20Addresses;
   }
 
   function getMilestoneGatedERC20Thresholds(
     uint256 _questId,
     uint256 _milestone
   ) public view returns (uint256[] memory) {
-    return _allQuests[_questId].milestones[_milestone].gated.erc20Thresholds;
+    return
+      _allQuests[_questId].milestones[_milestone - 1].gated.erc20Thresholds;
   }
 
   function getMilestoneRewardType(
@@ -760,5 +777,12 @@ contract KinoraQuestData {
     string memory _playbackId
   ) public view returns (uint256) {
     return _idsToVideos[_playbackId].profileId;
+  }
+
+  function getVideoPlaybackId(
+    uint256 _pubId,
+    uint256 _profileId
+  ) public view returns (string memory) {
+    return _postToPlayback[_profileId][_pubId];
   }
 }
