@@ -26,6 +26,7 @@ contract KinoraLibrary {
     GatingLogic gated;
     Reward[] rewards;
     mapping(uint256 => mapping(uint256 => Video)) videos;
+    string[] videoBytes;
     string uri;
     uint256 milestone;
     uint256 videoLength;
@@ -34,6 +35,7 @@ contract KinoraLibrary {
 
   struct Video {
     string playerId;
+    string videoBytes;
     uint256 profileId;
     uint256 pubId;
     uint256 minPlayCount;

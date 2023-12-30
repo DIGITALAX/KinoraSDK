@@ -102,7 +102,7 @@ export class Envoker {
    * @method
    * @description Instantiates a new quest with specified inputs. It checks for necessary setups, generates random keys if needed, and interacts with contracts to set up the quest.
    * @param {Object} args - The details required for quest creation.
-   * @param {string} args.questDetails - Title, cover and description of the quest.
+   * @param {string} args.questDetails - Title, cover, description and (optional) tags of the quest.
    * @param {number} args.maxPlayerCount - Maximum number of players for the quest.
    * @param {Milestone[]} args.milestones - Array of milestone objects for the quest.
    * @param {GatingLogic} args.joinQuestTokenGatedLogic - The token gated logic for joining the quest.
@@ -116,6 +116,7 @@ export class Envoker {
       cover: `ipfs://${string}`;
       title: string;
       description: string;
+      tags?: string[];
     };
     maxPlayerCount: number;
     milestones: Milestone[];
@@ -164,7 +165,11 @@ export class Envoker {
         id: uuidv4(),
         hideFromFeed: false,
         locale: "en",
-        tags: ["kinora quest", "vision quest"],
+        tags: [
+          "kinora quest",
+          "vision quest",
+          ...(args?.questDetails?.tags || []),
+        ],
       },
     };
 
@@ -225,6 +230,7 @@ export class Envoker {
               videos: milestone.eligibility.internalCriteria?.map((item) => {
                 return {
                   playerId: item?.playbackId,
+                  videoBytes: item?.postId,
                   profileId: parseInt(item?.postId?.split("-")[0], 16),
                   pubId: parseInt(item?.postId?.split("-")[1], 16),
                   minPlayCount: item.playbackCriteria.minPlayCount,
@@ -325,7 +331,7 @@ export class Envoker {
         encodedData = ethers.utils.defaultAbiCoder.encode(
           [
             "tuple(" +
-              "tuple(tuple(string[][] erc721TokenURIs, uint256[][] erc721TokenIds, address[] erc721Addresses, address[] erc20Addresses, uint256[] erc20Thresholds, bool oneOf) gated, tuple(uint8 rewardType, string uri, address tokenAddress, uint256 amount)[] rewards, tuple(string playerId, uint256 profileId, uint256 pubId, uint256 minPlayCount, uint256 minCTR, uint256 minAVD, uint256 minImpressionCount, uint256 minEngagementRate, uint256 minDuration, bool quote, bool mirror, bool comment, bool bookmark, bool react)[] videos, string uri, uint256 milestone)[] milestones, " +
+              "tuple(tuple(string[][] erc721TokenURIs, uint256[][] erc721TokenIds, address[] erc721Addresses, address[] erc20Addresses, uint256[] erc20Thresholds, bool oneOf) gated, tuple(uint8 rewardType, string uri, address tokenAddress, uint256 amount)[] rewards, tuple(string playerId, string videoBytes, uint256 profileId, uint256 pubId, uint256 minPlayCount, uint256 minCTR, uint256 minAVD, uint256 minImpressionCount, uint256 minEngagementRate, uint256 minDuration, bool quote, bool mirror, bool comment, bool bookmark, bool react)[] videos, string uri, uint256 milestone)[] milestones, " +
               "tuple(" +
               "string[][] erc721TokenURIs, " +
               "uint256[][] erc721TokenIds, " +

@@ -88,13 +88,13 @@ contract KinoraOpenAction is
           _params.milestones[i].rewards[j].rewardType ==
           KinoraLibrary.RewardType.ERC20
         ) {
-          // if (
-          //   !MODULE_GLOBALS.isErc20CurrencyRegistered(
-          //     _params.milestones[i].rewards[j].tokenAddress
-          //   )
-          // ) {
-          //   revert KinoraErrors.CurrencyNotWhitelisted();
-          // }
+          if (
+            !MODULE_GLOBALS.isErc20CurrencyRegistered(
+              _params.milestones[i].rewards[j].tokenAddress
+            )
+          ) {
+            revert KinoraErrors.CurrencyNotWhitelisted();
+          }
 
           if (_params.milestones[i].rewards[j].amount <= 0) {
             revert KinoraErrors.InvalidRewardAmount();

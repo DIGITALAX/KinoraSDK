@@ -34,9 +34,9 @@ const main = async () => {
     // );
     // const kinoraOpenAction = await KinoraOpenAction.deploy(
     //   "metadata open action",
-    //   "0x9d2b23DBf065DD9f3dA152DD3c64784Ac6036c26",
-    //   "0x71732bf30b19A4b950B5D0758380169bB5fE14a4",
-    //   "0xdf2968FA65364f563aB68A16722F46b4d2eB4920",
+    //   "0xA75251c14f43d824Bd46Ef174f1d4d2987f3D8b4",
+    //   "0x4cD2B29E8D80b150b46b90478f32D79417540F9d",
+    //   "0x09AdFa0C5b8E97E4F2E63D1639011F0Bb7328528",
     //   "0x4fbffF20302F3326B20052ab9C217C44F6480900",
     //   "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0",
     // );
@@ -59,41 +59,41 @@ const main = async () => {
     // console.log(`kinoraNFTCreator deployed at\n${kinoraNFTCreator.address}`);
 
     // await run(`verify:verify`, {
-    //   address: "0xdf2968FA65364f563aB68A16722F46b4d2eB4920",
+    //   address: "0x09AdFa0C5b8E97E4F2E63D1639011F0Bb7328528",
     //   constructorArguments: [],
     // });
     // await run(`verify:verify`, {
-    //   address: "0x71732bf30b19A4b950B5D0758380169bB5fE14a4",
-    //   constructorArguments: ["0xdf2968FA65364f563aB68A16722F46b4d2eB4920"],
+    //   address: "0xF393225C219b5af44cb024aB2B5d9bBa49c87358",
+    //   constructorArguments: ["0x09AdFa0C5b8E97E4F2E63D1639011F0Bb7328528"],
     // });
     // await run(`verify:verify`, {
-    //   address: "0x87681c02220C4B5bBF4E9a85dEd0F9aFb37509e1",
-    //   constructorArguments: ["0xdf2968FA65364f563aB68A16722F46b4d2eB4920"],
-    // });
-    // await run(`verify:verify`, {
-    //   address: "0x9d2b23DBf065DD9f3dA152DD3c64784Ac6036c26",
+    //   address: "0xA75251c14f43d824Bd46Ef174f1d4d2987f3D8b4",
     //   constructorArguments: [
-    //     "0xdf2968FA65364f563aB68A16722F46b4d2eB4920",
-    //     "0x71732bf30b19A4b950B5D0758380169bB5fE14a4",
-    //     "0x87681c02220C4B5bBF4E9a85dEd0F9aFb37509e1",
+    //     "0x09AdFa0C5b8E97E4F2E63D1639011F0Bb7328528",
+    //     "0x4cD2B29E8D80b150b46b90478f32D79417540F9d",
+    //     "0xF393225C219b5af44cb024aB2B5d9bBa49c87358",
     //   ],
     // });
     // await run(`verify:verify`, {
-    //   address: "0xbA3c91FD5667508BFbBc5B620aB7EE8693610962",
+    //   address: "0x39709a202854608983Ae96791d63FAdc3e30477f",
     //   constructorArguments: [
-    //     "0xdf2968FA65364f563aB68A16722F46b4d2eB4920",
-    //     "0x71732bf30b19A4b950B5D0758380169bB5fE14a4",
+    //     "0x09AdFa0C5b8E97E4F2E63D1639011F0Bb7328528",
+    //     "0x4cD2B29E8D80b150b46b90478f32D79417540F9d",
     //   ],
+    // });
+    // await run(`verify:verify`, {
+    //   address: "0x4cD2B29E8D80b150b46b90478f32D79417540F9d",
+    //   constructorArguments: ["0x09AdFa0C5b8E97E4F2E63D1639011F0Bb7328528"],
     // });
     await run(`verify:verify`, {
-      address: "0x8333e6CEBBE02FD45AF0fF3755aC852AF70b6022",
+      address: "0xC185fe57a86f17b31cfA08FA29dd2693143f00cc",
       constructorArguments: [
-      "metadata open action",
-      "0x9d2b23DBf065DD9f3dA152DD3c64784Ac6036c26",
-      "0x71732bf30b19A4b950B5D0758380169bB5fE14a4",
-      "0xdf2968FA65364f563aB68A16722F46b4d2eB4920",
-      "0x4fbffF20302F3326B20052ab9C217C44F6480900",
-      "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0",
+        "metadata open action",
+        "0x9d2b23DBf065DD9f3dA152DD3c64784Ac6036c26",
+        "0xA75251c14f43d824Bd46Ef174f1d4d2987f3D8b4",
+        "0x09AdFa0C5b8E97E4F2E63D1639011F0Bb7328528",
+        "0x4fbffF20302F3326B20052ab9C217C44F6480900",
+        "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0",
       ],
     });
   } catch (err: any) {
