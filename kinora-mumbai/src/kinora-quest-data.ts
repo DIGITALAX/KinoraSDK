@@ -243,7 +243,7 @@ export function handlePlayerMetricsUpdated(
   );
 
   let questData = KinoraQuestData.bind(
-    Address.fromString("0x4cD2B29E8D80b150b46b90478f32D79417540F9d"),
+    Address.fromString("0x4682D92f246a08B027cB400f3369a0a0D35AC923"),
   );
 
   if (currentPlayer) {
@@ -359,7 +359,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
   entity.transactionHash = event.transaction.hash;
 
   let questData = KinoraQuestData.bind(
-    Address.fromString("0x4cD2B29E8D80b150b46b90478f32D79417540F9d"),
+    Address.fromString("0x4682D92f246a08B027cB400f3369a0a0D35AC923"),
   );
 
   entity.uri = questData.getQuestURI(entity.questId);

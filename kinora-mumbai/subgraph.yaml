@@ -6,7 +6,7 @@ dataSources:
     name: KinoraQuestData
     network: mumbai
     source:
-      address: "0x4cD2B29E8D80b150b46b90478f32D79417540F9d"
+      address: "0x4682D92f246a08B027cB400f3369a0a0D35AC923"
       abi: KinoraQuestData
       startBlock: 44096047
     mapping:
