@@ -137,6 +137,25 @@
       {
         "indexed": false,
         "internalType": "uint256",
+        "name": "playerProfileId",
+        "type": "uint256"
+      }
+    ],
+    "name": "QuestCompleted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "milestoneCount",
         "type": "uint256"
       }
@@ -298,6 +317,11 @@
                   {
                     "internalType": "string",
                     "name": "playerId",
+                    "type": "string"
+                  },
+                  {
+                    "internalType": "string",
+                    "name": "videoBytes",
                     "type": "string"
                   },
                   {
@@ -1140,6 +1164,30 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "_questId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      }
+    ],
+    "name": "getMilestoneVideos",
+    "outputs": [
+      {
+        "internalType": "string[]",
+        "name": "",
+        "type": "string[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "_playerProfileId",
         "type": "uint256"
       }
@@ -1259,6 +1307,25 @@
         "type": "uint256"
       }
     ],
+    "name": "getPlayerQuestsCompleted",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      }
+    ],
     "name": "getPlayerQuestsJoined",
     "outputs": [
       {
@@ -1323,6 +1390,25 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_playerProfileId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPlayerVideoBytes",
+    "outputs": [
+      {
+        "internalType": "string[]",
+        "name": "",
+        "type": "string[]"
       }
     ],
     "stateMutability": "view",
@@ -1976,6 +2062,49 @@
         "type": "string"
       }
     ],
+    "name": "getVideoBytesFromPlaybackId",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_pubId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_profileId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getVideoPlaybackId",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_playbackId",
+        "type": "string"
+      }
+    ],
     "name": "getVideoProfileIdFromPlaybackId",
     "outputs": [
       {
@@ -2191,6 +2320,16 @@
     "inputs": [
       {
         "components": [
+          {
+            "internalType": "uint256",
+            "name": "profileId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "pubId",
+            "type": "uint256"
+          },
           {
             "internalType": "uint256",
             "name": "playCount",

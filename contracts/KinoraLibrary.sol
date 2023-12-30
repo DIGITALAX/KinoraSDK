@@ -52,6 +52,7 @@ contract KinoraLibrary {
   }
 
   struct VideoPost {
+    string videoBytes;
     uint256 profileId;
     uint256 pubId;
   }
@@ -78,6 +79,8 @@ contract KinoraLibrary {
     bool oneOf;
   }
   struct PlayerVideoMetrics {
+    uint256 profileId;
+    uint256 pubId;
     uint256 playCount;
     uint256 ctr;
     uint256 avd;
@@ -97,9 +100,11 @@ contract KinoraLibrary {
   struct Player {
     mapping(uint256 => uint256) milestonesCompletedPerQuest;
     uint256[] questsJoined;
+    uint256[] questsCompleted;
     mapping(uint256 => bool) joinedQuest;
     mapping(uint256 => mapping(uint256 => PlayerVideoMetrics)) videoMetrics;
     mapping(uint256 => mapping(uint256 => bool)) eligibleToClaimMilestone;
+    string[] videoBytes;
     address playerAddress;
     uint256 activeSince;
   }

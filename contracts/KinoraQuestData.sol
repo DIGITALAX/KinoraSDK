@@ -37,6 +37,7 @@ contract KinoraQuestData {
     uint256 playerProfileId,
     uint256 milestone
   );
+  event QuestCompleted(uint256 questId, uint256 playerProfileId);
   event PlayerEligibleToClaimMilestone(
     uint256 playerProfileId,
     uint256 questId,
@@ -145,6 +146,11 @@ contract KinoraQuestData {
     ] = _milestone;
 
     emit MilestoneCompleted(_questId, _playerProfileId, _milestone);
+
+    if (_milestone == _allQuests[_questId].milestoneCount) {
+      _allPlayers[_playerProfileId].questsCompleted.push(_questId);
+      emit QuestCompleted(_questId, _playerProfileId);
+    }
   }
 
   function setKinoraMetricsContract(
@@ -186,6 +192,22 @@ contract KinoraQuestData {
     if (_allPlayers[_playerProfileId].activeSince == 0) {
       revert KinoraErrors.PlayerNotEligible();
     }
+
+    if (
+      _allPlayers[_playerProfileId]
+      .videoMetrics[_videoPubId][_videoProfileId].profileId ==
+      0 &&
+      _allPlayers[_playerProfileId]
+      .videoMetrics[_videoPubId][_videoProfileId].pubId ==
+      0
+    ) {
+      string memory _playback = _postToPlayback[_videoProfileId][_videoPubId];
+
+      _allPlayers[_playerProfileId].videoBytes.push(
+        _idsToVideos[_playback].videoBytes
+      );
+    }
+
     _allPlayers[_playerProfileId].videoMetrics[_videoPubId][
       _videoProfileId
     ] = _metrics;
@@ -239,10 +261,11 @@ contract KinoraQuestData {
       _idsToQuests[video.playerId].push(_questId);
       _idsToVideos[video.playerId] = KinoraLibrary.VideoPost({
         pubId: video.pubId,
-        profileId: video.profileId
+        profileId: video.profileId,
+        videoBytes: video.videoBytes
       });
       _postToPlayback[video.profileId][video.pubId] = video.playerId;
-      _videoBytes[j] = (video.videoBytes);
+      _videoBytes[j] = video.videoBytes;
     }
 
     _newMilestone.videoBytes = _videoBytes;
@@ -254,6 +277,12 @@ contract KinoraQuestData {
 
   function getTotalPlayerCount() public view returns (uint256) {
     return _playerCount;
+  }
+
+  function getPlayerQuestsCompleted(
+    uint256 _playerProfileId
+  ) public view returns (uint256[] memory) {
+    return _allPlayers[_playerProfileId].questsCompleted;
   }
 
   function getPlayerVideoAVD(
@@ -344,6 +373,12 @@ contract KinoraQuestData {
     return
       _allPlayers[_playerProfileId]
       .videoMetrics[_videoProfileId][_videoPubId].duration;
+  }
+
+  function getPlayerVideoBytes(
+    uint256 _playerProfileId
+  ) public view returns (string[] memory) {
+    return _allPlayers[_playerProfileId].videoBytes;
   }
 
   function getPlayerVideoBookmark(
@@ -777,6 +812,12 @@ contract KinoraQuestData {
     string memory _playbackId
   ) public view returns (uint256) {
     return _idsToVideos[_playbackId].profileId;
+  }
+
+  function getVideoBytesFromPlaybackId(
+    string memory _playbackId
+  ) public view returns (string memory) {
+    return _idsToVideos[_playbackId].videoBytes;
   }
 
   function getVideoPlaybackId(

@@ -155,10 +155,10 @@ contract KinoraOpenAction is
 
       if (
         !kinoraQuestData.getPlayerEligibleToClaimMilestone(
+          _params.actorProfileId,
           _questId,
-          _playerMilestone,
-          _params.actorProfileId
-        )
+          _playerMilestone
+        ) || _playerMilestone == kinoraQuestData.getMilestoneCount(_questId)
       ) {
         revert KinoraErrors.PlayerNotEligible();
       }
