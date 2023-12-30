@@ -1,7 +1,8 @@
-import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
+import { Address, BigInt, ByteArray, Bytes } from "@graphprotocol/graph-ts";
 import {
   KinoraQuestData,
   MilestoneCompleted as MilestoneCompletedEvent,
+  QuestCompleted as QuestCompletedEvent,
   PlayerEligibleToClaimMilestone as PlayerEligibleToClaimMilestoneEvent,
   PlayerJoinedQuest as PlayerJoinedQuestEvent,
   PlayerMetricsUpdated as PlayerMetricsUpdatedEvent,
@@ -11,6 +12,7 @@ import {
 import { QuestMetadata as QuestMetadataTemplate } from "../generated/templates";
 import {
   MilestoneCompleted,
+  QuestCompleted,
   PlayerEligibleToClaimMilestone,
   PlayerJoinedQuest,
   PlayerMetricsUpdated,
@@ -22,6 +24,10 @@ import {
   ERC20Logic,
   ERC721Logic,
   Reward,
+  Player,
+  Eligible,
+  CompletionActivity,
+  VideoActivity,
 } from "../generated/schema";
 
 export function handleMilestoneCompleted(event: MilestoneCompletedEvent): void {
@@ -35,6 +41,80 @@ export function handleMilestoneCompleted(event: MilestoneCompletedEvent): void {
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
+
+  let currentPlayer = Player.load(
+    Bytes.fromByteArray(ByteArray.fromBigInt(event.params.playerProfileId)),
+  );
+
+  if (currentPlayer) {
+    let currentEligible = new Eligible(
+      event.params.milestone.toString() +
+        event.params.playerProfileId.toString() +
+        event.params.questId.toString(),
+    );
+
+    currentEligible.status = false;
+
+    currentEligible.save();
+
+    let currentCompleted = new CompletionActivity(
+      event.params.milestone.toString() +
+        event.params.playerProfileId.toString() +
+        event.params.questId.toString(),
+    );
+
+    currentCompleted.questId = entity.questId;
+    currentCompleted.milestonesCompleted = entity.milestone;
+
+    currentCompleted.save();
+
+    let completed: Array<string> | null = currentPlayer.milestonesCompleted;
+
+    if (!completed) {
+      completed = [];
+    }
+    completed.push(
+      event.params.milestone.toString() +
+        event.params.playerProfileId.toString() +
+        event.params.questId.toString(),
+    );
+
+    currentPlayer.milestonesCompleted = completed;
+
+    currentPlayer.save();
+  }
+
+  entity.save();
+}
+
+export function handleQuestCompleted(event: QuestCompletedEvent): void {
+  let entity = new QuestCompleted(
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
+  );
+  entity.questId = event.params.questId;
+  entity.playerProfileId = event.params.playerProfileId;
+
+  entity.blockNumber = event.block.number;
+  entity.blockTimestamp = event.block.timestamp;
+  entity.transactionHash = event.transaction.hash;
+
+  let currentPlayer = Player.load(
+    Bytes.fromByteArray(ByteArray.fromBigInt(event.params.playerProfileId)),
+  );
+
+  if (currentPlayer) {
+    let completedQuests: Array<BigInt> | null = currentPlayer.questsCompleted;
+
+    if (!completedQuests) {
+      completedQuests = [];
+    }
+
+    completedQuests.push(entity.questId);
+
+    currentPlayer.questsCompleted = completedQuests;
+
+    currentPlayer.save();
+  }
 
   entity.save();
 }
@@ -54,6 +134,39 @@ export function handlePlayerEligibleToClaimMilestone(
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
 
+  let currentPlayer = Player.load(
+    Bytes.fromByteArray(ByteArray.fromBigInt(event.params.playerProfileId)),
+  );
+
+  if (currentPlayer) {
+    let currentEligible = new Eligible(
+      event.params.milestone.toString() +
+        event.params.playerProfileId.toString() +
+        event.params.questId.toString(),
+    );
+
+    currentEligible.milestone = entity.milestone;
+    currentEligible.questId = entity.questId;
+    currentEligible.status = true;
+
+    currentEligible.save();
+
+    let eligibile: Array<string> | null = currentPlayer.eligibile;
+
+    if (!eligibile) {
+      eligibile = [];
+    }
+    eligibile.push(
+      event.params.milestone.toString() +
+        event.params.playerProfileId.toString() +
+        event.params.questId.toString(),
+    );
+
+    currentPlayer.eligibile = eligibile;
+
+    currentPlayer.save();
+  }
+
   entity.save();
 }
 
@@ -67,6 +180,46 @@ export function handlePlayerJoinedQuest(event: PlayerJoinedQuestEvent): void {
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
+
+  let currentPlayer = Player.load(
+    Bytes.fromByteArray(ByteArray.fromBigInt(event.params.playerProfileId)),
+  );
+
+  if (!currentPlayer) {
+    currentPlayer = new Player(
+      Bytes.fromByteArray(ByteArray.fromBigInt(event.params.playerProfileId)),
+    );
+    currentPlayer.profileId = event.params.playerProfileId;
+  }
+
+  if (currentPlayer) {
+    let questsJoined: Array<BigInt> | null = currentPlayer.questsJoined;
+
+    if (!questsJoined) {
+      questsJoined = [];
+    }
+    questsJoined.push(entity.questId);
+    currentPlayer.questsJoined = questsJoined;
+
+    currentPlayer.save();
+  }
+
+  let quest = QuestInstantiated.load(
+    Bytes.fromByteArray(ByteArray.fromBigInt(event.params.questId)),
+  );
+
+  if (quest) {
+    let players: Array<Bytes> | null = quest.players;
+
+    if (!players) {
+      players = [];
+    }
+
+    players.push(
+      Bytes.fromByteArray(ByteArray.fromBigInt(event.params.playerProfileId)),
+    );
+    quest.save();
+  }
 
   entity.save();
 }
@@ -84,6 +237,112 @@ export function handlePlayerMetricsUpdated(
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
+
+  let currentPlayer = Player.load(
+    Bytes.fromByteArray(ByteArray.fromBigInt(event.params.playerProfileId)),
+  );
+
+  let questData = KinoraQuestData.bind(
+    Address.fromString("0x4cD2B29E8D80b150b46b90478f32D79417540F9d"),
+  );
+
+  if (currentPlayer) {
+    let currentVideo = new VideoActivity(
+      entity.playerProfileId.toString() +
+        entity.videoPubId.toString() +
+        entity.videoProfileId.toString(),
+    );
+
+    currentVideo.profileId = entity.videoPubId;
+    currentVideo.pubId = entity.videoProfileId;
+    currentVideo.playCount = questData.getPlayerVideoPlayCount(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.ctr = questData.getPlayerVideoCTR(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.avd = questData.getPlayerVideoAVD(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.impressionCount = questData.getPlayerVideoImpressionCount(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.engagementRate = questData.getPlayerVideoEngagementRate(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.duration = questData.getPlayerVideoDuration(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.mostViewedSegment = questData.getPlayerVideoMostViewedSegment(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.interactionRate = questData.getPlayerVideoInteractionRate(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.mostReplayedArea = questData.getPlayerVideoMostReplayedArea(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.hasQuoted = questData.getPlayerVideoQuote(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.hasMirrored = questData.getPlayerVideoMirror(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.hasBookmarked = questData.getPlayerVideoBookmark(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.hasCommented = questData.getPlayerVideoComment(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.hasReacted = questData.getPlayerVideoReact(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+
+    currentVideo.save();
+
+    let videos: Array<string> | null = currentPlayer.videos;
+
+    if (!videos) {
+      videos = [];
+    }
+    videos.push(
+      entity.playerProfileId.toString() +
+        entity.videoPubId.toString() +
+        entity.videoProfileId.toString(),
+    );
+
+    currentPlayer.videos = videos;
+
+    currentPlayer.save();
+  }
 
   entity.save();
 }
@@ -104,6 +363,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
   );
 
   entity.uri = questData.getQuestURI(entity.questId);
+  entity.status = true;
 
   if (entity.uri !== null) {
     let hash = entity.uri.split("/").pop();
@@ -263,7 +523,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
 
     gated.save();
 
-    milestone.gated = milestoneURI + milestoneId;
+    milestone.gated = milestoneURI + milestoneId.toString();
     milestone.videoLength = questData.getMilestoneVideoLength(
       entity.questId,
       new BigInt(i),
@@ -421,6 +681,20 @@ export function handleQuestStatusUpdated(event: QuestStatusUpdatedEvent): void {
   );
   entity.questId = event.params.questId;
   entity.status = event.params.status;
+
+  let quest = QuestInstantiated.load(
+    Bytes.fromByteArray(ByteArray.fromBigInt(event.params.questId)),
+  );
+
+  if (quest) {
+    if (entity.status == 0) {
+      quest.status = true;
+    } else {
+      quest.status = false;
+    }
+
+    quest.save();
+  }
 
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;

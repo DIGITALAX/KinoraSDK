@@ -49,6 +49,8 @@ type QuestInstantiated @entity(immutable: false) {
   uri: String!
   milestones: [Milestone!]
   gate: Gate
+  players: [Player!]
+  status: Boolean!
 }
 
 type QuestStatusUpdated @entity(immutable: false) {
@@ -123,4 +125,47 @@ type ERC721Logic @entity(immutable: false) {
   address: Bytes
   uris: [String!]
   tokenIds: [BigInt!]
+}
+
+type Player @entity(immutable: false) {
+  id: Bytes!
+  profileId: BigInt
+  questsJoined: [BigInt!]
+  questsCompleted: [BigInt!]
+  milestonesCompleted: [CompletionActivity!]
+  videos: [VideoActivity!]
+  eligibile: [Eligible!]
+}
+
+type CompletionActivity @entity(immutable: false) {
+  id: Bytes!
+  questId: BigInt
+  milestonesCompleted: BigInt
+}
+
+type VideoActivity @entity(immutable: false) {
+  id: Bytes!
+  pubId: BigInt
+  profileId: BigInt
+  playCount: BigInt
+  ctr: BigInt
+  avd: BigInt
+  impressionCount: BigInt
+  engagementRate: BigInt
+  duration: BigInt
+  mostViewedSegment: BigInt
+  interactionRate: BigInt
+  mostReplayedArea: BigInt
+  hasQuoted: Boolean
+  hasMirrored: Boolean
+  hasCommented: Boolean
+  hasBookmarked: Boolean
+  hasReacted: Boolean
+}
+
+type Eligible @entity(immutable: false) {
+  id: Bytes!
+  questId: BigInt
+  milestone: BigInt
+  status: Boolean
 }
