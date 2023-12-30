@@ -4,7 +4,7 @@ import { EthereumAddress } from "./../@types/kinora-sdk";
  * @constant KINORA_OPEN_ACTION_CONTRACT Lens Kinora Open Action Address Matic Network.
  */
 export const KINORA_OPEN_ACTION_CONTRACT: EthereumAddress =
-  "0xC185fe57a86f17b31cfA08FA29dd2693143f00cc";
+  "0xF451CD340AEfe28C58162543D5167E35b36325d7";
 /**
  * @constant LENS_MODULE_CONTRACT Lens Module Contract.
  */
@@ -19,12 +19,12 @@ export const ZERO_ADDRESS: EthereumAddress =
  * @constant KINORA_METRICS_CONTRACT Lens Kinora Metrics Address Matic Network.
  */
 export const KINORA_METRICS_CONTRACT: EthereumAddress =
-  "0x39709a202854608983Ae96791d63FAdc3e30477f";
+  "0x31802679f1b53EceEf3F401CC0427F260F98014D";
 /**
  * @constant KINORA_ESCROW_CONTRACT Lens Kinora Escrow Address Matic Network.
  */
 export const KINORA_ESCROW_CONTRACT: EthereumAddress =
-  "0xA75251c14f43d824Bd46Ef174f1d4d2987f3D8b4";
+  "0x9266F71E1888a53923A605a82882F83211eF64E0";
 /**
  * @constant LENS_HUB_PROXY_CONTRACT Lens Hubs Proxy Address Matic Network.
  */
@@ -34,7 +34,7 @@ export const LENS_HUB_PROXY_CONTRACT: EthereumAddress =
  * @constant KINORA_QUEST_DATA_CONTRACT Kinora Quest Data Address Matic Network.
  */
 export const KINORA_QUEST_DATA_CONTRACT: EthereumAddress =
-  "0x4cD2B29E8D80b150b46b90478f32D79417540F9d";
+  "0x4682D92f246a08B027cB400f3369a0a0D35AC923";
 /**
  * @constant LENS_BASE_URL Base URL for the Lens V2 API.
  */
