@@ -1,4 +1,9 @@
-import { EthereumAddress, ILogEntry, LogCategory, PlayerData } from "./@types/kinora-sdk";
+import {
+  EthereumAddress,
+  ILogEntry,
+  LogCategory,
+  PlayerData,
+} from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import { ethers } from "ethers";
 import { KINORA_METRICS_CONTRACT } from "./constants/index";
@@ -155,6 +160,8 @@ export class Sequence extends EventEmitter {
 
       const tx = await kinoraMetricsContract.addPlayerMetrics(
         {
+          profileId: parseInt(postId?.split("-")[0], 16),
+          pubId: parseInt(postId?.split("-")[1], 16),
           playCount: this.metrics[postId].getPlayCount(),
           ctr: this.metrics[postId].getCTR(),
           avd: this.metrics[postId].getAVD(),
@@ -172,9 +179,6 @@ export class Sequence extends EventEmitter {
           hasBookmarked: (data?.publication as Post)?.operations.hasBookmarked,
           hasReacted: (data?.publication as Post)?.operations.hasReacted,
         },
-        parseInt(playerProfileId, 16),
-        parseInt(postId?.split("-")[0], 16),
-        parseInt(postId?.split("-")[1], 16),
       );
 
       this.metrics[postId].reset();

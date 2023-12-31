@@ -5,6 +5,7 @@ pragma solidity ^0.8.19;
 import "./KinoraAccessControl.sol";
 import "./KinoraLibrary.sol";
 import "./KinoraQuestData.sol";
+import "hardhat/console.sol";
 
 contract KinoraMetrics {
   string public symbol;
@@ -23,7 +24,10 @@ contract KinoraMetrics {
     uint256 playerProfileId
   );
 
-  modifier onlyPlayer(uint256 _playerProfileId) {
+  modifier onlyPlayer() {
+    uint256 _playerProfileId = kinoraQuestData.getAddressToProfileId(
+      msg.sender
+    );
     if (kinoraQuestData.getPlayerActiveSince(_playerProfileId) == 0) {
       revert KinoraErrors.PlayerNotEligible();
     }
@@ -52,19 +56,14 @@ contract KinoraMetrics {
   }
 
   function addPlayerMetrics(
-    KinoraLibrary.PlayerVideoMetrics memory _metrics,
-    uint256 _playerProfileId,
-    uint256 _videoProfileId,
-    uint256 _videoPubId
-  ) public onlyPlayer(_playerProfileId) {
-    kinoraQuestData.updatePlayerMetrics(
-      _metrics,
-      _videoPubId,
-      _videoProfileId,
-      _playerProfileId
+    KinoraLibrary.PlayerVideoMetrics memory _metrics
+  ) public onlyPlayer {
+    uint256 _playerProfileId = kinoraQuestData.getAddressToProfileId(
+      msg.sender
     );
+    kinoraQuestData.updatePlayerMetrics(_metrics, _playerProfileId);
 
-    emit AddPlayerMetrics(_videoPubId, _videoProfileId, _playerProfileId);
+    emit AddPlayerMetrics(_metrics.pubId, _metrics.profileId, _playerProfileId);
   }
 
   function playerEligibleToClaimMilestone(
