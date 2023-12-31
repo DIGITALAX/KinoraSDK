@@ -21,7 +21,7 @@ contract KinoraEscrow {
 
   mapping(uint256 => mapping(uint256 => mapping(address => uint256)))
     private _questMilestoneERC20Deposit;
-  mapping(uint256 => mapping(uint256 => string))
+  mapping(uint256 => mapping(uint256 => mapping(uint256 => string)))
     private _questMilestoneERC721Deposit;
 
   modifier onlyOpenAction() {
@@ -83,13 +83,30 @@ contract KinoraEscrow {
   function withdrawERC20(
     address _toAddress,
     uint256 _questId,
-    uint256 _milestone
+    uint256 _milestone,
+    uint256 _rewardIndex
   ) external onlyOpenAction {
     if (kinoraQuestData.getQuestStatus(_questId) != KinoraLibrary.Status.Open) {
       revert KinoraErrors.QuestClosed();
     }
 
-    _erc20Transfer(_toAddress, _questId, _milestone);
+    uint256 _amount = kinoraQuestData.getMilestoneRewardTokenAmount(
+      _questId,
+      _rewardIndex,
+      _milestone
+    );
+
+    address _tokenAddress = kinoraQuestData.getMilestoneRewardTokenAddress(
+      _questId,
+      _rewardIndex,
+      _milestone
+    );
+
+    IERC20(_tokenAddress).transfer(_toAddress, _amount);
+
+    _questMilestoneERC20Deposit[_questId][_milestone - 1][
+      _tokenAddress
+    ] -= _amount;
 
     emit ERC20Withdrawn(_toAddress, _questId, _milestone);
   }
@@ -101,7 +118,42 @@ contract KinoraEscrow {
     uint256 _milestoneCount = kinoraQuestData.getMilestoneCount(_questId);
 
     for (uint256 i = 0; i < _milestoneCount; i++) {
-      _erc20Transfer(_toAddress, _questId, i + 1);
+      uint256 _rewardLength = kinoraQuestData.getMilestoneRewardsLength(
+        _questId,
+        i + 1
+      );
+
+      uint256 _counterSize = 0;
+      for (uint256 j = 0; j < _rewardLength; j++) {
+        if (
+          kinoraQuestData.getMilestoneRewardType(_questId, j, i + 1) ==
+          KinoraLibrary.RewardType.ERC20
+        ) {
+          _counterSize++;
+        }
+      }
+
+      address[] memory _uniqueAddresses = new address[](_counterSize);
+
+      uint256 _counter = 0;
+      for (uint256 j = 0; j < _rewardLength; j++) {
+        if (
+          kinoraQuestData.getMilestoneRewardType(_questId, j, i + 1) ==
+          KinoraLibrary.RewardType.ERC20
+        ) {
+          _uniqueAddresses[_counter] = kinoraQuestData
+            .getMilestoneRewardTokenAddress(_questId, j, i + 1);
+          _counter++;
+        }
+      }
+
+      for (uint256 k = 0; k < _uniqueAddresses.length; k++) {
+        IERC20(_uniqueAddresses[k]).transfer(
+          _toAddress,
+          _questMilestoneERC20Deposit[_questId][i][_uniqueAddresses[k]]
+        );
+        _questMilestoneERC20Deposit[_questId][i][_uniqueAddresses[k]] = 0;
+      }
     }
 
     kinoraQuestData.updateQuestStatus(_questId);
@@ -112,9 +164,10 @@ contract KinoraEscrow {
   function depositERC721(
     string memory _uri,
     uint256 _questId,
-    uint256 _milestone
+    uint256 _milestone,
+    uint256 _rewardIndex
   ) external onlyOpenAction {
-    _questMilestoneERC721Deposit[_questId][_milestone] = _uri;
+    _questMilestoneERC721Deposit[_questId][_milestone][_rewardIndex] = _uri;
 
     emit ERC721URISet(_uri, _questId, _milestone);
   }
@@ -122,60 +175,34 @@ contract KinoraEscrow {
   function mintERC721(
     address _playerAddress,
     uint256 _questId,
-    uint256 _milestone
+    uint256 _milestone,
+    uint256 _rewardIndex
   ) external onlyOpenAction {
+    if (kinoraQuestData.getQuestStatus(_questId) != KinoraLibrary.Status.Open) {
+      revert KinoraErrors.QuestClosed();
+    }
     kinoraNFTCreator.mintToken(
-      _questMilestoneERC721Deposit[_questId][_milestone],
+      _questMilestoneERC721Deposit[_questId][_milestone - 1][_rewardIndex],
       _playerAddress
     );
 
     emit ERC721Minted(_playerAddress, _questId, _milestone);
   }
 
-  function _erc20Transfer(
-    address _toAddress,
-    uint256 _questId,
-    uint256 _milestone
-  ) internal {
-    uint256 _rewardLength = kinoraQuestData.getMilestoneRewardsLength(
-      _questId,
-      _milestone
-    );
-
-    for (uint256 i = 0; i < _rewardLength; i++) {
-      uint256 _amount = kinoraQuestData.getMilestoneRewardTokenAmount(
-        _questId,
-        i,
-        _milestone
-      );
-
-      address _tokenAddress = kinoraQuestData.getMilestoneRewardTokenAddress(
-        _questId,
-        i,
-        _milestone
-      );
-
-      IERC20(_tokenAddress).transfer(_toAddress, _amount);
-
-      _questMilestoneERC20Deposit[_questId][_milestone][
-        _tokenAddress
-      ] -= _amount;
-    }
-  }
-
-  function getQuestMilestoneERC20Amount(
+  function getQuestMilestoneERC20TotalDeposit(
     address _tokenAddress,
     uint256 _questId,
     uint256 _milestone
   ) public view returns (uint256) {
-    return _questMilestoneERC20Deposit[_questId][_milestone][_tokenAddress];
+    return _questMilestoneERC20Deposit[_questId][_milestone - 1][_tokenAddress];
   }
 
   function getQuestMilestoneERC721URI(
     uint256 _questId,
-    uint256 _milestone
+    uint256 _milestone,
+    uint256 _rewardIndex
   ) public view returns (string memory) {
-    return _questMilestoneERC721Deposit[_questId][_milestone];
+    return _questMilestoneERC721Deposit[_questId][_milestone - 1][_rewardIndex];
   }
 
   function setKinoraQuestDataContract(

@@ -112,6 +112,7 @@ contract KinoraLibrary {
     uint256 maxPlayerCount;
     GatingLogic gateLogic;
     MilestoneParameter[] milestones;
+    string uri;
     address envokerAddress;
     uint256 pubId;
     uint256 profileId;

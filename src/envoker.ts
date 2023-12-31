@@ -191,6 +191,7 @@ export class Envoker {
       const milestoneDetails = await Promise.all(
         args?.milestones
           ?.sort((a, b) => a.milestone - b.milestone)
+          ?.filter((v, i, a) => !i || v.milestone != a[i - 1].milestone)
           ?.map(async (milestone: Milestone) => {
             return {
               gated: {
@@ -318,7 +319,7 @@ export class Envoker {
 
               const tx = await erc20Contract.approve(
                 KINORA_ESCROW_CONTRACT,
-                Number(reward.amount) * 10,
+                Number(reward.amount) * args.maxPlayerCount,
               );
               await tx.wait();
             }

@@ -7,6 +7,7 @@ import "./KinoraErrors.sol";
 import "./KinoraEscrow.sol";
 import "./KinoraMetrics.sol";
 import "./KinoraAccessControl.sol";
+import "hardhat/console.sol";
 
 contract KinoraQuestData {
   KinoraAccessControl public kinoraAccess;
@@ -23,6 +24,7 @@ contract KinoraQuestData {
   mapping(string => uint256[]) private _idsToQuests;
   mapping(string => KinoraLibrary.VideoPost) private _idsToVideos;
   mapping(uint256 => mapping(uint256 => string)) private _postToPlayback;
+  mapping(address => uint256) private _addressToProfile;
 
   event QuestInstantiated(uint256 questId, uint256 milestoneCount);
   event PlayerJoinedQuest(uint256 questId, uint256 playerProfileId);
@@ -91,6 +93,7 @@ contract KinoraQuestData {
     newQuest.status = KinoraLibrary.Status.Open;
     newQuest.gated = _params.gateLogic;
     newQuest.milestoneCount = _params.milestones.length;
+    newQuest.uri = _params.uri;
 
     _setMilestones(_params.milestones, newQuest, _questCount);
 
@@ -106,6 +109,7 @@ contract KinoraQuestData {
       _playerCount++;
       _allPlayers[_playerProfileId].playerAddress = _playerAddress;
       _allPlayers[_playerProfileId].activeSince = block.timestamp;
+      _addressToProfile[_playerAddress] = _playerProfileId;
     }
 
     _allPlayers[_playerProfileId].questsJoined.push(_questId);
@@ -123,7 +127,7 @@ contract KinoraQuestData {
     bool _eligible
   ) external onlyKinoraMetrics {
     _allPlayers[_playerProfileId].eligibleToClaimMilestone[_questId][
-        _milestone
+        _milestone - 1
       ] = _eligible;
 
     emit PlayerEligibleToClaimMilestone(
@@ -185,8 +189,6 @@ contract KinoraQuestData {
 
   function updatePlayerMetrics(
     KinoraLibrary.PlayerVideoMetrics memory _metrics,
-    uint256 _videoPubId,
-    uint256 _videoProfileId,
     uint256 _playerProfileId
   ) external onlyKinoraMetrics {
     if (_allPlayers[_playerProfileId].activeSince == 0) {
@@ -195,24 +197,30 @@ contract KinoraQuestData {
 
     if (
       _allPlayers[_playerProfileId]
-      .videoMetrics[_videoPubId][_videoProfileId].profileId ==
+      .videoMetrics[_metrics.profileId][_metrics.pubId].profileId ==
       0 &&
       _allPlayers[_playerProfileId]
-      .videoMetrics[_videoPubId][_videoProfileId].pubId ==
+      .videoMetrics[_metrics.profileId][_metrics.pubId].pubId ==
       0
     ) {
-      string memory _playback = _postToPlayback[_videoProfileId][_videoPubId];
+      string memory _playback = _postToPlayback[_metrics.profileId][
+        _metrics.pubId
+      ];
 
       _allPlayers[_playerProfileId].videoBytes.push(
         _idsToVideos[_playback].videoBytes
       );
     }
 
-    _allPlayers[_playerProfileId].videoMetrics[_videoPubId][
-      _videoProfileId
+    _allPlayers[_playerProfileId].videoMetrics[_metrics.profileId][
+      _metrics.pubId
     ] = _metrics;
 
-    emit PlayerMetricsUpdated(_playerProfileId, _videoPubId, _videoProfileId);
+    emit PlayerMetricsUpdated(
+      _playerProfileId,
+      _metrics.pubId,
+      _metrics.profileId
+    );
   }
 
   function _setMilestones(
@@ -228,6 +236,7 @@ contract KinoraQuestData {
       _newMilestone.gated = _milestones[i].gated;
       _newMilestone.videoLength = _milestones[i].videos.length;
       _newMilestone.rewardsLength = _milestones[i].rewards.length;
+      _newMilestone.uri = _milestones[i].uri;
 
       _setRewards(_newMilestone, _milestones[i]);
       _setVideos(_newMilestone, _milestones[i], _questId);
@@ -253,7 +262,7 @@ contract KinoraQuestData {
     KinoraLibrary.MilestoneParameter memory _paramsMilestone,
     uint256 _questId
   ) private {
-    string[] memory _videoBytes;
+    string[] memory _videoBytes = new string[](_paramsMilestone.videos.length);
 
     for (uint j = 0; j < _paramsMilestone.videos.length; j++) {
       KinoraLibrary.Video memory video = _paramsMilestone.videos[j];
@@ -445,7 +454,7 @@ contract KinoraQuestData {
   ) public view returns (bool) {
     return
       _allPlayers[_playerProfileId].eligibleToClaimMilestone[_questId][
-        _milestone
+        _milestone - 1
       ];
   }
 
@@ -825,5 +834,11 @@ contract KinoraQuestData {
     uint256 _profileId
   ) public view returns (string memory) {
     return _postToPlayback[_profileId][_pubId];
+  }
+
+  function getAddressToProfileId(
+    address _playerAddress
+  ) public view returns (uint256) {
+    return _addressToProfile[_playerAddress];
   }
 }
