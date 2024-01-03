@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import getPublicationClient from "./../graphql/queries/getPublicationClient";
 import { KinoraContext } from "./KinoraProvider";
-import { EthereumAddress } from "./../@types/kinora-sdk";
+import { ZeroString } from "./../@types/kinora-sdk";
 import { Mirror, Post, Quote, Comment } from "./../@types/generated";
 
 // Code can only be executed in a browser environment
@@ -95,8 +95,8 @@ type KinoraPlayerWrapperProps = {
   fullscreen?: boolean;
   fillWidthHeight?: boolean;
   customControls?: boolean;
-  postId?: EthereumAddress;
-  playerProfileId?: EthereumAddress;
+  postId?: ZeroString;
+  playerProfileId?: ZeroString;
   styles?: React.CSSProperties;
 };
 
@@ -132,8 +132,8 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     const [lastVolumeId, setLastVolumeId] = useState<number>(0);
     // State for managing Lens related properties
     const [lensProps, setLensProps] = useState<{
-      postId: EthereumAddress | undefined;
-      playerProfileId: EthereumAddress | undefined;
+      postId: ZeroString | undefined;
+      playerProfileId: ZeroString | undefined;
       onLensVideoData:
         | ((
             data: Post | Mirror | Comment | Quote,
@@ -389,6 +389,10 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
         const videoElement = document
           ?.getElementById(parentId)
           ?.querySelector(".c-lioqzt");
+          const loaderElement = document
+          ?.getElementById(parentId)
+          ?.querySelector(".c-PJLV.c-IBjNz");
+
 
         const setStyles = (
           element: HTMLElement | null,
@@ -424,6 +428,12 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
             objectFit: "cover",
             ...filteredStyles,
           });
+          setStyles(loaderElement as HTMLElement, {
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            ...filteredStyles,
+          });
         } else {
           setStyles(livepeerContainer as HTMLElement, {
             width: "",
@@ -436,6 +446,12 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
             ...filteredStyles,
           });
           setStyles(videoElement as HTMLElement, {
+            width: "",
+            height: "",
+            objectFit: undefined,
+            ...filteredStyles,
+          });
+          setStyles(loaderElement as HTMLElement, {
             width: "",
             height: "",
             objectFit: undefined,
@@ -519,13 +535,13 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     const handleIsEqual = useCallback(
       (
         prevProps: {
-          postId: EthereumAddress | undefined;
-          playerProfileId: EthereumAddress | undefined;
+          postId: ZeroString | undefined;
+          playerProfileId: ZeroString | undefined;
           onLensVideoData: Function | undefined;
         },
         nextProps: {
-          postId: EthereumAddress | undefined;
-          playerProfileId: EthereumAddress | undefined;
+          postId: ZeroString | undefined;
+          playerProfileId: ZeroString | undefined;
           onLensVideoData: Function | undefined;
         },
       ): boolean => {

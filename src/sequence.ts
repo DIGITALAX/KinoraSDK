@@ -1,5 +1,5 @@
 import {
-  EthereumAddress,
+  ZeroString,
   ILogEntry,
   LogCategory,
   PlayerData,
@@ -23,17 +23,17 @@ export class Sequence extends EventEmitter {
 
   /**
    * @private
-   * @type {{ [postId: EthereumAddress]: Metrics } }
+   * @type {{ [postId: ZeroString]: Metrics } }
    * @description Instance of Metrics class for each Player to handle metric data.
    */
-  private metrics: { [postId: EthereumAddress]: Metrics } = {};
+  private metrics: { [postId: ZeroString]: Metrics } = {};
 
   /**
    * @private
-   * @type {{ [postId: EthereumAddress]: PlayerData }}
+   * @type {{ [postId: ZeroString]: PlayerData }}
    * @description Livepeer Player mapping.
    */
-  private playerMap: { [postId: EthereumAddress]: PlayerData } = {};
+  private playerMap: { [postId: ZeroString]: PlayerData } = {};
 
   /**
    * @private
@@ -72,7 +72,7 @@ export class Sequence extends EventEmitter {
    * @param videoElement - The HTML video element associated with the player.
    */
   initializePlayer = (
-    postId: EthereumAddress,
+    postId: ZeroString,
     videoElement: HTMLVideoElement,
   ): void => {
     const playerData = this.playerMap[postId];
@@ -109,7 +109,7 @@ export class Sequence extends EventEmitter {
    *
    * @param postId - A string representing the Lens Post Id.
    */
-  destroyPlayer = (postId: EthereumAddress): void => {
+  destroyPlayer = (postId: ZeroString): void => {
     if (!this.playerMap[postId]) return;
     this.cleanUpListeners(postId);
     delete this.playerMap[postId];
@@ -118,15 +118,15 @@ export class Sequence extends EventEmitter {
   /**
    * @method sendMetricsOnChain
    * @description This function is responsible for sending player metrics to the blockchain. It performs various checks and validations before proceeding with the transaction, and logs the outcome.
-   * @param {EthereumAddress} postId - The Lens Post Id of the for the connected video.
-   * @param {EthereumAddress} playerProfileId - The Profile Id of the Player.
+   * @param {ZeroString} postId - The Lens Post Id of the for the connected video.
+   * @param {ZeroString} playerProfileId - The Profile Id of the Player.
    * @param {ethers.Wallet} wallet - The Ethers.Wallet object of the Player.
    * @throws Will throw an error if required data is missing or if transaction generation or execution fails.
    * @returns {Promise<void>} - A Promise that resolves when the operation completes.
    */
   sendMetricsOnChain = async (
-    postId: EthereumAddress,
-    playerProfileId: EthereumAddress,
+    postId: ZeroString,
+    playerProfileId: ZeroString,
     wallet: ethers.Wallet,
   ): Promise<void> => {
     if (Object.keys(this.playerMap).length === 0)
@@ -228,7 +228,7 @@ export class Sequence extends EventEmitter {
    * @throws Will throw an error if not used in a browser environment or if the video element is not found.
    * @private
    */
-  private cleanUpListeners = (postId: EthereumAddress) => {
+  private cleanUpListeners = (postId: ZeroString) => {
     this.playerMap[postId].videoElement.removeEventListener(
       "play",
       this.playerMap[postId].eventHandlers.play,

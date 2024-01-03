@@ -7,7 +7,7 @@ import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import { omit } from "lodash";
 import { act } from "./graphql/mutations/actOn";
 import LensHubProxyAbi from "./abis/LensHubProxy.json";
-import { EthereumAddress } from "./@types/kinora-sdk";
+import { ZeroString } from "./@types/kinora-sdk";
 
 export class Dispatch {
   /**
@@ -39,12 +39,11 @@ export class Dispatch {
    * @description Allows a player to join a quest. Ensures a Player Authed Apollo Client is set before proceeding.
    * @param {string} postId - The Lens Pub Id of the quest.
    * @param {ethers.Wallet} wallet - The Player's wallet for signing and broadcasting the tx.
-   * @param {boolean} encrypt - Player to choose to encrypt metrics for quest or not.
    * @throws Will throw an error if the Player Authed Apollo Client is not set.
    * @returns {Promise<Object>} - Promise resolving to an object containing data about the action performed.
    */
   playerJoinQuest = async (
-    postId: EthereumAddress,
+    postId: ZeroString,
     wallet: ethers.Wallet,
   ): Promise<{
     txHash?: string;
@@ -66,7 +65,7 @@ export class Dispatch {
           actOn: {
             unknownOpenAction: {
               address: KINORA_OPEN_ACTION_CONTRACT,
-              data: "",
+              data: "0x00",
             },
           },
           for: postId,
@@ -125,7 +124,7 @@ export class Dispatch {
    * @returns {Promise<Object>} - Promise resolving to an object containing data about the action performed.
    */
   playerCompleteQuestMilestone = async (
-    postId: EthereumAddress,
+    postId: ZeroString,
     wallet: ethers.Signer,
   ): Promise<{
     txHash?: string;
