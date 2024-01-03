@@ -75,19 +75,12 @@ export class Dispatch {
 
       const typedData = data?.createActOnOpenActionTypedData.typedData;
 
-      await wallet.signMessage(
-        ethers.utils.arrayify(
-          ethers.utils.keccak256(
-            JSON.stringify({
-              types: omit(typedData?.types, ["__typename"]),
-              primaryType: "Act",
-              domain: omit(typedData?.domain, ["__typename"]),
-              message: omit(typedData?.value, ["__typename"]),
-            }),
-          ),
-        ),
+      const typedDataHash = ethers.utils._TypedDataEncoder.hash(
+        omit(typedData?.domain, ["__typename"]),
+        omit(typedData?.types, ["__typename"]),
+        omit(typedData?.value, ["__typename"]),
       );
-
+      await wallet?.signMessage(ethers.utils.arrayify(typedDataHash));
       const tx = await this.lensHubProxyContract.act({
         publicationActedProfileId: parseInt(
           typedData?.value.publicationActedProfileId,
@@ -151,19 +144,12 @@ export class Dispatch {
 
       const typedData = data?.createActOnOpenActionTypedData?.typedData;
 
-      await wallet.signMessage(
-        ethers.utils.arrayify(
-          ethers.utils.keccak256(
-            JSON.stringify({
-              types: omit(typedData?.types, ["__typename"]),
-              primaryType: "Post",
-              domain: omit(typedData?.domain, ["__typename"]),
-              message: omit(typedData?.value, ["__typename"]),
-            }),
-          ),
-        ),
+      const typedDataHash = ethers.utils._TypedDataEncoder.hash(
+        omit(typedData?.domain, ["__typename"]),
+        omit(typedData?.types, ["__typename"]),
+        omit(typedData?.value, ["__typename"]),
       );
-
+      await wallet?.signMessage(ethers.utils.arrayify(typedDataHash));
       const tx = await this.lensHubProxyContract?.act({
         publicationActedProfileId: parseInt(
           typedData?.value.publicationActedProfileId,
