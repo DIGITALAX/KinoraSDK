@@ -410,6 +410,11 @@
             "type": "tuple[]"
           },
           {
+            "internalType": "string",
+            "name": "uri",
+            "type": "string"
+          },
+          {
             "internalType": "address",
             "name": "envokerAddress",
             "type": "address"
@@ -433,6 +438,25 @@
     "name": "configureNewQuest",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_playerAddress",
+        "type": "address"
+      }
+    ],
+    "name": "getAddressToProfileId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -2404,16 +2428,6 @@
         "internalType": "struct KinoraLibrary.PlayerVideoMetrics",
         "name": "_metrics",
         "type": "tuple"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_videoPubId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_videoProfileId",
-        "type": "uint256"
       },
       {
         "internalType": "uint256",

@@ -20,7 +20,7 @@ import { ethers } from "ethers";
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import { PublicationMetadataMainFocusType } from "./@types/generated";
 import {
-  EthereumAddress,
+  ZeroString,
   LensQuestMetadata,
   GatingLogic,
   Milestone,
@@ -124,8 +124,8 @@ export class Envoker {
     wallet?: ethers.Wallet;
     approveRewardTokens?: boolean;
   }): Promise<{
-    postId?: EthereumAddress;
-    transactionHash?: EthereumAddress;
+    postId?: ZeroString;
+    transactionHash?: ZeroString;
     error: boolean;
     errorMessage?: string;
   }> => {
@@ -439,13 +439,13 @@ export class Envoker {
   /**
    * @method
    * @description Terminates a quest and triggers the withdrawal process for any remaining funds. Ensures necessary setups and data are present before proceeding.
-   * @param {EthereumAddress} questId - The Quest Id.
-   * @param {EthereumAddress} wallet - (Optional) Ethereum wallet boject for signing the transaction.
+   * @param {ZeroString} questId - The Quest Id.
+   * @param {ZeroString} wallet - (Optional) Ethereum wallet boject for signing the transaction.
    * @throws Will throw an error if necessary setups or data are missing.
    * @returns {Promise<Object>} - Promise resolving to an object containing transaction hashes for termination and withdrawal processes.
    */
   terminateQuestAndWithdraw = async (
-    questId: EthereumAddress,
+    questId: ZeroString,
     wallet?: ethers.Wallet,
   ): Promise<{
     txHash?: string;

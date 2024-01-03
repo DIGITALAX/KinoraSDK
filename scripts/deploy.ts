@@ -58,44 +58,44 @@ const main = async () => {
     // console.log(`kinoraOpenAction deployed at\n${kinoraOpenAction.address}`);
     // console.log(`kinoraNFTCreator deployed at\n${kinoraNFTCreator.address}`);
 
-    // await run(`verify:verify`, {
-    //   address: "0x8976C2692ADbF9C2DE124e5BaF085429D95Ab903",
-    //   constructorArguments: [],
-    // });
-    // await run(`verify:verify`, {
-    //   address: "0x970440d4f54b9ca9a32219798F96408b8045876D",
-    //   constructorArguments: ["0x8976C2692ADbF9C2DE124e5BaF085429D95Ab903"],
-    // });
-    // await run(`verify:verify`, {
-    //   address: "0x9266F71E1888a53923A605a82882F83211eF64E0",
-    //   constructorArguments: [
-    //     "0x8976C2692ADbF9C2DE124e5BaF085429D95Ab903",
-    //     "0x4682D92f246a08B027cB400f3369a0a0D35AC923",
-    //     "0x970440d4f54b9ca9a32219798F96408b8045876D",
-    //   ],
-    // });
-    // await run(`verify:verify`, {
-    //   address: "0x31802679f1b53EceEf3F401CC0427F260F98014D",
-    //   constructorArguments: [
-    //     "0x8976C2692ADbF9C2DE124e5BaF085429D95Ab903",
-    //     "0x4682D92f246a08B027cB400f3369a0a0D35AC923",
-    //   ],
-    // });
-    // await run(`verify:verify`, {
-    //   address: "0x4682D92f246a08B027cB400f3369a0a0D35AC923",
-    //   constructorArguments: ["0x8976C2692ADbF9C2DE124e5BaF085429D95Ab903"],
-    // });
-    // await run(`verify:verify`, {
-    //   address: "0xF451CD340AEfe28C58162543D5167E35b36325d7",
-    //   constructorArguments: [
-    //     "metadata open action",
-    //     "0x9d2b23DBf065DD9f3dA152DD3c64784Ac6036c26",
-    //     "0x9266F71E1888a53923A605a82882F83211eF64E0",
-    //     "0x8976C2692ADbF9C2DE124e5BaF085429D95Ab903",
-    //     "0x4fbffF20302F3326B20052ab9C217C44F6480900",
-    //     "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0",
-    //   ],
-    // });
+    await run(`verify:verify`, {
+      address: "0x329148ADC391b85C247c0bfFA3B02CbFda8F5260",
+      constructorArguments: [],
+    });
+    await run(`verify:verify`, {
+      address: "0x3a27DdB8BD7d311cA1c908D3132Af131F321119C",
+      constructorArguments: ["0x329148ADC391b85C247c0bfFA3B02CbFda8F5260"],
+    });
+    await run(`verify:verify`, {
+      address: "0x71A584c68d5B61Df0a6FadA8dbfa4382781D9c25",
+      constructorArguments: [
+        "0x329148ADC391b85C247c0bfFA3B02CbFda8F5260",
+        "0x7118487566985d9C2d504c705c8FFe2a17fBbDAE",
+        "0x3a27DdB8BD7d311cA1c908D3132Af131F321119C",
+      ],
+    });
+    await run(`verify:verify`, {
+      address: "0x4b315b4463603788AFc8cdCA3F549217Dd633B55",
+      constructorArguments: [
+        "0x329148ADC391b85C247c0bfFA3B02CbFda8F5260",
+        "0x7118487566985d9C2d504c705c8FFe2a17fBbDAE",
+      ],
+    });
+    await run(`verify:verify`, {
+      address: "0x7118487566985d9C2d504c705c8FFe2a17fBbDAE",
+      constructorArguments: ["0x329148ADC391b85C247c0bfFA3B02CbFda8F5260"],
+    });
+    await run(`verify:verify`, {
+      address: "0x9b83de365593BF5efB754eB581387034D655aEaF",
+      constructorArguments: [
+        "metadata open action",
+        "0x9d2b23DBf065DD9f3dA152DD3c64784Ac6036c26",
+        "0x71A584c68d5B61Df0a6FadA8dbfa4382781D9c25",
+        "0x329148ADC391b85C247c0bfFA3B02CbFda8F5260",
+        "0x4fbffF20302F3326B20052ab9C217C44F6480900",
+        "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0",
+      ],
+    });
   } catch (err: any) {
     console.error(err.message);
   }

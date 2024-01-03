@@ -23,6 +23,11 @@ export function handleQuestMetadata(content: Bytes): void {
       metadata.description = description.toString();
     }
 
+    // let tags = value.get("tags");
+    // if (tags && tags.kind === JSONValueKind.STRING) {
+    //   metadata.tags = tags.toString();
+    // }
+
     metadata.save();
   }
 }

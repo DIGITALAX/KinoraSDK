@@ -51,6 +51,9 @@ type QuestInstantiated @entity(immutable: false) {
   gate: Gate
   players: [Player!]
   status: Boolean!
+  pubId: BigInt
+  profileId: BigInt
+  maxPlayerCount: BigInt
 }
 
 type QuestStatusUpdated @entity(immutable: false) {
@@ -63,25 +66,26 @@ type QuestStatusUpdated @entity(immutable: false) {
 }
 
 type QuestMetadata @entity(immutable: false) {
-  id: Bytes!
+  id: ID!
   cover: String
   title: String
   description: String
 }
 
 type Milestone @entity(immutable: false) {
-  id: Bytes!
+  id: ID!
   gated: Gate
   rewards: [Reward!]
   videos: [Video!]
-  details: String
+  milestoneMetadata: QuestMetadata
+  uri: String
   milestoneId: BigInt
   videoLength: BigInt
   rewardsLength: BigInt
 }
 
 type Video @entity(immutable: false) {
-  id: Bytes!
+  id: ID!
   playerId: String
   videoBytes: String
   profileId: BigInt
@@ -100,7 +104,7 @@ type Video @entity(immutable: false) {
 }
 
 type Reward @entity(immutable: false) {
-  id: Bytes!
+  id: ID!
   type: BigInt
   uri: String
   tokenAddress: Bytes
@@ -108,27 +112,27 @@ type Reward @entity(immutable: false) {
 }
 
 type Gate @entity(immutable: false) {
-  id: Bytes!
+  id: ID!
   erc20Logic: [ERC20Logic!]
   erc721Logic: [ERC721Logic!]
   oneOf: Boolean
 }
 
 type ERC20Logic @entity(immutable: false) {
-  id: Bytes!
+  id: ID!
   address: Bytes
   amount: BigInt
 }
 
 type ERC721Logic @entity(immutable: false) {
-  id: Bytes!
+  id: ID!
   address: Bytes
   uris: [String!]
   tokenIds: [BigInt!]
 }
 
 type Player @entity(immutable: false) {
-  id: Bytes!
+  id: ID!
   profileId: BigInt
   questsJoined: [BigInt!]
   questsCompleted: [BigInt!]
@@ -138,13 +142,13 @@ type Player @entity(immutable: false) {
 }
 
 type CompletionActivity @entity(immutable: false) {
-  id: Bytes!
+  id: ID!
   questId: BigInt
   milestonesCompleted: BigInt
 }
 
 type VideoActivity @entity(immutable: false) {
-  id: Bytes!
+  id: ID!
   pubId: BigInt
   profileId: BigInt
   playCount: BigInt
@@ -164,7 +168,7 @@ type VideoActivity @entity(immutable: false) {
 }
 
 type Eligible @entity(immutable: false) {
-  id: Bytes!
+  id: ID!
   questId: BigInt
   milestone: BigInt
   status: Boolean

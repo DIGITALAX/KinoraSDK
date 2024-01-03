@@ -527,6 +527,33 @@ export class QuestInstantiated extends Entity {
     this.set("transactionHash", Value.fromBytes(value));
   }
 
+  get maxPlayerCount(): BigInt {
+    let value = this.get("maxPlayerCount");
+    return value!.toBigInt();
+  }
+
+  set maxPlayerCount(value: BigInt) {
+    this.set("maxPlayerCount", Value.fromBigInt(value));
+  }
+
+  get pubId(): BigInt {
+    let value = this.get("pubId");
+    return value!.toBigInt();
+  }
+
+  set pubId(value: BigInt) {
+    this.set("pubId", Value.fromBigInt(value));
+  }
+
+  get profileId(): BigInt {
+    let value = this.get("profileId");
+    return value!.toBigInt();
+  }
+
+  set profileId(value: BigInt) {
+    this.set("profileId", Value.fromBigInt(value));
+  }
+
   get questMetadata(): string | null {
     let value = this.get("questMetadata");
     if (!value || value.kind == ValueKind.NULL) {
@@ -704,26 +731,26 @@ export class QuestMetadata extends Entity {
     assert(id != null, "Cannot save QuestMetadata entity without an ID");
     if (id) {
       assert(
-        id.kind == ValueKind.BYTES,
-        `Entities of type QuestMetadata must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        id.kind == ValueKind.STRING,
+        `Entities of type QuestMetadata must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("QuestMetadata", id.toBytes().toHexString(), this);
+      store.set("QuestMetadata", id.toString(), this);
     }
   }
 
-  static load(id: Bytes): QuestMetadata | null {
+  static load(id: string): QuestMetadata | null {
     return changetype<QuestMetadata | null>(
-      store.get("QuestMetadata", id.toHexString()),
+      store.get("QuestMetadata", id.toString()),
     );
   }
 
-  get id(): Bytes {
+  get id(): string {
     let value = this.get("id");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set id(value: Bytes) {
-    this.set("id", Value.fromBytes(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
   get cover(): string | null {
@@ -760,6 +787,23 @@ export class QuestMetadata extends Entity {
     }
   }
 
+  // get tags(): string | null {
+  //   let value = this.get("tags");
+  //   if (!value || value.kind == ValueKind.NULL) {
+  //     return null;
+  //   } else {
+  //     return value.toString();
+  //   }
+  // }
+
+  // set tags(value: string | null) {
+  //   if (!value) {
+  //     this.unset("tags");
+  //   } else {
+  //     this.set("tags", Value.fromString(<string>value));
+  //   }
+  // }
+
   get description(): string | null {
     let value = this.get("description");
     if (!value || value.kind == ValueKind.NULL) {
@@ -789,26 +833,24 @@ export class Milestone extends Entity {
     assert(id != null, "Cannot save Milestone entity without an ID");
     if (id) {
       assert(
-        id.kind == ValueKind.BYTES,
-        `Entities of type Milestone must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        id.kind == ValueKind.STRING,
+        `Entities of type Milestone must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("Milestone", id.toBytes().toHexString(), this);
+      store.set("Milestone", id.toString(), this);
     }
   }
 
-  static load(id: Bytes): Milestone | null {
-    return changetype<Milestone | null>(
-      store.get("Milestone", id.toHexString()),
-    );
+  static load(id: string): Milestone | null {
+    return changetype<Milestone | null>(store.get("Milestone", id.toString()));
   }
 
-  get id(): Bytes {
+  get id(): string {
     let value = this.get("id");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set id(value: Bytes) {
-    this.set("id", Value.fromBytes(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
   get gated(): string | null {
@@ -862,8 +904,8 @@ export class Milestone extends Entity {
     }
   }
 
-  get details(): string | null {
-    let value = this.get("details");
+  get uri(): string | null {
+    let value = this.get("uri");
     if (!value || value.kind == ValueKind.NULL) {
       return null;
     } else {
@@ -871,11 +913,28 @@ export class Milestone extends Entity {
     }
   }
 
-  set details(value: string | null) {
+  set uri(value: string | null) {
     if (!value) {
-      this.unset("details");
+      this.unset("uri");
     } else {
-      this.set("details", Value.fromString(<string>value));
+      this.set("uri", Value.fromString(<string>value));
+    }
+  }
+
+  get milestoneMetadata(): string | null {
+    let value = this.get("milestoneMetadata");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set milestoneMetadata(value: string | null) {
+    if (!value) {
+      this.unset("milestoneMetadata");
+    } else {
+      this.set("milestoneMetadata", Value.fromString(<string>value));
     }
   }
 
@@ -942,24 +1001,24 @@ export class Video extends Entity {
     assert(id != null, "Cannot save Video entity without an ID");
     if (id) {
       assert(
-        id.kind == ValueKind.BYTES,
-        `Entities of type Video must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        id.kind == ValueKind.STRING,
+        `Entities of type Video must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("Video", id.toBytes().toHexString(), this);
+      store.set("Video", id.toString(), this);
     }
   }
 
-  static load(id: Bytes): Video | null {
-    return changetype<Video | null>(store.get("Video", id.toHexString()));
+  static load(id: string): Video | null {
+    return changetype<Video | null>(store.get("Video", id.toString()));
   }
 
-  get id(): Bytes {
+  get id(): string {
     let value = this.get("id");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set id(value: Bytes) {
-    this.set("id", Value.fromBytes(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
   get playerId(): string | null {
@@ -1189,24 +1248,24 @@ export class Reward extends Entity {
     assert(id != null, "Cannot save Reward entity without an ID");
     if (id) {
       assert(
-        id.kind == ValueKind.BYTES,
-        `Entities of type Reward must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        id.kind == ValueKind.STRING,
+        `Entities of type Reward must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("Reward", id.toBytes().toHexString(), this);
+      store.set("Reward", id.toString(), this);
     }
   }
 
-  static load(id: Bytes): Reward | null {
-    return changetype<Reward | null>(store.get("Reward", id.toHexString()));
+  static load(id: string): Reward | null {
+    return changetype<Reward | null>(store.get("Reward", id.toString()));
   }
 
-  get id(): Bytes {
+  get id(): string {
     let value = this.get("id");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set id(value: Bytes) {
-    this.set("id", Value.fromBytes(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
   get type(): BigInt | null {
@@ -1289,24 +1348,24 @@ export class Gate extends Entity {
     assert(id != null, "Cannot save Gate entity without an ID");
     if (id) {
       assert(
-        id.kind == ValueKind.BYTES,
-        `Entities of type Gate must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        id.kind == ValueKind.STRING,
+        `Entities of type String must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("Gate", id.toBytes().toHexString(), this);
+      store.set("Gate", id.toString(), this);
     }
   }
 
-  static load(id: Bytes): Gate | null {
-    return changetype<Gate | null>(store.get("Gate", id.toHexString()));
+  static load(id: string): Gate | null {
+    return changetype<Gate | null>(store.get("Gate", id.toString()));
   }
 
-  get id(): Bytes {
+  get id(): string {
     let value = this.get("id");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set id(value: Bytes) {
-    this.set("id", Value.fromBytes(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
   get erc20Logic(): Array<string> | null {
@@ -1364,26 +1423,26 @@ export class ERC20Logic extends Entity {
     assert(id != null, "Cannot save ERC20Logic entity without an ID");
     if (id) {
       assert(
-        id.kind == ValueKind.BYTES,
-        `Entities of type ERC20Logic must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        id.kind == ValueKind.STRING,
+        `Entities of type ERC20Logic must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("ERC20Logic", id.toBytes().toHexString(), this);
+      store.set("ERC20Logic", id.toString(), this);
     }
   }
 
-  static load(id: Bytes): ERC20Logic | null {
+  static load(id: string): ERC20Logic | null {
     return changetype<ERC20Logic | null>(
-      store.get("ERC20Logic", id.toHexString()),
+      store.get("ERC20Logic", id.toString()),
     );
   }
 
-  get id(): Bytes {
+  get id(): string {
     let value = this.get("id");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set id(value: Bytes) {
-    this.set("id", Value.fromBytes(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
   get address(): Bytes | null {
@@ -1432,26 +1491,26 @@ export class ERC721Logic extends Entity {
     assert(id != null, "Cannot save ERC721Logic entity without an ID");
     if (id) {
       assert(
-        id.kind == ValueKind.BYTES,
-        `Entities of type ERC721Logic must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        id.kind == ValueKind.STRING,
+        `Entities of type ERC721Logic must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("ERC721Logic", id.toBytes().toHexString(), this);
+      store.set("ERC721Logic", id.toString(), this);
     }
   }
 
-  static load(id: Bytes): ERC721Logic | null {
+  static load(id: string): ERC721Logic | null {
     return changetype<ERC721Logic | null>(
-      store.get("ERC721Logic", id.toHexString()),
+      store.get("ERC721Logic", id.toString()),
     );
   }
 
-  get id(): Bytes {
+  get id(): string {
     let value = this.get("id");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set id(value: Bytes) {
-    this.set("id", Value.fromBytes(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
   get address(): Bytes | null {
@@ -1507,9 +1566,9 @@ export class ERC721Logic extends Entity {
 }
 
 export class Player extends Entity {
-  constructor(id: Bytes) {
+  constructor(id: string) {
     super();
-    this.set("id", Value.fromBytes(id));
+    this.set("id", Value.fromString(id));
   }
 
   save(): void {
@@ -1517,24 +1576,24 @@ export class Player extends Entity {
     assert(id != null, "Cannot save Player entity without an ID");
     if (id) {
       assert(
-        id.kind == ValueKind.BYTES,
-        `Entities of type Player must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        id.kind == ValueKind.STRING,
+        `Entities of type Player must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("Player", id.toBytes().toHexString(), this);
+      store.set("Player", id.toString(), this);
     }
   }
 
-  static load(id: Bytes): Player | null {
-    return changetype<Player | null>(store.get("Player", id.toHexString()));
+  static load(id: string): Player | null {
+    return changetype<Player | null>(store.get("Player", id.toString()));
   }
 
-  get id(): Bytes {
+  get id(): string {
     let value = this.get("id");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set id(value: Bytes) {
-    this.set("id", Value.fromBytes(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
   get profileId(): BigInt | null {
@@ -1653,26 +1712,26 @@ export class CompletionActivity extends Entity {
     assert(id != null, "Cannot save CompletionActivity entity without an ID");
     if (id) {
       assert(
-        id.kind == ValueKind.BYTES,
-        `Entities of type CompletionActivity must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        id.kind == ValueKind.STRING,
+        `Entities of type CompletionActivity must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("CompletionActivity", id.toBytes().toHexString(), this);
+      store.set("CompletionActivity", id.toString(), this);
     }
   }
 
-  static load(id: Bytes): CompletionActivity | null {
+  static load(id: string): CompletionActivity | null {
     return changetype<CompletionActivity | null>(
-      store.get("CompletionActivity", id.toHexString()),
+      store.get("CompletionActivity", id.toString()),
     );
   }
 
-  get id(): Bytes {
+  get id(): string {
     let value = this.get("id");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set id(value: Bytes) {
-    this.set("id", Value.fromBytes(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
   get questId(): BigInt | null {
@@ -1721,26 +1780,26 @@ export class VideoActivity extends Entity {
     assert(id != null, "Cannot save VideoActivity entity without an ID");
     if (id) {
       assert(
-        id.kind == ValueKind.BYTES,
-        `Entities of type VideoActivity must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        id.kind == ValueKind.STRING,
+        `Entities of type VideoActivity must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("VideoActivity", id.toBytes().toHexString(), this);
+      store.set("VideoActivity", id.toString(), this);
     }
   }
 
-  static load(id: Bytes): VideoActivity | null {
+  static load(id: string): VideoActivity | null {
     return changetype<VideoActivity | null>(
-      store.get("VideoActivity", id.toHexString()),
+      store.get("VideoActivity", id.toString()),
     );
   }
 
-  get id(): Bytes {
+  get id(): string {
     let value = this.get("id");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set id(value: Bytes) {
-    this.set("id", Value.fromBytes(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
   get pubId(): BigInt | null {
@@ -1987,24 +2046,24 @@ export class Eligible extends Entity {
     assert(id != null, "Cannot save Eligible entity without an ID");
     if (id) {
       assert(
-        id.kind == ValueKind.BYTES,
-        `Entities of type Eligible must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        id.kind == ValueKind.STRING,
+        `Entities of type Eligible must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
       );
-      store.set("Eligible", id.toBytes().toHexString(), this);
+      store.set("Eligible", id.toString(), this);
     }
   }
 
-  static load(id: Bytes): Eligible | null {
-    return changetype<Eligible | null>(store.get("Eligible", id.toHexString()));
+  static load(id: string): Eligible | null {
+    return changetype<Eligible | null>(store.get("Eligible", id.toString()));
   }
 
-  get id(): Bytes {
+  get id(): string {
     let value = this.get("id");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set id(value: Bytes) {
-    this.set("id", Value.fromBytes(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
   get questId(): BigInt | null {

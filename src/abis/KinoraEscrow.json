@@ -222,6 +222,11 @@
         "internalType": "uint256",
         "name": "_milestone",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_rewardIndex",
+        "type": "uint256"
       }
     ],
     "name": "depositERC721",
@@ -265,7 +270,7 @@
         "type": "uint256"
       }
     ],
-    "name": "getQuestMilestoneERC20Amount",
+    "name": "getQuestMilestoneERC20TotalDeposit",
     "outputs": [
       {
         "internalType": "uint256",
@@ -286,6 +291,11 @@
       {
         "internalType": "uint256",
         "name": "_milestone",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_rewardIndex",
         "type": "uint256"
       }
     ],
@@ -354,6 +364,11 @@
       {
         "internalType": "uint256",
         "name": "_milestone",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_rewardIndex",
         "type": "uint256"
       }
     ],
@@ -455,6 +470,11 @@
       {
         "internalType": "uint256",
         "name": "_milestone",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_rewardIndex",
         "type": "uint256"
       }
     ],

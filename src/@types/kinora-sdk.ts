@@ -11,7 +11,7 @@ export enum RewardType {
 /**
  * @description Type for Eth Address.
  */
-export type EthereumAddress = `0x${string}`;
+export type ZeroString = `0x${string}`;
 
 /**
  * @description Type representing a contract's ABI (Application Binary Interface).
@@ -42,7 +42,7 @@ export type ContractABI = (
 export interface Reward {
   type: RewardType; // Type of reward
   erc721URI?: `ipfs://${string}`; // URI hash for the NFT reward
-  erc20tokenAddress?: EthereumAddress; // Address of the token contract
+  erc20tokenAddress?: ZeroString; // Address of the token contract
   erc20tokenAmount?: string; // Amount of erc20 tokens to reward
 }
 
@@ -52,8 +52,8 @@ export interface Reward {
 export interface GatingLogic {
   erc721TokenURIs: string[][];
   erc721TokenIds: number[][];
-  erc721Addresses: EthereumAddress[];
-  erc20Addresses: EthereumAddress[];
+  erc721Addresses: ZeroString[];
+  erc20Addresses: ZeroString[];
   erc20Thresholds: string[];
   oneOf: boolean;
 }
@@ -151,7 +151,7 @@ export interface LensQuestMetadata {
  */
 export interface PlayerData {
   videoElement: HTMLVideoElement;
-  postId: EthereumAddress;
+  postId: ZeroString;
   eventHandlers: {
     play: (event: Event) => void;
     pause: (event: Event) => void;
