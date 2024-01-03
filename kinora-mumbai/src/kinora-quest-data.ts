@@ -174,6 +174,9 @@ export function handlePlayerJoinedQuest(event: PlayerJoinedQuestEvent): void {
   let entity = new PlayerJoinedQuest(
     event.transaction.hash.concatI32(event.logIndex.toI32()),
   );
+  entity.id = Bytes.fromByteArray(
+    ByteArray.fromBigInt(event.params.playerProfileId),
+  );
   entity.questId = event.params.questId;
   entity.playerProfileId = event.params.playerProfileId;
 
@@ -205,15 +208,14 @@ export function handlePlayerJoinedQuest(event: PlayerJoinedQuestEvent): void {
   );
 
   if (quest) {
-    let players: Array<Bytes> | null = quest.players;
+    let players: Array<string> | null = quest.players;
 
     if (!players) {
       players = [];
     }
 
-    players.push(
-      Bytes.fromByteArray(ByteArray.fromBigInt(event.params.playerProfileId)),
-    );
+    players.push(event.params.playerProfileId.toString());
+    quest.players = players;
     quest.save();
   }
 
@@ -345,7 +347,6 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
   let entity = new QuestInstantiated(
     event.transaction.hash.concatI32(event.logIndex.toI32()),
   );
-  log.debug("quest here {}", [event.params.questId.toString()]);
   entity.id = Bytes.fromByteArray(ByteArray.fromBigInt(event.params.questId));
   entity.questId = event.params.questId;
   entity.milestoneCount = event.params.milestoneCount;
@@ -573,7 +574,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
 
     for (let j = 0; j < allVideos.length; j++) {
       let currentVideo = new Video(
-        allVideos[j] +
+        allVideos[j].toString() +
           entity.questId.toString() +
           (<BigInt>milestone.milestoneId).toString(),
       );
@@ -662,7 +663,11 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
           <BigInt>currentVideo.pubId,
         );
 
-        videos.push(allVideos[j]);
+        videos.push(
+          allVideos[j].toString() +
+            entity.questId.toString() +
+            (<BigInt>milestone.milestoneId).toString(),
+        );
       }
 
       currentVideo.save();
