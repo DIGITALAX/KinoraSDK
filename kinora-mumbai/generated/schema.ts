@@ -623,20 +623,20 @@ export class QuestInstantiated extends Entity {
     }
   }
 
-  get players(): Array<Bytes> | null {
+  get players(): Array<string> | null {
     let value = this.get("players");
     if (!value || value.kind == ValueKind.NULL) {
       return null;
     } else {
-      return value.toBytesArray();
+      return value.toStringArray();
     }
   }
 
-  set players(value: Array<Bytes> | null) {
+  set players(value: Array<string> | null) {
     if (!value) {
       this.unset("players");
     } else {
-      this.set("players", Value.fromBytesArray(<Array<Bytes>>value));
+      this.set("players", Value.fromStringArray(<Array<string>>value));
     }
   }
 }
