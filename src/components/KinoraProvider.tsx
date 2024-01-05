@@ -8,13 +8,11 @@ const KinoraContext = createContext<Kinora | null>(null);
  *
  * @component
  * @param children - The child React components over which the Kinora context is provided.
- * @param config.errorHandlingModeStrict - An optional flag indicating whether strict error handling mode is enabled.
  */
 const KinoraProvider: React.FC<{
   children: React.ReactNode;
-  errorHandlingModeStrict?: boolean;
-}> = ({ children, errorHandlingModeStrict }) => {
-  const kinoraSDKInstance = Kinora.getInstance(errorHandlingModeStrict);
+}> = ({ children }) => {
+  const kinoraSDKInstance = Kinora.getInstance();
 
   return (
     <KinoraContext.Provider value={kinoraSDKInstance}>

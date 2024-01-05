@@ -3,220 +3,141 @@
  * @description A class that tracks various metrics related to video playback and user interactions.
  */
 export class Metrics {
-  private playCount: number = 0; // Number of times the video has been played
-  private pauseCount: number = 0; // Number of times the video has been paused
-  private totalDuration: number = 0; // Total duration of video playback in seconds
-  private clickCount: number = 0; // Number of clicks on the video
-  private impressionCount: number = 0; // Number of impressions (views)
-  private totalInteractions: number = 0; // Total number of user interactions
-  private preferredTimeToWatch: { [key: string]: number } = {}; // Preferred time to watch the video
-  private segmentViewCount: { [key: string]: number } = {}; // Count of segment views
-  private replayArea: { [key: string]: number } = {}; // Count of replayed segments
+  private playCount: number = 0;
+  private totalDuration: number = 0;
+  private segmentWatchTimes: { [key: string]: number } = {};
+  private lastUpdateTime: number = 0;
+  private totalInteractions: number = 0;
+  private videoStarted: boolean = false;
 
-  /**
-   * @function onPlay
-   * @description Increment play-related metrics and trigger interaction and watch time tracking.
-   */
-  public onPlay = () => {
-    this.playCount++;
-    this.impressionCount++;
-    this.onInteraction();
-    this.onWatchTime();
+  public onPlay = (videoElement: HTMLVideoElement) => {
+    if (videoElement.currentTime < 0.5) {
+      this.videoStarted = true;
+    }
+    this.lastUpdateTime = videoElement.currentTime;
   };
 
-  /**
-   * @function onPause
-   * @description Increment pause-related metrics and trigger interaction tracking.
-   */
+  public onEnd = (videoElement: HTMLVideoElement) => {
+    if (this.videoStarted) {
+      this.playCount++;
+      this.totalDuration += videoElement.currentTime - this.lastUpdateTime;
+    }
+    this.videoStarted = false;
+    this.lastUpdateTime = 0;
+  };
+
+  public onTimeUpdate = (videoElement: HTMLVideoElement) => {
+    const currentTime = videoElement.currentTime;
+    if (this.lastUpdateTime > 0) {
+      const timeWatched = currentTime - this.lastUpdateTime;
+      this.totalDuration += timeWatched;
+      const segmentKey = this.identifySegment(currentTime);
+      if (!this.segmentWatchTimes[segmentKey]) {
+        this.segmentWatchTimes[segmentKey] = 0;
+      }
+      this.segmentWatchTimes[segmentKey] += timeWatched;
+    }
+    this.lastUpdateTime = currentTime;
+  };
+
   public onPause = () => {
-    this.pauseCount++;
-    this.onInteraction();
-  };
-
-  /**
-   * @function onSegmentView
-   * @description Record a segment view and update the count.
-   * @param {string} segment - The segment identifier.
-   */
-  public onSegmentView = (segment: string) => {
-    this.segmentViewCount[segment] = (this.segmentViewCount[segment] || 0) + 1;
-  };
-
-  /**
-   * @function onClick
-   * @description Increment the click count and register a user interaction.
-   */
-  public onClick = () => {
-    this.clickCount++;
-    this.onInteraction();
-  };
-
-  /**
-   * @function onInteraction
-   * @description Increment the total interactions count.
-   */
-  public onInteraction = () => {
     this.totalInteractions++;
   };
 
-  /**
-   * @function onWatchTime
-   * @description Update the preferred time to watch metric based on the current time.
-   */
-  public onWatchTime = () => {
-    const time = new Date().getHours().toString();
-    this.preferredTimeToWatch[time] =
-      (this.preferredTimeToWatch[time] || 0) + 1;
+  public onVolumeChange = () => {
+    this.totalInteractions++;
   };
 
-  /**
-   * @function getEngagementRate
-   * @description Calculates and retrieves the engagement rate based on video length.
-   * @param {number} videoLength - The length of the video.
-   * @returns {number} The engagement rate percentage.
-   */
-  public getEngagementRate = (videoLength: number): number => {
-    return (this.totalDuration / (this.playCount * videoLength)) * 100;
+  public onMuteToggle = () => {
+    this.totalInteractions++;
   };
 
-  /**
-   * @function getInteractionRate
-   * @description Calculates and retrieves the interaction rate as a percentage.
-   * @returns {number} The interaction rate percentage.
-   */
-  public getInteractionRate = (): number => {
-    return (this.totalInteractions / this.impressionCount) * 100;
+  public onQualityChange = () => {
+    this.totalInteractions++;
   };
 
-  /**
-   * @function getMostViewedSegment
-   * @description Determines and retrieves the most viewed video segment.
-   * @returns {string} The most viewed segment.
-   */
-  public getMostViewedSegment = (): string => {
-    let maxViews = 0;
-    let mostViewedSegment = "";
-    for (const [segment, views] of Object.entries(this.segmentViewCount)) {
-      if (views > maxViews) {
-        maxViews = views;
-        mostViewedSegment = segment;
+  public onFullscreenToggle = () => {
+    this.totalInteractions++;
+  };
+
+  public onSeeked = (videoElement: HTMLVideoElement) => {
+    this.totalInteractions++;
+    this.videoStarted = false;
+    this.lastUpdateTime = videoElement.currentTime;
+  };
+
+  public onClick = () => {
+    this.totalInteractions++;
+  };
+
+  private identifySegment = (currentTime: number): string => {
+    const segmentDuration = 10;
+    const segmentStart =
+      Math.floor(currentTime / segmentDuration) * segmentDuration;
+    const segmentEnd = segmentStart + segmentDuration;
+    const segmentKey = `${this.formatTime(
+      segmentStart,
+      currentTime % 1,
+    )}-${this.formatTime(segmentEnd, currentTime % 1)}`;
+    return segmentKey;
+  };
+
+  private formatTime = (
+    timeInSeconds: number,
+    fractionalSeconds: number,
+  ): string => {
+    let totalSeconds = Math.floor(timeInSeconds);
+    let ms = Math.floor(fractionalSeconds * 1000);
+    let date = new Date(totalSeconds * 1000);
+    let hours = date.getUTCHours();
+    let minutes = date.getUTCMinutes();
+    let seconds = date.getUTCSeconds();
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}:${ms
+      .toString()
+      .padStart(3, "0")}`;
+  };
+
+  public getMostReplayedArea = (): string => {
+    let mostReplayedSegmentKey = "";
+    let maxWatchTime = 0;
+
+    for (const [segmentKey, time] of Object.entries(this.segmentWatchTimes)) {
+      if (time > maxWatchTime) {
+        maxWatchTime = time;
+        mostReplayedSegmentKey = segmentKey;
       }
     }
-    return mostViewedSegment;
+
+    return mostReplayedSegmentKey || "No replays";
   };
 
-  /**
-   * @function getCTR
-   * @description Calculates and retrieves the Click-Through Rate (CTR) as a percentage.
-   * @returns {number} The CTR percentage.
-   */
-  public getCTR = (): number => {
-    return (this.clickCount / this.impressionCount) * 100;
-  };
-
-  /**
-   * @function getAVD
-   * @description Calculates and retrieves the Average View Duration (AVD).
-   * @returns {number} The AVD.
-   */
   public getAVD = (): number => {
+    if (this.playCount === 0) {
+      return 0;
+    }
     return this.totalDuration / this.playCount;
   };
 
-  /**
-   * @function getMostReplayedArea
-   * @description Determines and retrieves the most replayed video area.
-   * @returns {string} The most replayed area.
-   */
-  public getMostReplayedArea = (): string => {
-    let mostReplayedSegment = "";
-    let maxReplays = 0;
-
-    for (const [segment, count] of Object.entries(this.replayArea)) {
-      if (count > maxReplays) {
-        maxReplays = count;
-        mostReplayedSegment = segment;
-      }
-    }
-
-    return mostReplayedSegment;
-  };
-
-  /**
-   * @function getMostPreferredTimeToWatch
-   * @description Determines and retrieves the most preferred time to watch.
-   * @returns {string} The most preferred time to watch.
-   */
-  public getMostPreferredTimeToWatch = (): string => {
-    let maxCount = 0;
-    let mostPreferredTime = "";
-    for (const [time, count] of Object.entries(this.preferredTimeToWatch)) {
-      if (count > maxCount) {
-        maxCount = count;
-        mostPreferredTime = time;
-      }
-    }
-    return mostPreferredTime;
-  };
-
-  /**
-   * @function getPlayCount
-   * @description Retrieves the total count of play events.
-   * @returns {number} Total count of play events.
-   */
   public getPlayCount = (): number => {
     return this.playCount;
   };
 
-  /**
-   * @function getPauseCount
-   * @description Retrieves the total count of pause events.
-   * @returns {number} Total count of pause events.
-   */
-  public getPauseCount = (): number => {
-    return this.pauseCount;
-  };
-
-  /**
-   * @function getTotalDuration
-   * @description Retrieves the total duration of video playback.
-   * @returns {number} Total duration of video playback.
-   */
   public getTotalDuration = (): number => {
     return this.totalDuration;
   };
 
-  /**
-   * @function getClickCount
-   * @description Retrieves the total count of click events.
-   * @returns {number} Total count of click events.
-   */
-  public getClickCount = (): number => {
-    return this.clickCount;
+  public getTotalInteractions = (): number => {
+    return this.totalInteractions;
   };
 
-  /**
-   * @function getImpressionCount
-   * @description Retrieves the total count of impressions.
-   * @returns {number} Total count of impressions.
-   */
-  public getImpressionCount = (): number => {
-    return this.impressionCount;
-  };
-
-  /**
-   * @function reset
-   * @description Reset all metrics to their initial values.
-   */
   public reset = () => {
     this.playCount = 0;
-    this.pauseCount = 0;
-    this.totalDuration = 0;
-    this.clickCount = 0;
-    this.impressionCount = 0;
     this.totalInteractions = 0;
-    this.preferredTimeToWatch = {};
-    this.segmentViewCount = {};
-    this.replayArea = {};
+    this.videoStarted = false;
+    this.totalDuration = 0;
+    this.lastUpdateTime = 0;
+    this.segmentWatchTimes = {};
   };
 }
