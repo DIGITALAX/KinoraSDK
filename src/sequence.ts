@@ -199,7 +199,7 @@ export class Sequence {
         secondaryReactOnComment,
         secondaryCommentOnComment,
         secondaryCollectOnComment,
-      } = await this.secondaryData(playerProfileId, postId);
+      } = await this.getPlayerVideoSecondaryData(playerProfileId, postId);
 
       if (errorSecondary) {
         return {
@@ -405,7 +405,7 @@ export class Sequence {
     }
   };
 
-  private secondaryData = async (
+  getPlayerVideoSecondaryData = async (
     playerProfileId: `0x${string}`,
     postId: `0x${string}`,
   ): Promise<{
