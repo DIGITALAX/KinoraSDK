@@ -25,6 +25,7 @@ contract KinoraQuestData {
   mapping(string => KinoraLibrary.VideoPost) private _idsToVideos;
   mapping(uint256 => mapping(uint256 => string)) private _postToPlayback;
   mapping(address => uint256) private _addressToProfile;
+  mapping(uint256 => mapping(uint256 => uint256)) _questIdFromLensData;
 
   event QuestInstantiated(uint256 questId, uint256 milestoneCount);
   event PlayerJoinedQuest(uint256 questId, uint256 playerProfileId);
@@ -96,6 +97,8 @@ contract KinoraQuestData {
     newQuest.uri = _params.uri;
 
     _setMilestones(_params.milestones, newQuest, _questCount);
+
+    _questIdFromLensData[_params.profileId][_params.pubId] = _questCount;
 
     emit QuestInstantiated(_questCount, _params.milestones.length);
   }
@@ -304,54 +307,104 @@ contract KinoraQuestData {
       .videoMetrics[_videoProfileId][_videoPubId].avd;
   }
 
-  function getPlayerVideoCTR(
+  function getPlayerVideoSecondaryCommentOnComment(
     uint256 _playerProfileId,
     uint256 _videoPubId,
     uint256 _videoProfileId
   ) public view returns (uint256) {
     return
       _allPlayers[_playerProfileId]
-      .videoMetrics[_videoProfileId][_videoPubId].ctr;
+      .videoMetrics[_videoProfileId][_videoPubId].secondaryCommentOnComment;
   }
 
-  function getPlayerVideoImpressionCount(
+  function getPlayerVideoSecondaryReactOnComment(
     uint256 _playerProfileId,
     uint256 _videoPubId,
     uint256 _videoProfileId
   ) public view returns (uint256) {
     return
       _allPlayers[_playerProfileId]
-      .videoMetrics[_videoProfileId][_videoPubId].impressionCount;
+      .videoMetrics[_videoProfileId][_videoPubId].secondaryReactOnComment;
   }
 
-  function getPlayerVideoPlayCount(
+  function getPlayerVideoSecondaryCollectOnComment(
     uint256 _playerProfileId,
     uint256 _videoPubId,
     uint256 _videoProfileId
   ) public view returns (uint256) {
     return
       _allPlayers[_playerProfileId]
-      .videoMetrics[_videoProfileId][_videoPubId].playCount;
+      .videoMetrics[_videoProfileId][_videoPubId].secondaryCollectOnComment;
   }
 
-  function getPlayerVideoMostViewedSegment(
+  function getPlayerVideoSecondaryMirrorOnComment(
     uint256 _playerProfileId,
     uint256 _videoPubId,
     uint256 _videoProfileId
   ) public view returns (uint256) {
     return
       _allPlayers[_playerProfileId]
-      .videoMetrics[_videoProfileId][_videoPubId].mostViewedSegment;
+      .videoMetrics[_videoProfileId][_videoPubId].secondaryMirrorOnComment;
   }
 
-  function getPlayerVideoInteractionRate(
+  function getPlayerVideoSecondaryQuoteOnComment(
     uint256 _playerProfileId,
     uint256 _videoPubId,
     uint256 _videoProfileId
   ) public view returns (uint256) {
     return
       _allPlayers[_playerProfileId]
-      .videoMetrics[_videoProfileId][_videoPubId].interactionRate;
+      .videoMetrics[_videoProfileId][_videoPubId].secondaryQuoteOnComment;
+  }
+
+  function getPlayerVideoSecondaryCollectOnQuote(
+    uint256 _playerProfileId,
+    uint256 _videoPubId,
+    uint256 _videoProfileId
+  ) public view returns (uint256) {
+    return
+      _allPlayers[_playerProfileId]
+      .videoMetrics[_videoProfileId][_videoPubId].secondaryCollectOnQuote;
+  }
+
+  function getPlayerVideoSecondaryReactOnQuote(
+    uint256 _playerProfileId,
+    uint256 _videoPubId,
+    uint256 _videoProfileId
+  ) public view returns (uint256) {
+    return
+      _allPlayers[_playerProfileId]
+      .videoMetrics[_videoProfileId][_videoPubId].secondaryReactOnQuote;
+  }
+
+  function getPlayerVideoSecondaryMirrorOnQuote(
+    uint256 _playerProfileId,
+    uint256 _videoPubId,
+    uint256 _videoProfileId
+  ) public view returns (uint256) {
+    return
+      _allPlayers[_playerProfileId]
+      .videoMetrics[_videoProfileId][_videoPubId].secondaryMirrorOnQuote;
+  }
+
+  function getPlayerVideoSecondaryCommentOnQuote(
+    uint256 _playerProfileId,
+    uint256 _videoPubId,
+    uint256 _videoProfileId
+  ) public view returns (uint256) {
+    return
+      _allPlayers[_playerProfileId]
+      .videoMetrics[_videoProfileId][_videoPubId].secondaryCommentOnQuote;
+  }
+
+  function getPlayerVideoSecondaryQuoteOnQuote(
+    uint256 _playerProfileId,
+    uint256 _videoPubId,
+    uint256 _videoProfileId
+  ) public view returns (uint256) {
+    return
+      _allPlayers[_playerProfileId]
+      .videoMetrics[_videoProfileId][_videoPubId].secondaryQuoteOnQuote;
   }
 
   function getPlayerVideoMostReplayedArea(
@@ -362,16 +415,6 @@ contract KinoraQuestData {
     return
       _allPlayers[_playerProfileId]
       .videoMetrics[_videoProfileId][_videoPubId].mostReplayedArea;
-  }
-
-  function getPlayerVideoEngagementRate(
-    uint256 _playerProfileId,
-    uint256 _videoPubId,
-    uint256 _videoProfileId
-  ) public view returns (uint256) {
-    return
-      _allPlayers[_playerProfileId]
-      .videoMetrics[_videoProfileId][_videoPubId].engagementRate;
   }
 
   function getPlayerVideoDuration(
@@ -438,6 +481,16 @@ contract KinoraQuestData {
     return
       _allPlayers[_playerProfileId]
       .videoMetrics[_videoProfileId][_videoPubId].hasReacted;
+  }
+
+  function getPlayerVideoPlayCount(
+    uint256 _playerProfileId,
+    uint256 _videoPubId,
+    uint256 _videoProfileId
+  ) public view returns (uint256) {
+    return
+      _allPlayers[_playerProfileId]
+      .videoMetrics[_videoProfileId][_videoPubId].playCount;
   }
 
   function getPlayerMilestonesCompletedPerQuest(
@@ -618,42 +671,6 @@ contract KinoraQuestData {
       .videos[_videoProfileId][_videoPubId].minPlayCount;
   }
 
-  function getMilestoneVideoMinCTR(
-    uint256 _questId,
-    uint256 _milestone,
-    uint256 _videoProfileId,
-    uint256 _videoPubId
-  ) public view returns (uint256) {
-    return
-      _allQuests[_questId]
-      .milestones[_milestone - 1]
-      .videos[_videoProfileId][_videoPubId].minCTR;
-  }
-
-  function getMilestoneVideoMinImpressionCount(
-    uint256 _questId,
-    uint256 _milestone,
-    uint256 _videoProfileId,
-    uint256 _videoPubId
-  ) public view returns (uint256) {
-    return
-      _allQuests[_questId]
-      .milestones[_milestone - 1]
-      .videos[_videoProfileId][_videoPubId].minImpressionCount;
-  }
-
-  function getMilestoneVideoMinEngagementRate(
-    uint256 _questId,
-    uint256 _milestone,
-    uint256 _videoProfileId,
-    uint256 _videoPubId
-  ) public view returns (uint256) {
-    return
-      _allQuests[_questId]
-      .milestones[_milestone - 1]
-      .videos[_videoProfileId][_videoPubId].minEngagementRate;
-  }
-
   function getMilestoneVideoMinDuration(
     uint256 _questId,
     uint256 _milestone,
@@ -664,6 +681,126 @@ contract KinoraQuestData {
       _allQuests[_questId]
       .milestones[_milestone - 1]
       .videos[_videoProfileId][_videoPubId].minDuration;
+  }
+
+  function getMilestoneVideoMinSecondaryQuoteOnQuote(
+    uint256 _questId,
+    uint256 _milestone,
+    uint256 _videoProfileId,
+    uint256 _videoPubId
+  ) public view returns (uint256) {
+    return
+      _allQuests[_questId]
+      .milestones[_milestone - 1]
+      .videos[_videoProfileId][_videoPubId].minSecondaryQuoteOnQuote;
+  }
+
+  function getMilestoneVideoMinSecondaryCollectOnQuote(
+    uint256 _questId,
+    uint256 _milestone,
+    uint256 _videoProfileId,
+    uint256 _videoPubId
+  ) public view returns (uint256) {
+    return
+      _allQuests[_questId]
+      .milestones[_milestone - 1]
+      .videos[_videoProfileId][_videoPubId].minSecondaryCollectOnQuote;
+  }
+
+  function getMilestoneVideoMinSecondaryCommentOnQuote(
+    uint256 _questId,
+    uint256 _milestone,
+    uint256 _videoProfileId,
+    uint256 _videoPubId
+  ) public view returns (uint256) {
+    return
+      _allQuests[_questId]
+      .milestones[_milestone - 1]
+      .videos[_videoProfileId][_videoPubId].minSecondaryCommentOnQuote;
+  }
+
+  function getMilestoneVideoMinSecondaryReactOnQuote(
+    uint256 _questId,
+    uint256 _milestone,
+    uint256 _videoProfileId,
+    uint256 _videoPubId
+  ) public view returns (uint256) {
+    return
+      _allQuests[_questId]
+      .milestones[_milestone - 1]
+      .videos[_videoProfileId][_videoPubId].minSecondaryReactOnQuote;
+  }
+
+  function getMilestoneVideoMinSecondaryMirrorOnQuote(
+    uint256 _questId,
+    uint256 _milestone,
+    uint256 _videoProfileId,
+    uint256 _videoPubId
+  ) public view returns (uint256) {
+    return
+      _allQuests[_questId]
+      .milestones[_milestone - 1]
+      .videos[_videoProfileId][_videoPubId].minSecondaryMirrorOnQuote;
+  }
+
+  function getMilestoneVideoMinSecondaryCommentOnComment(
+    uint256 _questId,
+    uint256 _milestone,
+    uint256 _videoProfileId,
+    uint256 _videoPubId
+  ) public view returns (uint256) {
+    return
+      _allQuests[_questId]
+      .milestones[_milestone - 1]
+      .videos[_videoProfileId][_videoPubId].minSecondaryCommentOnComment;
+  }
+
+  function getMilestoneVideoMinSecondaryMirrorOnComment(
+    uint256 _questId,
+    uint256 _milestone,
+    uint256 _videoProfileId,
+    uint256 _videoPubId
+  ) public view returns (uint256) {
+    return
+      _allQuests[_questId]
+      .milestones[_milestone - 1]
+      .videos[_videoProfileId][_videoPubId].minSecondaryMirrorOnComment;
+  }
+
+  function getMilestoneVideoMinSecondaryQuoteOnComment(
+    uint256 _questId,
+    uint256 _milestone,
+    uint256 _videoProfileId,
+    uint256 _videoPubId
+  ) public view returns (uint256) {
+    return
+      _allQuests[_questId]
+      .milestones[_milestone - 1]
+      .videos[_videoProfileId][_videoPubId].minSecondaryQuoteOnComment;
+  }
+
+  function getMilestoneVideoMinSecondaryReactOnComment(
+    uint256 _questId,
+    uint256 _milestone,
+    uint256 _videoProfileId,
+    uint256 _videoPubId
+  ) public view returns (uint256) {
+    return
+      _allQuests[_questId]
+      .milestones[_milestone - 1]
+      .videos[_videoProfileId][_videoPubId].minSecondaryReactOnComment;
+  }
+
+  function getMilestoneVideoMinSecondaryCollectOnComment(
+    uint256 _questId,
+    uint256 _milestone,
+    uint256 _videoProfileId,
+    uint256 _videoPubId
+  ) public view returns (uint256) {
+    return
+      _allQuests[_questId]
+      .milestones[_milestone - 1]
+      .videos[_videoProfileId][_videoPubId].minSecondaryCollectOnComment;
   }
 
   function getMilestoneVideoQuote(
@@ -840,5 +977,12 @@ contract KinoraQuestData {
     address _playerAddress
   ) public view returns (uint256) {
     return _addressToProfile[_playerAddress];
+  }
+
+  function getQuestIdFromLensData(
+    uint256 _profileId,
+    uint256 _pubId
+  ) public view returns (uint256) {
+    return _questIdFromLensData[_profileId][_pubId];
   }
 }

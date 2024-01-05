@@ -303,45 +303,122 @@ contract KinoraOpenAction is
         _videoProfileId,
         _videoPubId
       ) ||
-      kinoraQuestData.getPlayerVideoCTR(
+      kinoraQuestData.getPlayerVideoSecondaryQuoteOnQuote(
         _playerProfileId,
         _videoPubId,
         _videoProfileId
       ) <
-      kinoraQuestData.getMilestoneVideoMinCTR(
+      kinoraQuestData.getMilestoneVideoMinSecondaryQuoteOnQuote(
         _questId,
         _milestone,
         _videoProfileId,
         _videoPubId
       ) ||
-      kinoraQuestData.getPlayerVideoImpressionCount(
+      kinoraQuestData.getPlayerVideoSecondaryMirrorOnQuote(
         _playerProfileId,
         _videoPubId,
         _videoProfileId
       ) <
-      kinoraQuestData.getMilestoneVideoMinImpressionCount(
+      kinoraQuestData.getMilestoneVideoMinSecondaryMirrorOnQuote(
         _questId,
         _milestone,
         _videoProfileId,
         _videoPubId
       ) ||
+      kinoraQuestData.getPlayerVideoSecondaryReactOnQuote(
+        _playerProfileId,
+        _videoPubId,
+        _videoProfileId
+      ) <
+      kinoraQuestData.getMilestoneVideoMinSecondaryReactOnQuote(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) ||
+      kinoraQuestData.getPlayerVideoSecondaryCommentOnQuote(
+        _playerProfileId,
+        _videoPubId,
+        _videoProfileId
+      ) <
+      kinoraQuestData.getMilestoneVideoMinSecondaryCommentOnQuote(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) ||
+      kinoraQuestData.getPlayerVideoSecondaryCollectOnQuote(
+        _playerProfileId,
+        _videoPubId,
+        _videoProfileId
+      ) <
+      kinoraQuestData.getMilestoneVideoMinSecondaryCollectOnQuote(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) ||
+      kinoraQuestData.getPlayerVideoSecondaryQuoteOnComment(
+        _playerProfileId,
+        _videoPubId,
+        _videoProfileId
+      ) <
+      kinoraQuestData.getMilestoneVideoMinSecondaryQuoteOnComment(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) ||
+      kinoraQuestData.getPlayerVideoSecondaryMirrorOnComment(
+        _playerProfileId,
+        _videoPubId,
+        _videoProfileId
+      ) <
+      kinoraQuestData.getMilestoneVideoMinSecondaryMirrorOnComment(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) ||
+      kinoraQuestData.getPlayerVideoSecondaryReactOnComment(
+        _playerProfileId,
+        _videoPubId,
+        _videoProfileId
+      ) <
+      kinoraQuestData.getMilestoneVideoMinSecondaryReactOnComment(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) ||
+      kinoraQuestData.getPlayerVideoSecondaryCommentOnComment(
+        _playerProfileId,
+        _videoPubId,
+        _videoProfileId
+      ) <
+      kinoraQuestData.getMilestoneVideoMinSecondaryCommentOnComment(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) ||
+      kinoraQuestData.getPlayerVideoSecondaryCollectOnComment(
+        _playerProfileId,
+        _videoPubId,
+        _videoProfileId
+      ) <
+      kinoraQuestData.getMilestoneVideoMinSecondaryCollectOnComment(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      )  ||
       kinoraQuestData.getPlayerVideoPlayCount(
         _playerProfileId,
         _videoPubId,
         _videoProfileId
       ) <
       kinoraQuestData.getMilestoneVideoMinPlayCount(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoEngagementRate(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinEngagementRate(
         _questId,
         _milestone,
         _videoProfileId,

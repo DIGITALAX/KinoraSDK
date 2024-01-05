@@ -1191,8 +1191,8 @@ export class Video extends Entity {
     }
   }
 
-  get minCTR(): BigInt | null {
-    let value = this.get("minCTR");
+  get minSecondaryQuoteOnQuote(): BigInt | null {
+    let value = this.get("minSecondaryQuoteOnQuote");
     if (!value || value.kind == ValueKind.NULL) {
       return null;
     } else {
@@ -1200,13 +1200,167 @@ export class Video extends Entity {
     }
   }
 
-  set minCTR(value: BigInt | null) {
+  set minSecondaryQuoteOnQuote(value: BigInt | null) {
     if (!value) {
-      this.unset("minCTR");
+      this.unset("minSecondaryQuoteOnQuote");
     } else {
-      this.set("minCTR", Value.fromBigInt(<BigInt>value));
+      this.set("minSecondaryQuoteOnQuote", Value.fromBigInt(<BigInt>value));
     }
   }
+
+  get minSecondaryMirrorOnQuote(): BigInt | null {
+    let value = this.get("minSecondaryQuoteOnQuote");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set minSecondaryMirrorOnQuote(value: BigInt | null) {
+    if (!value) {
+      this.unset("minSecondaryMirrorOnQuote");
+    } else {
+      this.set("minSecondaryMirrorOnQuote", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get minSecondaryReactOnQuote(): BigInt | null {
+    let value = this.get("minSecondaryReactOnQuote");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set minSecondaryReactOnQuote(value: BigInt | null) {
+    if (!value) {
+      this.unset("minSecondaryReactOnQuote");
+    } else {
+      this.set("minSecondaryReactOnQuote", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get minSecondaryCommentOnQuote(): BigInt | null {
+    let value = this.get("minSecondaryCommentOnQuote");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set minSecondaryCommentOnQuote(value: BigInt | null) {
+    if (!value) {
+      this.unset("minSecondaryCommentOnQuote");
+    } else {
+      this.set("minSecondaryCommentOnQuote", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get minSecondaryCollectOnQuote(): BigInt | null {
+    let value = this.get("minSecondaryCollectOnQuote");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set minSecondaryCollectOnQuote(value: BigInt | null) {
+    if (!value) {
+      this.unset("minSecondaryCollectOnQuote");
+    } else {
+      this.set("minSecondaryCollectOnQuote", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get minSecondaryQuoteOnComment(): BigInt | null {
+    let value = this.get("minSecondaryQuoteOnComment");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set minSecondaryQuoteOnComment(value: BigInt | null) {
+    if (!value) {
+      this.unset("minSecondaryQuoteOnComment");
+    } else {
+      this.set("minSecondaryQuoteOnComment", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get minSecondaryMirrorOnComment(): BigInt | null {
+    let value = this.get("minSecondaryQuoteOnComment");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set minSecondaryMirrorOnComment(value: BigInt | null) {
+    if (!value) {
+      this.unset("minSecondaryMirrorOnComment");
+    } else {
+      this.set("minSecondaryMirrorOnComment", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get minSecondaryReactOnComment(): BigInt | null {
+    let value = this.get("minSecondaryReactOnComment");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set minSecondaryReactOnComment(value: BigInt | null) {
+    if (!value) {
+      this.unset("minSecondaryReactOnComment");
+    } else {
+      this.set("minSecondaryReactOnComment", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get minSecondaryCommentOnComment(): BigInt | null {
+    let value = this.get("minSecondaryCommentOnComment");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set minSecondaryCommentOnComment(value: BigInt | null) {
+    if (!value) {
+      this.unset("minSecondaryCommentOnComment");
+    } else {
+      this.set("minSecondaryCommentOnComment", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get minSecondaryCollectOnComment(): BigInt | null {
+    let value = this.get("minSecondaryCollectOnComment");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set minSecondaryCollectOnComment(value: BigInt | null) {
+    if (!value) {
+      this.unset("minSecondaryCollectOnComment");
+    } else {
+      this.set("minSecondaryCollectOnComment", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
 
   get minAVD(): BigInt | null {
     let value = this.get("minAVD");
@@ -1222,40 +1376,6 @@ export class Video extends Entity {
       this.unset("minAVD");
     } else {
       this.set("minAVD", Value.fromBigInt(<BigInt>value));
-    }
-  }
-
-  get minImpressionCount(): BigInt | null {
-    let value = this.get("minImpressionCount");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set minImpressionCount(value: BigInt | null) {
-    if (!value) {
-      this.unset("minImpressionCount");
-    } else {
-      this.set("minImpressionCount", Value.fromBigInt(<BigInt>value));
-    }
-  }
-
-  get minEngagementRate(): BigInt | null {
-    let value = this.get("minEngagementRate");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set minEngagementRate(value: BigInt | null) {
-    if (!value) {
-      this.unset("minEngagementRate");
-    } else {
-      this.set("minEngagementRate", Value.fromBigInt(<BigInt>value));
     }
   }
 
@@ -1989,40 +2109,6 @@ export class VideoActivity extends Entity {
     }
   }
 
-  get impressionCount(): BigInt | null {
-    let value = this.get("impressionCount");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set impressionCount(value: BigInt | null) {
-    if (!value) {
-      this.unset("impressionCount");
-    } else {
-      this.set("impressionCount", Value.fromBigInt(<BigInt>value));
-    }
-  }
-
-  get engagementRate(): BigInt | null {
-    let value = this.get("engagementRate");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set engagementRate(value: BigInt | null) {
-    if (!value) {
-      this.unset("engagementRate");
-    } else {
-      this.set("engagementRate", Value.fromBigInt(<BigInt>value));
-    }
-  }
-
   get duration(): BigInt | null {
     let value = this.get("duration");
     if (!value || value.kind == ValueKind.NULL) {
@@ -2037,23 +2123,6 @@ export class VideoActivity extends Entity {
       this.unset("duration");
     } else {
       this.set("duration", Value.fromBigInt(<BigInt>value));
-    }
-  }
-
-  get mostViewedSegment(): BigInt | null {
-    let value = this.get("mostViewedSegment");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set mostViewedSegment(value: BigInt | null) {
-    if (!value) {
-      this.unset("mostViewedSegment");
-    } else {
-      this.set("mostViewedSegment", Value.fromBigInt(<BigInt>value));
     }
   }
 

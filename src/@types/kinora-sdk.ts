@@ -89,11 +89,18 @@ export interface MilestoneEligibility {
  */
 export interface MilestoneEligibilityCriteria {
   minAvd?: number;
-  minCtr?: number;
   minPlayCount?: number;
   minDuration?: number;
-  minImpressionCount?: number;
-  minEngagementRate?: number;
+  minSecondaryQuoteOnQuote?: number;
+  minSecondaryMirrorOnQuote?: number;
+  minSecondaryReactOnQuote?: number;
+  minSecondaryCommentOnQuote?: number;
+  minSecondaryCollectOnQuote?: number;
+  minSecondaryQuoteOnComment?: number;
+  minSecondaryMirrorOnComment?: number;
+  minSecondaryReactOnComment?: number;
+  minSecondaryCommentOnComment?: number;
+  minSecondaryCollectOnComment?: number;
   quote?: boolean;
   mirror?: boolean;
   react?: boolean;

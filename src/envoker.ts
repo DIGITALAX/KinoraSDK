@@ -235,11 +235,28 @@ export class Envoker {
                   profileId: parseInt(item?.postId?.split("-")[0], 16),
                   pubId: parseInt(item?.postId?.split("-")[1], 16),
                   minPlayCount: item.playbackCriteria.minPlayCount,
-                  minCTR: item.playbackCriteria.minCtr,
                   minAVD: item.playbackCriteria.minAvd,
-                  minImpressionCount: item.playbackCriteria.minImpressionCount,
-                  minEngagementRate: item.playbackCriteria.minEngagementRate,
                   minDuration: item.playbackCriteria.minDuration,
+                  minSecondaryQuoteOnQuote:
+                    item.playbackCriteria.minSecondaryQuoteOnQuote,
+                  minSecondaryMirrorOnQuote:
+                    item.playbackCriteria.minSecondaryMirrorOnQuote,
+                  minSecondaryReactOnQuote:
+                    item.playbackCriteria.minSecondaryReactOnQuote,
+                  minSecondaryCommentOnQuote:
+                    item.playbackCriteria.minSecondaryCommentOnQuote,
+                  minSecondaryCollectOnQuote:
+                    item.playbackCriteria.minSecondaryCollectOnQuote,
+                  minSecondaryQuoteOnComment:
+                    item.playbackCriteria.minSecondaryQuoteOnComment,
+                  minSecondaryMirrorOnComment:
+                    item.playbackCriteria.minSecondaryMirrorOnComment,
+                  minSecondaryReactOnComment:
+                    item.playbackCriteria.minSecondaryReactOnComment,
+                  minSecondaryCommentOnComment:
+                    item.playbackCriteria.minSecondaryCommentOnComment,
+                  minSecondaryCollectOnComment:
+                    item.playbackCriteria.minSecondaryCollectOnComment,
                   quote: item.playbackCriteria.quote,
                   mirror: item.playbackCriteria.mirror,
                   comment: item.playbackCriteria.comment,
@@ -332,7 +349,7 @@ export class Envoker {
         encodedData = ethers.utils.defaultAbiCoder.encode(
           [
             "tuple(" +
-              "tuple(tuple(string[][] erc721TokenURIs, uint256[][] erc721TokenIds, address[] erc721Addresses, address[] erc20Addresses, uint256[] erc20Thresholds, bool oneOf) gated, tuple(uint8 rewardType, string uri, address tokenAddress, uint256 amount)[] rewards, tuple(string playerId, string videoBytes, uint256 profileId, uint256 pubId, uint256 minPlayCount, uint256 minCTR, uint256 minAVD, uint256 minImpressionCount, uint256 minEngagementRate, uint256 minDuration, bool quote, bool mirror, bool comment, bool bookmark, bool react)[] videos, string uri, uint256 milestone)[] milestones, " +
+              "tuple(tuple(string[][] erc721TokenURIs, uint256[][] erc721TokenIds, address[] erc721Addresses, address[] erc20Addresses, uint256[] erc20Thresholds, bool oneOf) gated, tuple(uint8 rewardType, string uri, address tokenAddress, uint256 amount)[] rewards, tuple(string playerId, string videoBytes, uint256 profileId, uint256 pubId, uint256 minPlayCount, uint256 minAVD, uint256 minDuration,  uint256 minSecondaryQuoteOnQuote, uint256 minSecondaryMirrorOnQuote, uint256 minSecondaryReactOnQuote, uint256 minSecondaryCommentOnQuote, uint256 minSecondaryCollectOnQuote, uint256 minSecondaryQuoteOnComment, uint256 minSecondaryMirrorOnComment, uint256 minSecondaryReactOnComment, uint256 minSecondaryCommentOnComment, uint256 minSecondaryCollectOnComment, bool quote, bool mirror, bool comment, bool bookmark, bool react)[] videos, string uri, uint256 milestone)[] milestones, " +
               "tuple(" +
               "string[][] erc721TokenURIs, " +
               "uint256[][] erc721TokenIds, " +
