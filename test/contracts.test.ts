@@ -103,7 +103,7 @@ describe("Contract Test Suite", () => {
       const encodedData = ethers.utils.defaultAbiCoder.encode(
         [
           "tuple(" +
-            "tuple(tuple(string[][] erc721TokenURIs, uint256[][] erc721TokenIds, address[] erc721Addresses, address[] erc20Addresses, uint256[] erc20Thresholds, bool oneOf) gated, tuple(uint8 rewardType, string uri, address tokenAddress, uint256 amount)[] rewards, tuple(string playerId, string videoBytes, uint256 profileId, uint256 pubId, uint256 minPlayCount, uint256 minCTR, uint256 minAVD, uint256 minImpressionCount, uint256 minEngagementRate, uint256 minDuration, bool quote, bool mirror, bool comment, bool bookmark, bool react)[] videos, string uri, uint256 milestone)[] milestones, " +
+            "tuple(tuple(string[][] erc721TokenURIs, uint256[][] erc721TokenIds, address[] erc721Addresses, address[] erc20Addresses, uint256[] erc20Thresholds, bool oneOf) gated, tuple(uint8 rewardType, string uri, address tokenAddress, uint256 amount)[] rewards, tuple(string playerId, string videoBytes, uint256 profileId, uint256 pubId, uint256 minPlayCount, uint256 minAVD, uint256 minDuration,  uint256 minSecondaryQuoteOnQuote, uint256 minSecondaryMirrorOnQuote, uint256 minSecondaryReactOnQuote, uint256 minSecondaryCommentOnQuote, uint256 minSecondaryCollectOnQuote, uint256 minSecondaryQuoteOnComment, uint256 minSecondaryMirrorOnComment, uint256 minSecondaryReactOnComment, uint256 minSecondaryCommentOnComment, uint256 minSecondaryCollectOnComment, bool quote, bool mirror, bool comment, bool bookmark, bool react)[] videos, string uri, uint256 milestone)[] milestones, " +
             "tuple(" +
             "string[][] erc721TokenURIs, " +
             "uint256[][] erc721TokenIds, " +
@@ -155,11 +155,18 @@ describe("Contract Test Suite", () => {
                     profileId: 116393,
                     pubId: 68,
                     minPlayCount: 100,
-                    minCTR: 100,
                     minAVD: 100,
-                    minImpressionCount: 100,
-                    minEngagementRate: 100,
                     minDuration: 100,
+                    minSecondaryQuoteOnQuote: 1,
+                    minSecondaryMirrorOnQuote: 2,
+                    minSecondaryReactOnQuote: 3,
+                    minSecondaryCommentOnQuote: 4,
+                    minSecondaryCollectOnQuote: 5,
+                    minSecondaryQuoteOnComment: 6,
+                    minSecondaryMirrorOnComment: 1,
+                    minSecondaryReactOnComment: 7,
+                    minSecondaryCommentOnComment: 8,
+                    minSecondaryCollectOnComment: 1,
                     quote: true,
                     mirror: true,
                     comment: true,
@@ -196,11 +203,18 @@ describe("Contract Test Suite", () => {
                     profileId: 116393,
                     pubId: 67,
                     minPlayCount: 100,
-                    minCTR: 100,
                     minAVD: 100,
-                    minImpressionCount: 100,
-                    minEngagementRate: 100,
                     minDuration: 100,
+                    minSecondaryQuoteOnQuote: 1,
+                    minSecondaryMirrorOnQuote: 2,
+                    minSecondaryReactOnQuote: 3,
+                    minSecondaryCommentOnQuote: 4,
+                    minSecondaryCollectOnQuote: 5,
+                    minSecondaryQuoteOnComment: 6,
+                    minSecondaryMirrorOnComment: 1,
+                    minSecondaryReactOnComment: 7,
+                    minSecondaryCommentOnComment: 8,
+                    minSecondaryCollectOnComment: 1,
                     quote: true,
                     mirror: true,
                     comment: true,
@@ -308,26 +322,87 @@ describe("Contract Test Suite", () => {
         await kinoraQuestData.getMilestoneVideoMinPlayCount(1, 2, 116393, 67),
       ).to.equal(100);
       expect(
-        await kinoraQuestData.getMilestoneVideoMinCTR(1, 2, 116393, 67),
-      ).to.equal(100);
+        await kinoraQuestData.getMilestoneVideoMinSecondaryQuoteOnQuote(
+          1,
+          2,
+          116393,
+          67,
+        ),
+      ).to.equal(1);
+      expect(
+        await kinoraQuestData.getMilestoneVideoMinSecondaryMirrorOnQuote(
+          1,
+          2,
+          116393,
+          67,
+        ),
+      ).to.equal(2),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryReactOnQuote(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(3),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryCommentOnQuote(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(4),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryCollectOnQuote(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(5),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryQuoteOnComment(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(6),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryMirrorOnComment(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(1),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryReactOnComment(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(7),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryCommentOnComment(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(8),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryCollectOnComment(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(1);
       expect(
         await kinoraQuestData.getMilestoneVideoMinAVD(1, 2, 116393, 67),
-      ).to.equal(100);
-      expect(
-        await kinoraQuestData.getMilestoneVideoMinImpressionCount(
-          1,
-          2,
-          116393,
-          67,
-        ),
-      ).to.equal(100);
-      expect(
-        await kinoraQuestData.getMilestoneVideoMinEngagementRate(
-          1,
-          2,
-          116393,
-          67,
-        ),
       ).to.equal(100);
       expect(
         await kinoraQuestData.getMilestoneVideoMinDuration(1, 2, 116393, 67),
@@ -367,7 +442,7 @@ describe("Contract Test Suite", () => {
       ).to.deep.equal([nft.address, nft.address]);
       expect(
         await kinoraQuestData.getMilestoneGatedERC721TokenIds(1, 1),
-      ).to.deep.equal([[],[4]]);
+      ).to.deep.equal([[], [4]]);
       expect(
         await kinoraQuestData.getMilestoneGatedERC721TokenURIs(1, 1),
       ).to.deep.equal([
@@ -394,27 +469,88 @@ describe("Contract Test Suite", () => {
         await kinoraQuestData.getMilestoneVideoMinPlayCount(1, 1, 116393, 68),
       ).to.equal(100);
       expect(
-        await kinoraQuestData.getMilestoneVideoMinCTR(1, 1, 116393, 68),
-      ).to.equal(100);
-      expect(
-        await kinoraQuestData.getMilestoneVideoMinAVD(1, 1, 116393, 68),
-      ).to.equal(100);
-      expect(
-        await kinoraQuestData.getMilestoneVideoMinImpressionCount(
+        await kinoraQuestData.getMilestoneVideoMinSecondaryQuoteOnQuote(
           1,
-          1,
+          2,
           116393,
-          68,
+          67,
         ),
-      ).to.equal(100);
+      ).to.equal(1);
       expect(
-        await kinoraQuestData.getMilestoneVideoMinEngagementRate(
+        await kinoraQuestData.getMilestoneVideoMinSecondaryMirrorOnQuote(
           1,
-          1,
+          2,
           116393,
-          68,
+          67,
         ),
-      ).to.equal(100);
+      ).to.equal(2),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryReactOnQuote(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(3),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryCommentOnQuote(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(4),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryCollectOnQuote(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(5),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryQuoteOnComment(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(6),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryMirrorOnComment(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(1),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryReactOnComment(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(7),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryCommentOnComment(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(8),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinSecondaryCollectOnComment(
+            1,
+            2,
+            116393,
+            67,
+          ),
+        ).to.equal(1),
+        expect(
+          await kinoraQuestData.getMilestoneVideoMinAVD(1, 1, 116393, 68),
+        ).to.equal(100);
       expect(
         await kinoraQuestData.getMilestoneVideoMinDuration(1, 1, 116393, 68),
       ).to.equal(100);
@@ -525,13 +661,18 @@ describe("Contract Test Suite", () => {
           profileId: 116393,
           pubId: 67,
           playCount: 10,
-          ctr: 20,
+          secondaryQuoteOnQuote: 1,
+          secondaryMirrorOnQuote: 2,
+          secondaryReactOnQuote: 3,
+          secondaryCommentOnQuote: 4,
+          secondaryCollectOnQuote: 5,
+          secondaryQuoteOnComment: 6,
+          secondaryMirrorOnComment: 1,
+          secondaryReactOnComment: 7,
+          secondaryCommentOnComment: 8,
+          secondaryCollectOnComment: 1,
           avd: 30,
-          impressionCount: 1,
-          engagementRate: 0,
           duration: 100,
-          mostViewedSegment: 50,
-          interactionRate: 23,
           mostReplayedArea: 30,
           hasQuoted: true,
           hasMirrored: true,
@@ -547,13 +688,18 @@ describe("Contract Test Suite", () => {
         profileId: 116393,
         pubId: 67,
         playCount: 10,
-        ctr: 20,
+        secondaryQuoteOnQuote: 1,
+        secondaryMirrorOnQuote: 2,
+        secondaryReactOnQuote: 3,
+        secondaryCommentOnQuote: 4,
+        secondaryCollectOnQuote: 5,
+        secondaryQuoteOnComment: 6,
+        secondaryMirrorOnComment: 1,
+        secondaryReactOnComment: 7,
+        secondaryCommentOnComment: 8,
+        secondaryCollectOnComment: 1,
         avd: 30,
-        impressionCount: 1,
-        engagementRate: 0,
         duration: 100,
-        mostViewedSegment: 50,
-        interactionRate: 23,
         mostReplayedArea: 30,
         hasQuoted: true,
         hasMirrored: true,
@@ -566,9 +712,77 @@ describe("Contract Test Suite", () => {
       expect(
         await kinoraQuestData.getPlayerVideoAVD(playerProfileId, 67, 116393),
       ).to.equal(30);
+
       expect(
-        await kinoraQuestData.getPlayerVideoCTR(playerProfileId, 67, 116393),
-      ).to.equal(20);
+        await kinoraQuestData.getPlayerVideoSecondaryQuoteOnQuote(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(1);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryMirrorOnQuote(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(2);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryReactOnQuote(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(3);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryCommentOnQuote(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(4);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryCollectOnQuote(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(5);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryQuoteOnComment(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(6);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryMirrorOnComment(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(1);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryReactOnComment(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(7);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryCommentOnComment(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(8);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryCollectOnComment(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(1);
       expect(
         await kinoraQuestData.getPlayerVideoPlayCount(
           playerProfileId,
@@ -577,40 +791,12 @@ describe("Contract Test Suite", () => {
         ),
       ).to.equal(10);
       expect(
-        await kinoraQuestData.getPlayerVideoImpressionCount(
-          playerProfileId,
-          67,
-          116393,
-        ),
-      ).to.equal(1);
-      expect(
-        await kinoraQuestData.getPlayerVideoEngagementRate(
-          playerProfileId,
-          67,
-          116393,
-        ),
-      ).to.equal(0);
-      expect(
         await kinoraQuestData.getPlayerVideoDuration(
           playerProfileId,
           67,
           116393,
         ),
       ).to.equal(100);
-      expect(
-        await kinoraQuestData.getPlayerVideoMostViewedSegment(
-          playerProfileId,
-          67,
-          116393,
-        ),
-      ).to.equal(50);
-      expect(
-        await kinoraQuestData.getPlayerVideoInteractionRate(
-          playerProfileId,
-          67,
-          116393,
-        ),
-      ).to.equal(23);
       expect(
         await kinoraQuestData.getPlayerVideoMostReplayedArea(
           playerProfileId,
@@ -649,13 +835,18 @@ describe("Contract Test Suite", () => {
         profileId: 116393,
         pubId: 67,
         playCount: 100,
-        ctr: 100,
+        secondaryQuoteOnQuote: 1,
+        secondaryMirrorOnQuote: 2,
+        secondaryReactOnQuote: 3,
+        secondaryCommentOnQuote: 4,
+        secondaryCollectOnQuote: 5,
+        secondaryQuoteOnComment: 6,
+        secondaryMirrorOnComment: 1,
+        secondaryReactOnComment: 7,
+        secondaryCommentOnComment: 8,
+        secondaryCollectOnComment: 1,
         avd: 100,
-        impressionCount: 100,
-        engagementRate: 100,
         duration: 100,
-        mostViewedSegment: 100,
-        interactionRate: 100,
         mostReplayedArea: 100,
         hasQuoted: true,
         hasMirrored: true,
@@ -668,9 +859,77 @@ describe("Contract Test Suite", () => {
       expect(
         await kinoraQuestData.getPlayerVideoAVD(playerProfileId, 67, 116393),
       ).to.equal(100);
+
       expect(
-        await kinoraQuestData.getPlayerVideoCTR(playerProfileId, 67, 116393),
-      ).to.equal(100);
+        await kinoraQuestData.getPlayerVideoSecondaryQuoteOnQuote(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(1);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryMirrorOnQuote(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(2);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryReactOnQuote(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(3);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryCommentOnQuote(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(4);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryCollectOnQuote(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(5);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryQuoteOnComment(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(6);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryMirrorOnComment(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(1);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryReactOnComment(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(7);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryCommentOnComment(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(8);
+      expect(
+        await kinoraQuestData.getPlayerVideoSecondaryCollectOnComment(
+          playerProfileId,
+          67,
+          116393,
+        ),
+      ).to.equal(1);
       expect(
         await kinoraQuestData.getPlayerVideoPlayCount(
           playerProfileId,
@@ -679,35 +938,7 @@ describe("Contract Test Suite", () => {
         ),
       ).to.equal(100);
       expect(
-        await kinoraQuestData.getPlayerVideoImpressionCount(
-          playerProfileId,
-          67,
-          116393,
-        ),
-      ).to.equal(100);
-      expect(
-        await kinoraQuestData.getPlayerVideoEngagementRate(
-          playerProfileId,
-          67,
-          116393,
-        ),
-      ).to.equal(100);
-      expect(
         await kinoraQuestData.getPlayerVideoDuration(
-          playerProfileId,
-          67,
-          116393,
-        ),
-      ).to.equal(100);
-      expect(
-        await kinoraQuestData.getPlayerVideoMostViewedSegment(
-          playerProfileId,
-          67,
-          116393,
-        ),
-      ).to.equal(100);
-      expect(
-        await kinoraQuestData.getPlayerVideoInteractionRate(
           playerProfileId,
           67,
           116393,
@@ -769,13 +1000,18 @@ describe("Contract Test Suite", () => {
         profileId: 116393,
         pubId: 68,
         playCount: 100,
-        ctr: 100,
+        secondaryQuoteOnQuote: 1,
+        secondaryMirrorOnQuote: 2,
+        secondaryReactOnQuote: 3,
+        secondaryCommentOnQuote: 4,
+        secondaryCollectOnQuote: 5,
+        secondaryQuoteOnComment: 6,
+        secondaryMirrorOnComment: 1,
+        secondaryReactOnComment: 7,
+        secondaryCommentOnComment: 8,
+        secondaryCollectOnComment: 1,
         avd: 100,
-        impressionCount: 100,
-        engagementRate: 100,
         duration: 100,
-        mostViewedSegment: 100,
-        interactionRate: 100,
         mostReplayedArea: 100,
         hasQuoted: true,
         hasMirrored: true,
@@ -1083,13 +1319,18 @@ describe("Contract Test Suite", () => {
           profileId: 116393,
           pubId: 68,
           playCount: 100,
-          ctr: 100,
+          secondaryQuoteOnQuote: 1,
+          secondaryMirrorOnQuote: 2,
+          secondaryReactOnQuote: 3,
+          secondaryCommentOnQuote: 4,
+          secondaryCollectOnQuote: 5,
+          secondaryQuoteOnComment: 6,
+          secondaryMirrorOnComment: 1,
+          secondaryReactOnComment: 7,
+          secondaryCommentOnComment: 8,
+          secondaryCollectOnComment: 1,
           avd: 100,
-          impressionCount: 100,
-          engagementRate: 100,
           duration: 100,
-          mostViewedSegment: 100,
-          interactionRate: 100,
           mostReplayedArea: 100,
           hasQuoted: true,
           hasMirrored: true,
@@ -1143,7 +1384,7 @@ describe("Contract Test Suite", () => {
       const encodedData = ethers.utils.defaultAbiCoder.encode(
         [
           "tuple(" +
-            "tuple(tuple(string[][] erc721TokenURIs, uint256[][] erc721TokenIds, address[] erc721Addresses, address[] erc20Addresses, uint256[] erc20Thresholds, bool oneOf) gated, tuple(uint8 rewardType, string uri, address tokenAddress, uint256 amount)[] rewards, tuple(string playerId, string videoBytes, uint256 profileId, uint256 pubId, uint256 minPlayCount, uint256 minCTR, uint256 minAVD, uint256 minImpressionCount, uint256 minEngagementRate, uint256 minDuration, bool quote, bool mirror, bool comment, bool bookmark, bool react)[] videos, string uri, uint256 milestone)[] milestones, " +
+            "tuple(tuple(string[][] erc721TokenURIs, uint256[][] erc721TokenIds, address[] erc721Addresses, address[] erc20Addresses, uint256[] erc20Thresholds, bool oneOf) gated, tuple(uint8 rewardType, string uri, address tokenAddress, uint256 amount)[] rewards, tuple(string playerId, string videoBytes, uint256 profileId, uint256 pubId, uint256 minPlayCount, uint256 minAVD, uint256 minDuration,  uint256 minSecondaryQuoteOnQuote, uint256 minSecondaryMirrorOnQuote, uint256 minSecondaryReactOnQuote, uint256 minSecondaryCommentOnQuote, uint256 minSecondaryCollectOnQuote, uint256 minSecondaryQuoteOnComment, uint256 minSecondaryMirrorOnComment, uint256 minSecondaryReactOnComment, uint256 minSecondaryCommentOnComment, uint256 minSecondaryCollectOnComment, bool quote, bool mirror, bool comment, bool bookmark, bool react)[] videos, string uri, uint256 milestone)[] milestones, " +
             "tuple(" +
             "string[][] erc721TokenURIs, " +
             "uint256[][] erc721TokenIds, " +
@@ -1190,11 +1431,18 @@ describe("Contract Test Suite", () => {
                     profileId: 116393,
                     pubId: 68,
                     minPlayCount: 100,
-                    minCTR: 100,
                     minAVD: 100,
-                    minImpressionCount: 100,
-                    minEngagementRate: 100,
                     minDuration: 100,
+                    minSecondaryQuoteOnQuote: 1,
+                    minSecondaryMirrorOnQuote: 2,
+                    minSecondaryReactOnQuote: 3,
+                    minSecondaryCommentOnQuote: 4,
+                    minSecondaryCollectOnQuote: 5,
+                    minSecondaryQuoteOnComment: 6,
+                    minSecondaryMirrorOnComment: 1,
+                    minSecondaryReactOnComment: 7,
+                    minSecondaryCommentOnComment: 8,
+                    minSecondaryCollectOnComment: 1,
                     quote: true,
                     mirror: true,
                     comment: true,
@@ -1260,6 +1508,5 @@ describe("Contract Test Suite", () => {
         expect(err.message).to.include("MaxPlayerCountReached()");
       }
     });
-
   });
 });

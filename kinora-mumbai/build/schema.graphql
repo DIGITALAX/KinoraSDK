@@ -96,7 +96,16 @@ type Video @entity(immutable: false) {
   profileId: BigInt
   pubId: BigInt
   minPlayCount: BigInt
-  minCTR: BigInt
+  minSecondaryQuoteOnQuote: BigInt
+  minSecondaryMirrorOnQuote: BigInt
+  minSecondaryReactOnQuote: BigInt
+  minSecondaryCommentOnQuote: BigInt
+  minSecondaryCollectOnQuote: BigInt
+  minSecondaryQuoteOnComment: BigInt
+  minSecondaryMirrorOnComment: BigInt
+  minSecondaryReactOnComment: BigInt
+  minSecondaryCommentOnComment: BigInt
+  minSecondaryCollectOnComment: BigInt
   minAVD: BigInt
   minImpressionCount: BigInt
   minEngagementRate: BigInt
@@ -158,13 +167,18 @@ type VideoActivity @entity(immutable: false) {
   pubId: BigInt
   profileId: BigInt
   playCount: BigInt
-  ctr: BigInt
+  secondaryQuoteOnQuote: BigInt
+  secondaryMirrorOnQuote: BigInt
+  secondaryReactOnQuote: BigInt
+  secondaryCommentOnQuote: BigInt
+  secondaryCollectOnQuote: BigInt
+  secondaryQuoteOnComment: BigInt
+  secondaryMirrorOnComment: BigInt
+  secondaryReactOnComment: BigInt
+  secondaryCommentOnComment: BigInt
+  secondaryCollectOnComment: BigInt
   avd: BigInt
-  impressionCount: BigInt
-  engagementRate: BigInt
   duration: BigInt
-  mostViewedSegment: BigInt
-  interactionRate: BigInt
   mostReplayedArea: BigInt
   hasQuoted: Boolean
   hasMirrored: Boolean

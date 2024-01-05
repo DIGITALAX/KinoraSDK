@@ -1,9 +1,4 @@
-import {
-  Address,
-  BigInt,
-  ByteArray,
-  Bytes,
-} from "@graphprotocol/graph-ts";
+import { Address, BigInt, ByteArray, Bytes } from "@graphprotocol/graph-ts";
 import {
   KinoraQuestData,
   MilestoneCompleted as MilestoneCompletedEvent,
@@ -266,26 +261,13 @@ export function handlePlayerMetricsUpdated(
       entity.videoPubId,
       entity.videoProfileId,
     );
-    currentVideo.impressionCount = questData.getPlayerVideoImpressionCount(
-      entity.playerProfileId,
-      entity.videoPubId,
-      entity.videoProfileId,
-    );
-    currentVideo.engagementRate = questData.getPlayerVideoEngagementRate(
-      entity.playerProfileId,
-      entity.videoPubId,
-      entity.videoProfileId,
-    );
+
     currentVideo.duration = questData.getPlayerVideoDuration(
       entity.playerProfileId,
       entity.videoPubId,
       entity.videoProfileId,
     );
-    currentVideo.mostViewedSegment = questData.getPlayerVideoMostViewedSegment(
-      entity.playerProfileId,
-      entity.videoPubId,
-      entity.videoProfileId,
-    );
+
     currentVideo.interactionRate = questData.getPlayerVideoInteractionRate(
       entity.playerProfileId,
       entity.videoPubId,
@@ -609,25 +591,67 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
-        currentVideo.minCTR = questData.getMilestoneVideoMinCTR(
+        currentVideo.minSecondaryQuoteOnQuote = questData.getMilestoneVideoMinSecondaryQuoteOnQuote(
+          entity.questId,
+          <BigInt>milestone.milestoneId,
+          <BigInt>currentVideo.profileId,
+          <BigInt>currentVideo.pubId,
+        );
+        currentVideo.minSecondaryMirrorOnQuote = questData.getMilestoneVideoMinSecondaryMirrorOnQuote(
+          entity.questId,
+          <BigInt>milestone.milestoneId,
+          <BigInt>currentVideo.profileId,
+          <BigInt>currentVideo.pubId,
+        );
+        currentVideo.minSecondaryReactOnQuote = questData.getMilestoneVideoMinSecondaryReactOnQuote(
+          entity.questId,
+          <BigInt>milestone.milestoneId,
+          <BigInt>currentVideo.profileId,
+          <BigInt>currentVideo.pubId,
+        );
+        currentVideo.minSecondaryCommentOnQuote = questData.getMilestoneVideoMinSecondaryCommentOnQuote(
+          entity.questId,
+          <BigInt>milestone.milestoneId,
+          <BigInt>currentVideo.profileId,
+          <BigInt>currentVideo.pubId,
+        );
+        currentVideo.minSecondaryCollectOnQuote = questData.getMilestoneVideoMinSecondaryCollectOnQuote(
+          entity.questId,
+          <BigInt>milestone.milestoneId,
+          <BigInt>currentVideo.profileId,
+          <BigInt>currentVideo.pubId,
+        );
+        currentVideo.minSecondaryQuoteOnComment = questData.getMilestoneVideoMinSecondaryQuoteOnComment(
+          entity.questId,
+          <BigInt>milestone.milestoneId,
+          <BigInt>currentVideo.profileId,
+          <BigInt>currentVideo.pubId,
+        );
+        currentVideo.minSecondaryMirrorOnComment = questData.getMilestoneVideoMinSecondaryMirrorOnComment(
+          entity.questId,
+          <BigInt>milestone.milestoneId,
+          <BigInt>currentVideo.profileId,
+          <BigInt>currentVideo.pubId,
+        );
+        currentVideo.minSecondaryReactOnComment = questData.getMilestoneVideoMinSecondaryReactOnComment(
+          entity.questId,
+          <BigInt>milestone.milestoneId,
+          <BigInt>currentVideo.profileId,
+          <BigInt>currentVideo.pubId,
+        );
+        currentVideo.minSecondaryCommentOnComment = questData.getMilestoneVideoMinSecondaryCommentOnComment(
+          entity.questId,
+          <BigInt>milestone.milestoneId,
+          <BigInt>currentVideo.profileId,
+          <BigInt>currentVideo.pubId,
+        );
+        currentVideo.minSecondaryCollectOnComment = questData.getMilestoneVideoMinSecondaryCollectOnComment(
           entity.questId,
           <BigInt>milestone.milestoneId,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minDuration = questData.getMilestoneVideoMinDuration(
-          entity.questId,
-          <BigInt>milestone.milestoneId,
-          <BigInt>currentVideo.profileId,
-          <BigInt>currentVideo.pubId,
-        );
-        currentVideo.minEngagementRate = questData.getMilestoneVideoMinEngagementRate(
-          entity.questId,
-          <BigInt>milestone.milestoneId,
-          <BigInt>currentVideo.profileId,
-          <BigInt>currentVideo.pubId,
-        );
-        currentVideo.minImpressionCount = questData.getMilestoneVideoMinImpressionCount(
           entity.questId,
           <BigInt>milestone.milestoneId,
           <BigInt>currentVideo.profileId,

@@ -9,7 +9,7 @@ import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
 import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
 import getPublicationClient from "./graphql/queries/getPublicationClient";
 import getPublicationsClient from "./graphql/queries/getPublicationsClient";
-import { Post, Comment } from "./@types/generated";
+import { Post, Comment, Quote } from "./@types/generated";
 
 export class Sequence {
   /**
@@ -186,24 +186,49 @@ export class Sequence {
         };
       }
 
-      this.metrics[postId]?.getAVD();
+      const {
+        error: errorSecondary,
+        errorMessage: errorMessageSecondary,
+        secondaryQuoteOnQuote,
+        secondaryMirrorOnQuote,
+        secondaryReactOnQuote,
+        secondaryCommentOnQuote,
+        secondaryCollectOnQuote,
+        secondaryQuoteOnComment,
+        secondaryMirrorOnComment,
+        secondaryReactOnComment,
+        secondaryCommentOnComment,
+        secondaryCollectOnComment,
+      } = await this.secondaryData(playerProfileId, postId);
+
+      if (errorSecondary) {
+        return {
+          error: true,
+          errorMessage: errorMessageSecondary,
+        };
+      }
 
       const tx = await kinoraMetricsContract.addPlayerMetrics({
         profileId: parseInt(postId?.split("-")[0], 16),
         pubId: parseInt(postId?.split("-")[1], 16),
         playCount: Number(playCount) + this.metrics[postId]?.getPlayCount(),
-        ctr: 0,
+        secondaryQuoteOnQuote,
+        secondaryMirrorOnQuote,
+        secondaryReactOnQuote,
+        secondaryCommentOnQuote,
+        secondaryCollectOnQuote,
+        secondaryQuoteOnComment,
+        secondaryMirrorOnComment,
+        secondaryReactOnComment,
+        secondaryCommentOnComment,
+        secondaryCollectOnComment,
         avd:
           (Number(avd) * Number(duration) +
             this.metrics[postId]?.getAVD() *
               this.metrics[postId]?.getTotalDuration()) /
           (Number(duration) + this.metrics[postId]?.getTotalDuration()) /
           1000,
-        impressionCount: 0,
-        engagementRate: 0,
         duration: Number(duration) + this.metrics[postId]?.getTotalDuration(),
-        mostViewedSegment: 0,
-        interactionRate: 0,
         mostReplayedArea: this.reconcileMostReplayedArea(
           mostReplayedArea!,
           this.metrics[postId]?.getMostReplayedArea(),
@@ -360,65 +385,128 @@ export class Sequence {
     }
   };
 
-  private reconcileMostReplayedArea = (
-    prevMostReplayedArea: string,
-    currentMostReplayedArea: string,
+  public reconcileMostReplayedArea = (
+    previousArea: string,
+    currentArea: string,
   ): string => {
-    if (
-      prevMostReplayedArea?.toLowerCase() === "no replays" ||
-      !prevMostReplayedArea ||
-      prevMostReplayedArea?.trim() == ""
-    ) {
-      return currentMostReplayedArea;
+    const [prevStart] = previousArea.split("-");
+    const [currStart] = currentArea.split("-");
+
+    const prevStartTime = new Date(`1970-01-01T${prevStart}Z`);
+    const currStartTime = new Date(`1970-01-01T${currStart}Z`);
+
+    const prevMilliseconds = prevStartTime.getTime();
+    const currMilliseconds = currStartTime.getTime();
+
+    if (currMilliseconds > prevMilliseconds) {
+      return currentArea;
+    } else {
+      return previousArea;
     }
-    if (
-      currentMostReplayedArea?.toLowerCase() === "no replays" ||
-      !currentMostReplayedArea ||
-      currentMostReplayedArea?.trim() == ""
-    ) {
-      return prevMostReplayedArea;
-    }
-
-    const [prevStart, prevEnd] = prevMostReplayedArea.split("-");
-    const [currentStart, currentEnd] = currentMostReplayedArea.split("-");
-
-    const prevStartTime_ms = this.timeStringToMilliseconds(prevStart);
-    const prevEndTime_ms = this.timeStringToMilliseconds(prevEnd);
-    const currentStartTime_ms = this.timeStringToMilliseconds(currentStart);
-    const currentEndTime_ms = this.timeStringToMilliseconds(currentEnd);
-
-    const reconciledStart_ms =
-      prevStartTime_ms < currentStartTime_ms
-        ? prevStartTime_ms
-        : currentStartTime_ms;
-
-    const reconciledEnd_ms =
-      prevEndTime_ms > currentEndTime_ms ? prevEndTime_ms : currentEndTime_ms;
-
-    const reconciledStart = this.millisecondsToTimeStr(reconciledStart_ms);
-    const reconciledEnd = this.millisecondsToTimeStr(reconciledEnd_ms);
-
-    const reconciledArea = `${reconciledStart}-${reconciledEnd}`;
-
-    return reconciledArea;
   };
 
-  private timeStringToMilliseconds = (timeStr: string): number => {
-    const [hours, minutes, seconds, milliseconds] = timeStr
-      .split(/[:.]/)
-      .map(Number);
-    return hours * 3600000 + minutes * 60000 + seconds * 1000 + milliseconds;
-  };
+  private secondaryData = async (
+    playerProfileId: `0x${string}`,
+    postId: `0x${string}`,
+  ): Promise<{
+    error: boolean;
+    errorMessage?: string;
+    secondaryQuoteOnQuote?: number;
+    secondaryMirrorOnQuote?: number;
+    secondaryReactOnQuote?: number;
+    secondaryCommentOnQuote?: number;
+    secondaryCollectOnQuote?: number;
+    secondaryQuoteOnComment?: number;
+    secondaryMirrorOnComment?: number;
+    secondaryReactOnComment?: number;
+    secondaryCommentOnComment?: number;
+    secondaryCollectOnComment?: number;
+  }> => {
+    try {
+      const { data: commentData } = await getPublicationsClient({
+        where: {
+          commentOn: {
+            id: postId,
+          },
+          from: [playerProfileId],
+        },
+      });
+      let secondaryQuoteOnComment: number = 0,
+        secondaryMirrorOnComment: number = 0,
+        secondaryReactOnComment: number = 0,
+        secondaryCommentOnComment: number = 0,
+        secondaryCollectOnComment: number = 0;
 
-  private millisecondsToTimeStr = (milliseconds: number): string => {
-    const date = new Date(milliseconds);
-    const hours = date.getUTCHours().toString().padStart(2, "0");
-    const minutes = date.getUTCMinutes().toString().padStart(2, "0");
-    const seconds = date.getUTCSeconds().toString().padStart(2, "0");
-    const millisecondsStr = date
-      .getUTCMilliseconds()
-      .toString()
-      .padStart(3, "0");
-    return `${hours}:${minutes}:${seconds}.${millisecondsStr}`;
+      if (
+        commentData?.publications?.items &&
+        commentData?.publications?.items?.length > 0
+      ) {
+        (commentData?.publications?.items as Comment[])?.forEach(
+          (item: Comment) => {
+            if (item?.stats?.countOpenActions > secondaryCollectOnComment)
+              secondaryCollectOnComment = item?.stats?.countOpenActions;
+            if (item?.stats?.reactions > secondaryReactOnComment)
+              secondaryReactOnComment = item?.stats?.reactions;
+            if (item?.stats?.mirrors > secondaryMirrorOnComment)
+              secondaryMirrorOnComment = item?.stats?.mirrors;
+            if (item?.stats?.quotes > secondaryQuoteOnComment)
+              secondaryQuoteOnComment = item?.stats?.quotes;
+            if (item?.stats?.comments > secondaryCommentOnComment)
+              secondaryCommentOnComment = item?.stats?.comments;
+          },
+        );
+      }
+
+      let secondaryQuoteOnQuote: number = 0,
+        secondaryMirrorOnQuote: number = 0,
+        secondaryReactOnQuote: number = 0,
+        secondaryCommentOnQuote: number = 0,
+        secondaryCollectOnQuote: number = 0;
+      const { data: quoteData } = await getPublicationsClient({
+        where: {
+          quoteOn: {
+            id: postId,
+          },
+          from: [playerProfileId],
+        },
+      });
+
+      if (
+        quoteData?.publications?.items &&
+        quoteData?.publications?.items?.length > 0
+      ) {
+        (quoteData?.publications?.items as Quote[])?.forEach((item: Quote) => {
+          if (item?.stats?.countOpenActions > secondaryCollectOnQuote)
+            secondaryCollectOnQuote = item?.stats?.countOpenActions;
+          if (item?.stats?.reactions > secondaryReactOnQuote)
+            secondaryReactOnQuote = item?.stats?.reactions;
+          if (item?.stats?.mirrors > secondaryMirrorOnQuote)
+            secondaryMirrorOnQuote = item?.stats?.mirrors;
+          if (item?.stats?.quotes > secondaryQuoteOnQuote)
+            secondaryQuoteOnQuote = item?.stats?.quotes;
+          if (item?.stats?.comments > secondaryCommentOnQuote)
+            secondaryCommentOnQuote = item?.stats?.comments;
+        });
+      }
+
+      return {
+        error: false,
+        secondaryQuoteOnQuote,
+        secondaryMirrorOnQuote,
+        secondaryReactOnQuote,
+        secondaryCommentOnQuote,
+        secondaryCollectOnQuote,
+        secondaryQuoteOnComment,
+        secondaryMirrorOnComment,
+        secondaryReactOnComment,
+        secondaryCommentOnComment,
+        secondaryCollectOnComment,
+      };
+    } catch (err: any) {
+      return {
+        error: true,
+        errorMessage: err.message,
+      };
+    }
   };
 }
