@@ -3,7 +3,6 @@ import {
   BigInt,
   ByteArray,
   Bytes,
-  log,
 } from "@graphprotocol/graph-ts";
 import {
   KinoraQuestData,
@@ -251,6 +250,7 @@ export function handlePlayerMetricsUpdated(
 
     currentVideo.profileId = entity.videoPubId;
     currentVideo.pubId = entity.videoProfileId;
+    // currentVideo.videosBytes = questData.getPlayerVideoBytes();
     currentVideo.playCount = questData.getPlayerVideoPlayCount(
       entity.playerProfileId,
       entity.videoPubId,
@@ -477,6 +477,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
 
     if (milestoneURI !== null) {
       milestone.uri = milestoneURI;
+
       milestone.milestoneMetadata = milestoneURI;
       QuestMetadataTemplate.create(milestoneURI);
     }
@@ -707,6 +708,12 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
         BigInt.fromI32(j),
         <BigInt>milestone.milestoneId,
       );
+
+      if (currentReward.uri) {
+        const hash = (<string>currentReward.uri).split("/").pop();
+        currentReward.rewardMetadata = hash;
+        QuestMetadataTemplate.create(hash);
+      }
 
       currentReward.save();
       rewards.push(milestoneURI + j.toString());

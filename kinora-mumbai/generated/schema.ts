@@ -820,6 +820,91 @@ export class QuestMetadata extends Entity {
       this.set("description", Value.fromString(<string>value));
     }
   }
+
+  get mediaType(): string | null {
+    let value = this.get("mediaType");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set mediaType(value: string | null) {
+    if (!value) {
+      this.unset("mediaType");
+    } else {
+      this.set("mediaType", Value.fromString(<string>value));
+    }
+  }
+
+  get audio(): string | null {
+    let value = this.get("audio");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set audio(value: string | null) {
+    if (!value) {
+      this.unset("audio");
+    } else {
+      this.set("audio", Value.fromString(<string>value));
+    }
+  }
+
+  get video(): string | null {
+    let value = this.get("video");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set video(value: string | null) {
+    if (!value) {
+      this.unset("video");
+    } else {
+      this.set("video", Value.fromString(<string>value));
+    }
+  }
+
+  get mediaCover(): string | null {
+    let value = this.get("mediaCover");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set mediaCover(value: string | null) {
+    if (!value) {
+      this.unset("mediaCover");
+    } else {
+      this.set("mediaCover", Value.fromString(<string>value));
+    }
+  }
+
+  get images(): Array<string> | null {
+    let value = this.get("images");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toStringArray();
+    }
+  }
+
+  set images(value: Array<string> | null) {
+    if (!value) {
+      this.unset("images");
+    } else {
+      this.set("images", Value.fromStringArray(<Array<string>>value));
+    }
+  }
 }
 
 export class Milestone extends Entity {
@@ -1299,6 +1384,23 @@ export class Reward extends Entity {
       this.unset("uri");
     } else {
       this.set("uri", Value.fromString(<string>value));
+    }
+  }
+
+  get rewardMetadata(): string | null {
+    let value = this.get("rewardMetadata");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set rewardMetadata(value: string | null) {
+    if (!value) {
+      this.unset("rewardMetadata");
+    } else {
+      this.set("rewardMetadata", Value.fromString(<string>value));
     }
   }
 

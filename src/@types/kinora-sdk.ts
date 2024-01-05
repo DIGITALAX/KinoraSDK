@@ -101,25 +101,6 @@ export interface MilestoneEligibilityCriteria {
   comment?: boolean;
 }
 
-/**
- * @description Enumeration defining log categories.
- */
-export enum LogCategory {
-  ERROR = 0,
-  METRICS = 1,
-  BROADCAST = 2,
-}
-
-/**
- * @description Interface representing a log entry.
- */
-export interface ILogEntry {
-  category: LogCategory; // Category of the log entry
-  message: string; // Message associated with the log entry
-  responseObject: string; // Response object (if any) associated with the log entry
-  isoDate: string; // ISO date string representing when the log entry was created
-}
-
 /** *
  * @description Lens Protocol Publication Metadata Struct.
  */
@@ -153,8 +134,15 @@ export interface PlayerData {
   videoElement: HTMLVideoElement;
   postId: ZeroString;
   eventHandlers: {
-    play: (event: Event) => void;
+    play: (videoElement: HTMLVideoElement) => void;
+    end: (videoElement: HTMLVideoElement) => void;
     pause: (event: Event) => void;
+    volumeChange: (event: Event) => void;
+    muteToggle: (event: Event) => void;
+    qualityChange: (event: Event) => void;
+    fullscreenToggle: (event: Event) => void;
     click: (event: Event) => void;
+    onTimeUpdate: (videoElement: HTMLVideoElement) => void;
+    onSeeked: (videoElement: HTMLVideoElement) => void;
   };
 }

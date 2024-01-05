@@ -1,26 +1,17 @@
-import {
-  ZeroString,
-  ILogEntry,
-  LogCategory,
-  PlayerData,
-} from "./@types/kinora-sdk";
+import { ZeroString, PlayerData } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import { ethers } from "ethers";
-import { KINORA_METRICS_CONTRACT } from "./constants/index";
-import { EventEmitter } from "events";
+import {
+  KINORA_METRICS_CONTRACT,
+  KINORA_QUEST_DATA_CONTRACT,
+} from "./constants/index";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
+import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
 import getPublicationClient from "./graphql/queries/getPublicationClient";
 import getPublicationsClient from "./graphql/queries/getPublicationsClient";
 import { Post, Comment } from "./@types/generated";
 
-export class Sequence extends EventEmitter {
-  /**
-   * @private
-   * @type {boolean}
-   * @description Flag to determine the mode of error handling; strict or not.
-   */
-  private errorHandlingModeStrict: boolean | undefined = false;
-
+export class Sequence {
   /**
    * @private
    * @type {{ [postId: ZeroString]: Metrics } }
@@ -36,36 +27,6 @@ export class Sequence extends EventEmitter {
   private playerMap: { [postId: ZeroString]: PlayerData } = {};
 
   /**
-   * @private
-   * @type {number}
-   * @description Maximum size of the logs array.
-   */
-  private logSize: number = 1000;
-
-  /**
-   * @private
-   * @type {number}
-   * @description Index for the next log entry.
-   */
-  private logIndex: number = 0;
-
-  /**
-   * @private
-   * @type {ILogEntry[]}
-   * @description Array to hold log entries.
-   */
-  private logs: ILogEntry[] = new Array(this.logSize);
-
-  /**
-   * Constructs an instance of the enclosing class, initializing necessary properties and contracts.
-   * @param {boolean} errorHandlingModeStrict - A boolean indicating whether the error handling mode is strict. Optional.
-   */
-  constructor(errorHandlingModeStrict?: boolean | undefined) {
-    super();
-    this.errorHandlingModeStrict = errorHandlingModeStrict;
-  }
-
-  /**
    * Initializes a Livepeer video player with given Id and associates event handlers to the video element.
    *
    * @param postId - Lens publication Id associated with the video.
@@ -75,33 +36,68 @@ export class Sequence extends EventEmitter {
     postId: ZeroString,
     videoElement: HTMLVideoElement,
   ): void => {
-    const playerData = this.playerMap[postId];
-    if (!playerData) return;
+    if (!this.metrics[postId]) {
+      this.metrics[postId] = new Metrics();
+    }
 
-    this.metrics[postId] = new Metrics();
+    if (
+      !this.playerMap[postId] ||
+      this.playerMap[postId].videoElement !== videoElement
+    ) {
+      this.playerMap[postId] = {
+        videoElement,
+        postId,
+        eventHandlers: {
+          play: () => this.metrics[postId].onPlay(videoElement),
+          end: () => this.metrics[postId].onEnd(videoElement),
+          pause: () => this.metrics[postId].onPause(),
+          volumeChange: () => this.metrics[postId].onVolumeChange(),
+          muteToggle: () => this.metrics[postId].onMuteToggle(),
+          qualityChange: () => this.metrics[postId].onQualityChange(),
+          fullscreenToggle: () => this.metrics[postId].onFullscreenToggle(),
+          click: () => this.metrics[postId].onClick(),
+          onTimeUpdate: () => this.metrics[postId].onTimeUpdate(videoElement),
+          onSeeked: () => this.metrics[postId].onSeeked(videoElement),
+        },
+      };
+      videoElement.addEventListener("ended", () =>
+        this.playerMap[postId].eventHandlers.end(videoElement),
+      );
+      videoElement.addEventListener("play", () =>
+        this.playerMap[postId].eventHandlers.play(videoElement),
+      );
+      videoElement.addEventListener(
+        "pause",
+        this.playerMap[postId].eventHandlers.pause,
+      );
+      videoElement.addEventListener("seeked", () =>
+        this.metrics[postId].onSeeked(videoElement),
+      );
+      videoElement.addEventListener(
+        "volumechange",
+        this.playerMap[postId].eventHandlers.volumeChange,
+      );
+      videoElement.addEventListener(
+        "click",
+        this.playerMap[postId].eventHandlers.click,
+      );
 
-    this.playerMap[postId] = {
-      videoElement,
-      postId,
-      eventHandlers: {
-        play: this.metrics[postId].onPlay,
-        pause: this.metrics[postId].onPause,
-        click: this.metrics[postId].onClick,
-      },
-    };
-
-    videoElement.addEventListener(
-      "play",
-      this.playerMap[postId].eventHandlers.play,
-    );
-    videoElement.addEventListener(
-      "pause",
-      this.playerMap[postId].eventHandlers.pause,
-    );
-    videoElement.addEventListener(
-      "click",
-      this.playerMap[postId].eventHandlers.click,
-    );
+      videoElement.addEventListener(
+        "qualityChange",
+        this.playerMap[postId].eventHandlers.qualityChange,
+      );
+      videoElement.addEventListener(
+        "muteToggle",
+        this.playerMap[postId].eventHandlers.muteToggle,
+      );
+      videoElement.addEventListener(
+        "fullscreenToggle",
+        this.playerMap[postId].eventHandlers.fullscreenToggle,
+      );
+      videoElement.addEventListener("timeupdate", () =>
+        this.metrics[postId].onTimeUpdate(videoElement),
+      );
+    }
   };
 
   /**
@@ -112,6 +108,7 @@ export class Sequence extends EventEmitter {
   destroyPlayer = (postId: ZeroString): void => {
     if (!this.playerMap[postId]) return;
     this.cleanUpListeners(postId);
+    this.metrics[postId].reset();
     delete this.playerMap[postId];
   };
 
@@ -128,11 +125,21 @@ export class Sequence extends EventEmitter {
     postId: ZeroString,
     playerProfileId: ZeroString,
     wallet: ethers.Wallet,
-  ): Promise<void> => {
+  ): Promise<{
+    error: boolean;
+    errorMessage?: string;
+    txHash?: string;
+  }> => {
     if (Object.keys(this.playerMap).length === 0)
       throw new Error(
         "No video elements detected. Make sure to set your Livepeer Player component in your app.",
       );
+
+    if (!this.metrics[postId]) {
+      throw new Error(
+        "Player Not Found in App. Make sure you've correctly added the Post Id.",
+      );
+    }
 
     try {
       const { data } = await getPublicationClient({
@@ -158,119 +165,260 @@ export class Sequence extends EventEmitter {
         wallet,
       );
 
-      const tx = await kinoraMetricsContract.addPlayerMetrics(
-        {
-          profileId: parseInt(postId?.split("-")[0], 16),
-          pubId: parseInt(postId?.split("-")[1], 16),
-          playCount: this.metrics[postId].getPlayCount(),
-          ctr: this.metrics[postId].getCTR(),
-          avd: this.metrics[postId].getAVD(),
-          impressionCount: this.metrics[postId].getImpressionCount(),
-          engagementRate: this.metrics[postId].getEngagementRate(
-            this.playerMap[postId].videoElement.duration,
-          ),
-          duration: this.metrics[postId].getTotalDuration(),
-          mostViewedSegment: this.metrics[postId].getMostViewedSegment(),
-          interactionRate: this.metrics[postId].getInteractionRate(),
-          mostReplayedArea: this.metrics[postId].getMostReplayedArea(),
-          hasQuoted: (data?.publication as Post)?.operations?.hasQuoted,
-          hasMirrored: (data?.publication as Post)?.operations.hasMirrored,
-          hasCommented: commentData?.length > 0 ? true : false,
-          hasBookmarked: (data?.publication as Post)?.operations.hasBookmarked,
-          hasReacted: (data?.publication as Post)?.operations.hasReacted,
-        },
+      const {
+        error,
+        errorMessage,
+        playCount,
+        avd,
+        duration,
+        mostReplayedArea,
+      } = await this.getCurrentMetrics(
+        wallet,
+        parseInt(playerProfileId, 16),
+        parseInt(postId?.split("-")[1], 16),
+        parseInt(postId?.split("-")[0], 16),
       );
 
-      this.metrics[postId].reset();
-
-      this.log(
-        LogCategory.BROADCAST,
-        `Broadcast on-chain.`,
-        await tx.wait(),
-        new Date().toISOString(),
-      );
-    } catch (err: any) {
-      this.log(
-        LogCategory.ERROR,
-        `Adding Player metrics failed.`,
-        err.message,
-        new Date().toISOString(),
-      );
-      if (this.errorHandlingModeStrict) {
-        throw new Error(`Error sending metrics on-chain: ${err.message}`);
+      if (error) {
+        return {
+          error: true,
+          errorMessage: errorMessage,
+        };
       }
+
+      this.metrics[postId]?.getAVD();
+
+      const tx = await kinoraMetricsContract.addPlayerMetrics({
+        profileId: parseInt(postId?.split("-")[0], 16),
+        pubId: parseInt(postId?.split("-")[1], 16),
+        playCount: Number(playCount) + this.metrics[postId]?.getPlayCount(),
+        ctr: 0,
+        avd:
+          (Number(avd) * Number(duration) +
+            this.metrics[postId]?.getAVD() *
+              this.metrics[postId]?.getTotalDuration()) /
+          (Number(duration) + this.metrics[postId]?.getTotalDuration()) /
+          1000,
+        impressionCount: 0,
+        engagementRate: 0,
+        duration: Number(duration) + this.metrics[postId]?.getTotalDuration(),
+        mostViewedSegment: 0,
+        interactionRate: 0,
+        mostReplayedArea: this.reconcileMostReplayedArea(
+          mostReplayedArea!,
+          this.metrics[postId]?.getMostReplayedArea(),
+        ),
+        hasQuoted: (data?.publication as Post)?.operations?.hasQuoted,
+        hasMirrored: (data?.publication as Post)?.operations.hasMirrored,
+        hasCommented: commentData?.length > 0 ? true : false,
+        hasBookmarked: (data?.publication as Post)?.operations.hasBookmarked,
+        hasReacted: (data?.publication as Post)?.operations.hasReacted,
+      });
+
+      this.destroyPlayer(postId);
+
+      const txHash = await tx.wait();
+
+      return {
+        error: false,
+        txHash,
+      };
+    } catch (err: any) {
+      return {
+        error: true,
+        errorMessage: err.message,
+      };
     }
   };
 
-  /**
-   * @method getLogs
-   * @description Retrieves the logs stored in the instance, optionally filtered by a specified category.
-   * @param {LogCategory} [category] - An optional parameter to filter logs by a specific category. If not provided, all logs are returned.
-   * @returns {ILogEntry[]} - An array of log entries, either filtered by the specified category or all logs if no category is specified.
-   */
-  getLogs = (category?: LogCategory): ILogEntry[] => {
-    const logsInOrder = [
-      ...this.logs.slice(this.logIndex),
-      ...this.logs.slice(0, this.logIndex),
-    ].filter((log) => log !== undefined);
-
-    if (!category) {
-      return logsInOrder;
-    }
-
-    return logsInOrder.filter((log) => log.category === category);
+  getLivePlayerVideoMetrics = (
+    postId: `0x${string}`,
+  ): {
+    playCount: number;
+    avd: number;
+    duration: number;
+    mostReplayedArea: string;
+    totalInteractions: number;
+  } => {
+    return {
+      playCount: this.metrics[postId]?.getPlayCount(),
+      avd: this.metrics[postId]?.getAVD(),
+      duration: this.metrics[postId]?.getTotalDuration(),
+      totalInteractions: this.metrics[postId]?.getTotalInteractions(),
+      mostReplayedArea: this.metrics[postId]?.getMostReplayedArea(),
+    };
   };
-
   /**
    * @method cleanUpListeners
    * @description Removes event listeners related to video metrics collection.
-   * @param {string} playbackId - The player's playback Id.
+   * @param {string} postId - The video post Id.
    * @throws Will throw an error if not used in a browser environment or if the video element is not found.
    * @private
    */
   private cleanUpListeners = (postId: ZeroString) => {
-    this.playerMap[postId].videoElement.removeEventListener(
-      "play",
-      this.playerMap[postId].eventHandlers.play,
+    if (typeof window == "undefined") {
+      throw new Error("Make sure you are in a browser environment.");
+    }
+    this.playerMap[postId].videoElement.removeEventListener("ended", () =>
+      this.playerMap[postId].eventHandlers.end(
+        this.playerMap[postId].videoElement,
+      ),
+    );
+    this.playerMap[postId].videoElement.removeEventListener("play", () =>
+      this.playerMap[postId].eventHandlers.play(
+        this.playerMap[postId].videoElement,
+      ),
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "pause",
       this.playerMap[postId].eventHandlers.pause,
     );
     this.playerMap[postId].videoElement.removeEventListener(
+      "volumechange",
+      this.playerMap[postId].eventHandlers.volumeChange,
+    );
+    this.playerMap[postId].videoElement.removeEventListener(
       "click",
       this.playerMap[postId].eventHandlers.click,
     );
+    this.playerMap[postId].videoElement.addEventListener("seeked", () =>
+      this.playerMap[postId].eventHandlers.onSeeked(
+        this.playerMap[postId].videoElement,
+      ),
+    );
+    this.playerMap[postId].videoElement.removeEventListener(
+      "qualityChange",
+      this.playerMap[postId].eventHandlers.qualityChange,
+    );
+    this.playerMap[postId].videoElement.removeEventListener(
+      "muteToggle",
+      this.playerMap[postId].eventHandlers.muteToggle,
+    );
+    this.playerMap[postId].videoElement.removeEventListener(
+      "fullscreenToggle",
+      this.playerMap[postId].eventHandlers.fullscreenToggle,
+    );
+    this.playerMap[postId].videoElement.removeEventListener("timeupdate", () =>
+      this.metrics[postId].onTimeUpdate(this.playerMap[postId].videoElement),
+    );
   };
 
-  /**
-   * @method log
-   * @description Logs messages along with associated data, managing log index and emitting log events.
-   * @param {LogCategory} category - The category of the log.
-   * @param {string} message - The log message.
-   * @param {string} responseObject - The response object as a string.
-   * @param {string} isoDate - The ISO string representation of the log date.
-   * @private
-   */
-  private log = (
-    category: LogCategory,
-    message: string,
-    responseObject: string,
-    isoDate: string,
-  ) => {
-    if (typeof responseObject === "object") {
-      responseObject = JSON.stringify(responseObject);
+  private getCurrentMetrics = async (
+    wallet: ethers.Wallet,
+    playerProfileId: number,
+    videoPubId: number,
+    videoProfileId: number,
+  ): Promise<{
+    error: boolean;
+    errorMessage?: string;
+    mostReplayedArea?: string;
+    playCount?: number;
+    avd?: number;
+    duration?: number;
+  }> => {
+    try {
+      const kinoraQuestData = new ethers.Contract(
+        KINORA_QUEST_DATA_CONTRACT,
+        KinoraQuestDataAbi,
+        wallet,
+      );
+
+      const duration = await kinoraQuestData.getPlayerVideoDuration(
+        playerProfileId,
+        videoPubId,
+        videoProfileId,
+      );
+      const mostReplayedArea =
+        await kinoraQuestData.getPlayerVideoMostReplayedArea(
+          playerProfileId,
+          videoPubId,
+          videoProfileId,
+        );
+      const playCount = await kinoraQuestData.getPlayerVideoPlayCount(
+        playerProfileId,
+        videoPubId,
+        videoProfileId,
+      );
+      const avd = await kinoraQuestData.getPlayerVideoAVD(
+        playerProfileId,
+        videoPubId,
+        videoProfileId,
+      );
+
+      return {
+        error: false,
+        mostReplayedArea,
+        playCount,
+        avd,
+        duration,
+      };
+    } catch (err: any) {
+      return {
+        error: true,
+        errorMessage: err.message,
+      };
+    }
+  };
+
+  private reconcileMostReplayedArea = (
+    prevMostReplayedArea: string,
+    currentMostReplayedArea: string,
+  ): string => {
+    if (
+      prevMostReplayedArea?.toLowerCase() === "no replays" ||
+      !prevMostReplayedArea ||
+      prevMostReplayedArea?.trim() == ""
+    ) {
+      return currentMostReplayedArea;
+    }
+    if (
+      currentMostReplayedArea?.toLowerCase() === "no replays" ||
+      !currentMostReplayedArea ||
+      currentMostReplayedArea?.trim() == ""
+    ) {
+      return prevMostReplayedArea;
     }
 
-    this.logs[this.logIndex] = { category, message, responseObject, isoDate };
-    this.logIndex = (this.logIndex + 1) % this.logSize;
-    this.emit(
-      "log",
-      JSON.stringify({
-        message,
-        responseObject,
-        isoDate,
-      }),
-    );
+    const [prevStart, prevEnd] = prevMostReplayedArea.split("-");
+    const [currentStart, currentEnd] = currentMostReplayedArea.split("-");
+
+    const prevStartTime_ms = this.timeStringToMilliseconds(prevStart);
+    const prevEndTime_ms = this.timeStringToMilliseconds(prevEnd);
+    const currentStartTime_ms = this.timeStringToMilliseconds(currentStart);
+    const currentEndTime_ms = this.timeStringToMilliseconds(currentEnd);
+
+    const reconciledStart_ms =
+      prevStartTime_ms < currentStartTime_ms
+        ? prevStartTime_ms
+        : currentStartTime_ms;
+
+    const reconciledEnd_ms =
+      prevEndTime_ms > currentEndTime_ms ? prevEndTime_ms : currentEndTime_ms;
+
+    const reconciledStart = this.millisecondsToTimeStr(reconciledStart_ms);
+    const reconciledEnd = this.millisecondsToTimeStr(reconciledEnd_ms);
+
+    const reconciledArea = `${reconciledStart}-${reconciledEnd}`;
+
+    return reconciledArea;
+  };
+
+  private timeStringToMilliseconds = (timeStr: string): number => {
+    const [hours, minutes, seconds, milliseconds] = timeStr
+      .split(/[:.]/)
+      .map(Number);
+    return hours * 3600000 + minutes * 60000 + seconds * 1000 + milliseconds;
+  };
+
+  private millisecondsToTimeStr = (milliseconds: number): string => {
+    const date = new Date(milliseconds);
+    const hours = date.getUTCHours().toString().padStart(2, "0");
+    const minutes = date.getUTCMinutes().toString().padStart(2, "0");
+    const seconds = date.getUTCSeconds().toString().padStart(2, "0");
+    const millisecondsStr = date
+      .getUTCMilliseconds()
+      .toString()
+      .padStart(3, "0");
+    return `${hours}:${minutes}:${seconds}.${millisecondsStr}`;
   };
 }

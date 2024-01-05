@@ -8,11 +8,9 @@ class Kinora {
 
   /**
    * Constructs a new instance of the Kinora SDK with the provided configuration.
-   *
-   * @param {boolean} errorHandlingModeStrict - (Optional) A flag indicating whether strict error handling mode is enabled.
    */
-  private constructor(errorHandlingModeStrict?: boolean) {
-    this.sequence = new Sequence(errorHandlingModeStrict);
+  private constructor() {
+    this.sequence = new Sequence();
   }
 
   /**
@@ -20,9 +18,9 @@ class Kinora {
    *
    * @returns The singleton instance of Kinora.
    */
-  static getInstance(errorHandlingModeStrict?: boolean): Kinora {
+  static getInstance(): Kinora {
     if (!Kinora.instance) {
-      Kinora.instance = new Kinora(errorHandlingModeStrict);
+      Kinora.instance = new Kinora();
     }
     return Kinora.instance;
   }
@@ -34,10 +32,7 @@ class Kinora {
    * @param postId - Lens publication Id associated with the video.
    * @param videoElement - The HTML video element associated with the player.
    */
-  livepeerAdd = (
-    postId: ZeroString,
-    videoElement: HTMLVideoElement,
-  ): void => {
+  livepeerAdd = (postId: ZeroString, videoElement: HTMLVideoElement): void => {
     this.sequence.initializePlayer(postId, videoElement);
   };
 
@@ -59,42 +54,34 @@ class Kinora {
    * @param {ethers.Wallet} args.wallet - The Player's wallet object for signing the metrics on-chain.
    * @returns {Promise<void>} - A Promise that resolves when the operation completes.
    */
-  async sendPlayerMetricsOnChain(
+  public async sendPlayerMetricsOnChain(
     postId: ZeroString,
     playerProfileId: ZeroString,
     wallet: ethers.Wallet,
-  ): Promise<void> {
+  ): Promise<{
+    error: boolean;
+    errorMessage?: string;
+    txHash?: string;
+  }> {
     if (!this.sequence)
       throw new Error(`Set the Kinora Provider in the root of your App.`);
-    await this.sequence.sendMetricsOnChain(
+    return await this.sequence.sendMetricsOnChain(
       postId,
       playerProfileId,
       wallet,
     );
   }
 
-  /**
-   * @method getSequenceLogs
-   * @description Retrieves the logs stored in the instance, optionally filtered by a specified category.
-   * @param {LogCategory} [category] - An optional parameter to filter logs by a specific category. If not provided, all logs are returned.
-   * @returns {ILogEntry[]} - An array of log entries, either filtered by the specified category or all logs if no category is specified.
-   */
-  getSequenceLogs(category?: LogCategory): ILogEntry[] {
+  public getLiveVideoMetrics(pubId: `0x${string}`): {
+    playCount: number;
+    avd: number;
+    duration: number;
+    mostReplayedArea: string;
+    totalInteractions: number;
+  } {
     if (!this.sequence)
       throw new Error(`Set the Kinora Provider in the root of your App.`);
-    return this.sequence.getLogs(category);
-  }
-
-  /**
-   * @method on
-   * @description Extends on the Sequence Event Emitter for listening in on emitted events.
-   * @param {string} event - The event name, in this case "log".
-   * @param listener - The function to capture the data.
-   * @returns {ILogEntry[]} - An array of log entries, either filtered by the specified category or all logs if no category is specified.
-   */
-  on(event: string, listener: (...args: any[]) => void): this {
-    this.sequence.on(event, listener);
-    return this;
+    return this.sequence.getLivePlayerVideoMetrics(pubId);
   }
 }
 
