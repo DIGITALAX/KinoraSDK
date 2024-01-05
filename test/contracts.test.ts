@@ -9,8 +9,7 @@ const secondEnvokerProfileId = 55;
 const playerProfileId = 89811;
 
 describe("Contract Test Suite", () => {
-  let maintainer: Signer,
-    questEnvoker: Signer,
+  let questEnvoker: Signer,
     secondEnvoker: Signer,
     playerAddress: Signer,
     secondPlayerAddress: Signer,
@@ -28,7 +27,6 @@ describe("Contract Test Suite", () => {
 
   before(async () => {
     [
-      maintainer,
       hub,
       questEnvoker,
       playerAddress,
