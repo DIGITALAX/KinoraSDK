@@ -7,7 +7,7 @@ import {
   Entity,
   Bytes,
   Address,
-  BigInt,
+  BigInt
 } from "@graphprotocol/graph-ts";
 
 export class MilestoneCompleted extends ethereum.Event {
@@ -33,28 +33,6 @@ export class MilestoneCompleted__Params {
 
   get milestone(): BigInt {
     return this._event.parameters[2].value.toBigInt();
-  }
-}
-
-export class QuestCompleted extends ethereum.Event {
-  get params(): QuestCompleted__Params {
-    return new QuestCompleted__Params(this);
-  }
-}
-
-export class QuestCompleted__Params {
-  _event: QuestCompleted;
-
-  constructor(event: QuestCompleted) {
-    this._event = event;
-  }
-
-  get questId(): BigInt {
-    return this._event.parameters[0].value.toBigInt();
-  }
-
-  get playerProfileId(): BigInt {
-    return this._event.parameters[1].value.toBigInt();
   }
 }
 
@@ -136,6 +114,28 @@ export class PlayerMetricsUpdated__Params {
   }
 }
 
+export class QuestCompleted extends ethereum.Event {
+  get params(): QuestCompleted__Params {
+    return new QuestCompleted__Params(this);
+  }
+}
+
+export class QuestCompleted__Params {
+  _event: QuestCompleted;
+
+  constructor(event: QuestCompleted) {
+    this._event = event;
+  }
+
+  get questId(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get playerProfileId(): BigInt {
+    return this._event.parameters[1].value.toBigInt();
+  }
+}
+
 export class QuestInstantiated extends ethereum.Event {
   get params(): QuestInstantiated__Params {
     return new QuestInstantiated__Params(this);
@@ -185,11 +185,36 @@ export class KinoraQuestData extends ethereum.SmartContract {
     return new KinoraQuestData("KinoraQuestData", address);
   }
 
+  getAddressToProfileId(_playerAddress: Address): BigInt {
+    let result = super.call(
+      "getAddressToProfileId",
+      "getAddressToProfileId(address):(uint256)",
+      [ethereum.Value.fromAddress(_playerAddress)]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getAddressToProfileId(
+    _playerAddress: Address
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getAddressToProfileId",
+      "getAddressToProfileId(address):(uint256)",
+      [ethereum.Value.fromAddress(_playerAddress)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   getMilestoneCount(_questId: BigInt): BigInt {
     let result = super.call(
       "getMilestoneCount",
       "getMilestoneCount(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toBigInt();
@@ -199,7 +224,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getMilestoneCount",
       "getMilestoneCount(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -210,15 +235,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   getMilestoneGatedERC20Addresses(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): Array<Address> {
     let result = super.call(
       "getMilestoneGatedERC20Addresses",
       "getMilestoneGatedERC20Addresses(uint256,uint256):(address[])",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toAddressArray();
@@ -226,15 +251,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getMilestoneGatedERC20Addresses(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<Array<Address>> {
     let result = super.tryCall(
       "getMilestoneGatedERC20Addresses",
       "getMilestoneGatedERC20Addresses(uint256,uint256):(address[])",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -245,15 +270,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   getMilestoneGatedERC20Thresholds(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): Array<BigInt> {
     let result = super.call(
       "getMilestoneGatedERC20Thresholds",
       "getMilestoneGatedERC20Thresholds(uint256,uint256):(uint256[])",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toBigIntArray();
@@ -261,15 +286,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getMilestoneGatedERC20Thresholds(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<Array<BigInt>> {
     let result = super.tryCall(
       "getMilestoneGatedERC20Thresholds",
       "getMilestoneGatedERC20Thresholds(uint256,uint256):(uint256[])",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -280,15 +305,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   getMilestoneGatedERC721Addresses(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): Array<Address> {
     let result = super.call(
       "getMilestoneGatedERC721Addresses",
       "getMilestoneGatedERC721Addresses(uint256,uint256):(address[])",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toAddressArray();
@@ -296,15 +321,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getMilestoneGatedERC721Addresses(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<Array<Address>> {
     let result = super.tryCall(
       "getMilestoneGatedERC721Addresses",
       "getMilestoneGatedERC721Addresses(uint256,uint256):(address[])",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -315,15 +340,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   getMilestoneGatedERC721TokenIds(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): Array<Array<BigInt>> {
     let result = super.call(
       "getMilestoneGatedERC721TokenIds",
       "getMilestoneGatedERC721TokenIds(uint256,uint256):(uint256[][])",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toBigIntMatrix();
@@ -331,15 +356,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getMilestoneGatedERC721TokenIds(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<Array<Array<BigInt>>> {
     let result = super.tryCall(
       "getMilestoneGatedERC721TokenIds",
       "getMilestoneGatedERC721TokenIds(uint256,uint256):(uint256[][])",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -350,15 +375,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   getMilestoneGatedERC721TokenURIs(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): Array<Array<string>> {
     let result = super.call(
       "getMilestoneGatedERC721TokenURIs",
       "getMilestoneGatedERC721TokenURIs(uint256,uint256):(string[][])",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toStringMatrix();
@@ -366,15 +391,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getMilestoneGatedERC721TokenURIs(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<Array<Array<string>>> {
     let result = super.tryCall(
       "getMilestoneGatedERC721TokenURIs",
       "getMilestoneGatedERC721TokenURIs(uint256,uint256):(string[][])",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -389,8 +414,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       "getMilestoneGatedOneOf(uint256,uint256):(bool)",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toBoolean();
@@ -398,15 +423,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getMilestoneGatedOneOf(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getMilestoneGatedOneOf",
       "getMilestoneGatedOneOf(uint256,uint256):(bool)",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -418,7 +443,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getMilestoneRewardTokenAddress(
     _questId: BigInt,
     _rewardIndex: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): Address {
     let result = super.call(
       "getMilestoneRewardTokenAddress",
@@ -426,8 +451,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_rewardIndex),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toAddress();
@@ -436,7 +461,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getMilestoneRewardTokenAddress(
     _questId: BigInt,
     _rewardIndex: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<Address> {
     let result = super.tryCall(
       "getMilestoneRewardTokenAddress",
@@ -444,8 +469,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_rewardIndex),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -457,7 +482,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getMilestoneRewardTokenAmount(
     _questId: BigInt,
     _rewardIndex: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): BigInt {
     let result = super.call(
       "getMilestoneRewardTokenAmount",
@@ -465,8 +490,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_rewardIndex),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toBigInt();
@@ -475,7 +500,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getMilestoneRewardTokenAmount(
     _questId: BigInt,
     _rewardIndex: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getMilestoneRewardTokenAmount",
@@ -483,8 +508,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_rewardIndex),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -496,7 +521,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getMilestoneRewardType(
     _questId: BigInt,
     _rewardIndex: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): i32 {
     let result = super.call(
       "getMilestoneRewardType",
@@ -504,8 +529,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_rewardIndex),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toI32();
@@ -514,7 +539,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getMilestoneRewardType(
     _questId: BigInt,
     _rewardIndex: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<i32> {
     let result = super.tryCall(
       "getMilestoneRewardType",
@@ -522,8 +547,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_rewardIndex),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -535,7 +560,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getMilestoneRewardURI(
     _questId: BigInt,
     _rewardIndex: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): string {
     let result = super.call(
       "getMilestoneRewardURI",
@@ -543,8 +568,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_rewardIndex),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toString();
@@ -553,7 +578,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getMilestoneRewardURI(
     _questId: BigInt,
     _rewardIndex: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<string> {
     let result = super.tryCall(
       "getMilestoneRewardURI",
@@ -561,8 +586,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_rewardIndex),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -577,8 +602,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       "getMilestoneRewardsLength(uint256,uint256):(uint256)",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toBigInt();
@@ -586,15 +611,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getMilestoneRewardsLength(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getMilestoneRewardsLength",
       "getMilestoneRewardsLength(uint256,uint256):(uint256)",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -609,8 +634,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       "getMilestoneURI(uint256,uint256):(string)",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toString();
@@ -618,15 +643,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getMilestoneURI(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<string> {
     let result = super.tryCall(
       "getMilestoneURI",
       "getMilestoneURI(uint256,uint256):(string)",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -639,7 +664,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): boolean {
     let result = super.call(
       "getMilestoneVideoBookmark",
@@ -648,8 +673,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
 
     return result[0].toBoolean();
@@ -659,7 +684,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getMilestoneVideoBookmark",
@@ -668,8 +693,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -682,7 +707,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): boolean {
     let result = super.call(
       "getMilestoneVideoComment",
@@ -691,8 +716,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
 
     return result[0].toBoolean();
@@ -702,7 +727,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getMilestoneVideoComment",
@@ -711,8 +736,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -727,8 +752,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       "getMilestoneVideoLength(uint256,uint256):(uint256)",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toBigInt();
@@ -736,15 +761,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getMilestoneVideoLength(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getMilestoneVideoLength",
       "getMilestoneVideoLength(uint256,uint256):(uint256)",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -757,7 +782,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): BigInt {
     let result = super.call(
       "getMilestoneVideoMinAVD",
@@ -766,8 +791,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
 
     return result[0].toBigInt();
@@ -777,7 +802,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getMilestoneVideoMinAVD",
@@ -786,51 +811,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getMilestoneVideoMinCTR(
-    _questId: BigInt,
-    _milestone: BigInt,
-    _videoProfileId: BigInt,
-    _videoPubId: BigInt,
-  ): BigInt {
-    let result = super.call(
-      "getMilestoneVideoMinCTR",
-      "getMilestoneVideoMinCTR(uint256,uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getMilestoneVideoMinCTR(
-    _questId: BigInt,
-    _milestone: BigInt,
-    _videoProfileId: BigInt,
-    _videoPubId: BigInt,
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getMilestoneVideoMinCTR",
-      "getMilestoneVideoMinCTR(uint256,uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -843,7 +825,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): BigInt {
     let result = super.call(
       "getMilestoneVideoMinDuration",
@@ -852,8 +834,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
 
     return result[0].toBigInt();
@@ -863,7 +845,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getMilestoneVideoMinDuration",
@@ -872,94 +854,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getMilestoneVideoMinEngagementRate(
-    _questId: BigInt,
-    _milestone: BigInt,
-    _videoProfileId: BigInt,
-    _videoPubId: BigInt,
-  ): BigInt {
-    let result = super.call(
-      "getMilestoneVideoMinEngagementRate",
-      "getMilestoneVideoMinEngagementRate(uint256,uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getMilestoneVideoMinEngagementRate(
-    _questId: BigInt,
-    _milestone: BigInt,
-    _videoProfileId: BigInt,
-    _videoPubId: BigInt,
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getMilestoneVideoMinEngagementRate",
-      "getMilestoneVideoMinEngagementRate(uint256,uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getMilestoneVideoMinImpressionCount(
-    _questId: BigInt,
-    _milestone: BigInt,
-    _videoProfileId: BigInt,
-    _videoPubId: BigInt,
-  ): BigInt {
-    let result = super.call(
-      "getMilestoneVideoMinImpressionCount",
-      "getMilestoneVideoMinImpressionCount(uint256,uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getMilestoneVideoMinImpressionCount(
-    _questId: BigInt,
-    _milestone: BigInt,
-    _videoProfileId: BigInt,
-    _videoPubId: BigInt,
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getMilestoneVideoMinImpressionCount",
-      "getMilestoneVideoMinImpressionCount(uint256,uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -972,7 +868,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): BigInt {
     let result = super.call(
       "getMilestoneVideoMinPlayCount",
@@ -981,8 +877,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
 
     return result[0].toBigInt();
@@ -992,7 +888,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getMilestoneVideoMinPlayCount",
@@ -1001,8 +897,438 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryCollectOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryCollectOnComment",
+      "getMilestoneVideoMinSecondaryCollectOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryCollectOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryCollectOnComment",
+      "getMilestoneVideoMinSecondaryCollectOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryCollectOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryCollectOnQuote",
+      "getMilestoneVideoMinSecondaryCollectOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryCollectOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryCollectOnQuote",
+      "getMilestoneVideoMinSecondaryCollectOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryCommentOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryCommentOnComment",
+      "getMilestoneVideoMinSecondaryCommentOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryCommentOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryCommentOnComment",
+      "getMilestoneVideoMinSecondaryCommentOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryCommentOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryCommentOnQuote",
+      "getMilestoneVideoMinSecondaryCommentOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryCommentOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryCommentOnQuote",
+      "getMilestoneVideoMinSecondaryCommentOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryMirrorOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryMirrorOnComment",
+      "getMilestoneVideoMinSecondaryMirrorOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryMirrorOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryMirrorOnComment",
+      "getMilestoneVideoMinSecondaryMirrorOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryMirrorOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryMirrorOnQuote",
+      "getMilestoneVideoMinSecondaryMirrorOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryMirrorOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryMirrorOnQuote",
+      "getMilestoneVideoMinSecondaryMirrorOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryQuoteOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryQuoteOnComment",
+      "getMilestoneVideoMinSecondaryQuoteOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryQuoteOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryQuoteOnComment",
+      "getMilestoneVideoMinSecondaryQuoteOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryQuoteOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryQuoteOnQuote",
+      "getMilestoneVideoMinSecondaryQuoteOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryQuoteOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryQuoteOnQuote",
+      "getMilestoneVideoMinSecondaryQuoteOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryReactOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryReactOnComment",
+      "getMilestoneVideoMinSecondaryReactOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryReactOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryReactOnComment",
+      "getMilestoneVideoMinSecondaryReactOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryReactOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryReactOnQuote",
+      "getMilestoneVideoMinSecondaryReactOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryReactOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryReactOnQuote",
+      "getMilestoneVideoMinSecondaryReactOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1015,7 +1341,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): boolean {
     let result = super.call(
       "getMilestoneVideoMirror",
@@ -1024,8 +1350,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
 
     return result[0].toBoolean();
@@ -1035,7 +1361,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getMilestoneVideoMirror",
@@ -1044,8 +1370,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1058,7 +1384,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): boolean {
     let result = super.call(
       "getMilestoneVideoQuote",
@@ -1067,8 +1393,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
 
     return result[0].toBoolean();
@@ -1078,7 +1404,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getMilestoneVideoQuote",
@@ -1087,8 +1413,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1101,7 +1427,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): boolean {
     let result = super.call(
       "getMilestoneVideoReact",
@@ -1110,8 +1436,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
 
     return result[0].toBoolean();
@@ -1121,7 +1447,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _questId: BigInt,
     _milestone: BigInt,
     _videoProfileId: BigInt,
-    _videoPubId: BigInt,
+    _videoPubId: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getMilestoneVideoReact",
@@ -1130,8 +1456,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
         ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1146,8 +1472,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       "getMilestoneVideos(uint256,uint256):(string[])",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toStringArray();
@@ -1155,15 +1481,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getMilestoneVideos(
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<Array<string>> {
     let result = super.tryCall(
       "getMilestoneVideos",
       "getMilestoneVideos(uint256,uint256):(string[])",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1176,19 +1502,19 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getPlayerActiveSince",
       "getPlayerActiveSince(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)],
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
     );
 
     return result[0].toBigInt();
   }
 
   try_getPlayerActiveSince(
-    _playerProfileId: BigInt,
+    _playerProfileId: BigInt
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getPlayerActiveSince",
       "getPlayerActiveSince(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)],
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1201,7 +1527,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getPlayerAddress",
       "getPlayerAddress(uint256):(address)",
-      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)],
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
     );
 
     return result[0].toAddress();
@@ -1211,7 +1537,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getPlayerAddress",
       "getPlayerAddress(uint256):(address)",
-      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)],
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1223,7 +1549,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getPlayerEligibleToClaimMilestone(
     _playerProfileId: BigInt,
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): boolean {
     let result = super.call(
       "getPlayerEligibleToClaimMilestone",
@@ -1231,8 +1557,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
 
     return result[0].toBoolean();
@@ -1241,7 +1567,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getPlayerEligibleToClaimMilestone(
     _playerProfileId: BigInt,
     _questId: BigInt,
-    _milestone: BigInt,
+    _milestone: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getPlayerEligibleToClaimMilestone",
@@ -1249,8 +1575,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_milestone)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1265,8 +1591,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       "getPlayerHasJoinedQuest(uint256,uint256):(bool)",
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_questId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_questId)
+      ]
     );
 
     return result[0].toBoolean();
@@ -1274,15 +1600,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getPlayerHasJoinedQuest(
     _playerProfileId: BigInt,
-    _questId: BigInt,
+    _questId: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getPlayerHasJoinedQuest",
       "getPlayerHasJoinedQuest(uint256,uint256):(bool)",
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_questId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_questId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1293,15 +1619,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   getPlayerMilestonesCompletedPerQuest(
     _playerProfileId: BigInt,
-    _questId: BigInt,
+    _questId: BigInt
   ): BigInt {
     let result = super.call(
       "getPlayerMilestonesCompletedPerQuest",
       "getPlayerMilestonesCompletedPerQuest(uint256,uint256):(uint256)",
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_questId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_questId)
+      ]
     );
 
     return result[0].toBigInt();
@@ -1309,15 +1635,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getPlayerMilestonesCompletedPerQuest(
     _playerProfileId: BigInt,
-    _questId: BigInt,
+    _questId: BigInt
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getPlayerMilestonesCompletedPerQuest",
       "getPlayerMilestonesCompletedPerQuest(uint256,uint256):(uint256)",
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_questId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_questId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1326,23 +1652,48 @@ export class KinoraQuestData extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  getPlayerQuestsCompleted(_playerProfileId: BigInt): Array<BigInt> {
+    let result = super.call(
+      "getPlayerQuestsCompleted",
+      "getPlayerQuestsCompleted(uint256):(uint256[])",
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
+    );
+
+    return result[0].toBigIntArray();
+  }
+
+  try_getPlayerQuestsCompleted(
+    _playerProfileId: BigInt
+  ): ethereum.CallResult<Array<BigInt>> {
+    let result = super.tryCall(
+      "getPlayerQuestsCompleted",
+      "getPlayerQuestsCompleted(uint256):(uint256[])",
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigIntArray());
+  }
+
   getPlayerQuestsJoined(_playerProfileId: BigInt): Array<BigInt> {
     let result = super.call(
       "getPlayerQuestsJoined",
       "getPlayerQuestsJoined(uint256):(uint256[])",
-      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)],
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
     );
 
     return result[0].toBigIntArray();
   }
 
   try_getPlayerQuestsJoined(
-    _playerProfileId: BigInt,
+    _playerProfileId: BigInt
   ): ethereum.CallResult<Array<BigInt>> {
     let result = super.tryCall(
       "getPlayerQuestsJoined",
       "getPlayerQuestsJoined(uint256):(uint256[])",
-      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)],
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1354,7 +1705,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getPlayerVideoAVD(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): BigInt {
     let result = super.call(
       "getPlayerVideoAVD",
@@ -1362,8 +1713,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
 
     return result[0].toBigInt();
@@ -1372,7 +1723,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getPlayerVideoAVD(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getPlayerVideoAVD",
@@ -1380,8 +1731,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1393,7 +1744,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getPlayerVideoBookmark(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): boolean {
     let result = super.call(
       "getPlayerVideoBookmark",
@@ -1401,8 +1752,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
 
     return result[0].toBoolean();
@@ -1411,7 +1762,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getPlayerVideoBookmark(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getPlayerVideoBookmark",
@@ -1419,8 +1770,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1429,49 +1780,35 @@ export class KinoraQuestData extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
-  getPlayerVideoCTR(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt,
-  ): BigInt {
+  getPlayerVideoBytes(_playerProfileId: BigInt): Array<string> {
     let result = super.call(
-      "getPlayerVideoCTR",
-      "getPlayerVideoCTR(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+      "getPlayerVideoBytes",
+      "getPlayerVideoBytes(uint256):(string[])",
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
     );
 
-    return result[0].toBigInt();
+    return result[0].toStringArray();
   }
 
-  try_getPlayerVideoCTR(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt,
-  ): ethereum.CallResult<BigInt> {
+  try_getPlayerVideoBytes(
+    _playerProfileId: BigInt
+  ): ethereum.CallResult<Array<string>> {
     let result = super.tryCall(
-      "getPlayerVideoCTR",
-      "getPlayerVideoCTR(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+      "getPlayerVideoBytes",
+      "getPlayerVideoBytes(uint256):(string[])",
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
+    return ethereum.CallResult.fromValue(value[0].toStringArray());
   }
 
   getPlayerVideoComment(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): boolean {
     let result = super.call(
       "getPlayerVideoComment",
@@ -1479,8 +1816,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
 
     return result[0].toBoolean();
@@ -1489,7 +1826,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getPlayerVideoComment(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getPlayerVideoComment",
@@ -1497,8 +1834,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1510,7 +1847,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getPlayerVideoDuration(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): BigInt {
     let result = super.call(
       "getPlayerVideoDuration",
@@ -1518,8 +1855,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
 
     return result[0].toBigInt();
@@ -1528,7 +1865,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getPlayerVideoDuration(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getPlayerVideoDuration",
@@ -1536,125 +1873,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getPlayerVideoEngagementRate(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt,
-  ): BigInt {
-    let result = super.call(
-      "getPlayerVideoEngagementRate",
-      "getPlayerVideoEngagementRate(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getPlayerVideoEngagementRate(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt,
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getPlayerVideoEngagementRate",
-      "getPlayerVideoEngagementRate(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getPlayerVideoImpressionCount(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt,
-  ): BigInt {
-    let result = super.call(
-      "getPlayerVideoImpressionCount",
-      "getPlayerVideoImpressionCount(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getPlayerVideoImpressionCount(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt,
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getPlayerVideoImpressionCount",
-      "getPlayerVideoImpressionCount(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getPlayerVideoInteractionRate(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt,
-  ): BigInt {
-    let result = super.call(
-      "getPlayerVideoInteractionRate",
-      "getPlayerVideoInteractionRate(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getPlayerVideoInteractionRate(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt,
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getPlayerVideoInteractionRate",
-      "getPlayerVideoInteractionRate(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1666,7 +1886,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getPlayerVideoMirror(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): boolean {
     let result = super.call(
       "getPlayerVideoMirror",
@@ -1674,8 +1894,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
 
     return result[0].toBoolean();
@@ -1684,7 +1904,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getPlayerVideoMirror(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getPlayerVideoMirror",
@@ -1692,8 +1912,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1705,7 +1925,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getPlayerVideoMostReplayedArea(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): BigInt {
     let result = super.call(
       "getPlayerVideoMostReplayedArea",
@@ -1713,8 +1933,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
 
     return result[0].toBigInt();
@@ -1723,7 +1943,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getPlayerVideoMostReplayedArea(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getPlayerVideoMostReplayedArea",
@@ -1731,47 +1951,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getPlayerVideoMostViewedSegment(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt,
-  ): BigInt {
-    let result = super.call(
-      "getPlayerVideoMostViewedSegment",
-      "getPlayerVideoMostViewedSegment(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getPlayerVideoMostViewedSegment(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt,
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getPlayerVideoMostViewedSegment",
-      "getPlayerVideoMostViewedSegment(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1783,7 +1964,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getPlayerVideoPlayCount(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): BigInt {
     let result = super.call(
       "getPlayerVideoPlayCount",
@@ -1791,8 +1972,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
 
     return result[0].toBigInt();
@@ -1801,7 +1982,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getPlayerVideoPlayCount(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getPlayerVideoPlayCount",
@@ -1809,8 +1990,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1822,7 +2003,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getPlayerVideoQuote(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): boolean {
     let result = super.call(
       "getPlayerVideoQuote",
@@ -1830,8 +2011,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
 
     return result[0].toBoolean();
@@ -1840,7 +2021,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getPlayerVideoQuote(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getPlayerVideoQuote",
@@ -1848,8 +2029,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1861,7 +2042,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   getPlayerVideoReact(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): boolean {
     let result = super.call(
       "getPlayerVideoReact",
@@ -1869,8 +2050,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
 
     return result[0].toBoolean();
@@ -1879,7 +2060,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
   try_getPlayerVideoReact(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
-    _videoProfileId: BigInt,
+    _videoProfileId: BigInt
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "getPlayerVideoReact",
@@ -1887,8 +2068,8 @@ export class KinoraQuestData extends ethereum.SmartContract {
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1897,11 +2078,401 @@ export class KinoraQuestData extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
+  getPlayerVideoSecondaryCollectOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryCollectOnComment",
+      "getPlayerVideoSecondaryCollectOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryCollectOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryCollectOnComment",
+      "getPlayerVideoSecondaryCollectOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryCollectOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryCollectOnQuote",
+      "getPlayerVideoSecondaryCollectOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryCollectOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryCollectOnQuote",
+      "getPlayerVideoSecondaryCollectOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryCommentOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryCommentOnComment",
+      "getPlayerVideoSecondaryCommentOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryCommentOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryCommentOnComment",
+      "getPlayerVideoSecondaryCommentOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryCommentOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryCommentOnQuote",
+      "getPlayerVideoSecondaryCommentOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryCommentOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryCommentOnQuote",
+      "getPlayerVideoSecondaryCommentOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryMirrorOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryMirrorOnComment",
+      "getPlayerVideoSecondaryMirrorOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryMirrorOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryMirrorOnComment",
+      "getPlayerVideoSecondaryMirrorOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryMirrorOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryMirrorOnQuote",
+      "getPlayerVideoSecondaryMirrorOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryMirrorOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryMirrorOnQuote",
+      "getPlayerVideoSecondaryMirrorOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryQuoteOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryQuoteOnComment",
+      "getPlayerVideoSecondaryQuoteOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryQuoteOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryQuoteOnComment",
+      "getPlayerVideoSecondaryQuoteOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryQuoteOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryQuoteOnQuote",
+      "getPlayerVideoSecondaryQuoteOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryQuoteOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryQuoteOnQuote",
+      "getPlayerVideoSecondaryQuoteOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryReactOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryReactOnComment",
+      "getPlayerVideoSecondaryReactOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryReactOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryReactOnComment",
+      "getPlayerVideoSecondaryReactOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryReactOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryReactOnQuote",
+      "getPlayerVideoSecondaryReactOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryReactOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryReactOnQuote",
+      "getPlayerVideoSecondaryReactOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   getQuestEnvoker(_questId: BigInt): Address {
     let result = super.call(
       "getQuestEnvoker",
       "getQuestEnvoker(uint256):(address)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toAddress();
@@ -1911,7 +2482,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getQuestEnvoker",
       "getQuestEnvoker(uint256):(address)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1924,19 +2495,19 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getQuestGatedERC20Addresses",
       "getQuestGatedERC20Addresses(uint256):(address[])",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toAddressArray();
   }
 
   try_getQuestGatedERC20Addresses(
-    _questId: BigInt,
+    _questId: BigInt
   ): ethereum.CallResult<Array<Address>> {
     let result = super.tryCall(
       "getQuestGatedERC20Addresses",
       "getQuestGatedERC20Addresses(uint256):(address[])",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1949,19 +2520,19 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getQuestGatedERC20Thresholds",
       "getQuestGatedERC20Thresholds(uint256):(uint256[])",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toBigIntArray();
   }
 
   try_getQuestGatedERC20Thresholds(
-    _questId: BigInt,
+    _questId: BigInt
   ): ethereum.CallResult<Array<BigInt>> {
     let result = super.tryCall(
       "getQuestGatedERC20Thresholds",
       "getQuestGatedERC20Thresholds(uint256):(uint256[])",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1974,19 +2545,19 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getQuestGatedERC721Addresses",
       "getQuestGatedERC721Addresses(uint256):(address[])",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toAddressArray();
   }
 
   try_getQuestGatedERC721Addresses(
-    _questId: BigInt,
+    _questId: BigInt
   ): ethereum.CallResult<Array<Address>> {
     let result = super.tryCall(
       "getQuestGatedERC721Addresses",
       "getQuestGatedERC721Addresses(uint256):(address[])",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1999,19 +2570,19 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getQuestGatedERC721TokenIds",
       "getQuestGatedERC721TokenIds(uint256):(uint256[][])",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toBigIntMatrix();
   }
 
   try_getQuestGatedERC721TokenIds(
-    _questId: BigInt,
+    _questId: BigInt
   ): ethereum.CallResult<Array<Array<BigInt>>> {
     let result = super.tryCall(
       "getQuestGatedERC721TokenIds",
       "getQuestGatedERC721TokenIds(uint256):(uint256[][])",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2024,19 +2595,19 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getQuestGatedERC721TokenURIs",
       "getQuestGatedERC721TokenURIs(uint256):(string[][])",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toStringMatrix();
   }
 
   try_getQuestGatedERC721TokenURIs(
-    _questId: BigInt,
+    _questId: BigInt
   ): ethereum.CallResult<Array<Array<string>>> {
     let result = super.tryCall(
       "getQuestGatedERC721TokenURIs",
       "getQuestGatedERC721TokenURIs(uint256):(string[][])",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2049,7 +2620,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getQuestGatedOneOf",
       "getQuestGatedOneOf(uint256):(bool)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toBoolean();
@@ -2059,7 +2630,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getQuestGatedOneOf",
       "getQuestGatedOneOf(uint256):(bool)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2068,23 +2639,55 @@ export class KinoraQuestData extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
+  getQuestIdFromLensData(_profileId: BigInt, _pubId: BigInt): BigInt {
+    let result = super.call(
+      "getQuestIdFromLensData",
+      "getQuestIdFromLensData(uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_profileId),
+        ethereum.Value.fromUnsignedBigInt(_pubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getQuestIdFromLensData(
+    _profileId: BigInt,
+    _pubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getQuestIdFromLensData",
+      "getQuestIdFromLensData(uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_profileId),
+        ethereum.Value.fromUnsignedBigInt(_pubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   getQuestIdsToVideoPlaybackId(_playbackId: string): Array<BigInt> {
     let result = super.call(
       "getQuestIdsToVideoPlaybackId",
       "getQuestIdsToVideoPlaybackId(string):(uint256[])",
-      [ethereum.Value.fromString(_playbackId)],
+      [ethereum.Value.fromString(_playbackId)]
     );
 
     return result[0].toBigIntArray();
   }
 
   try_getQuestIdsToVideoPlaybackId(
-    _playbackId: string,
+    _playbackId: string
   ): ethereum.CallResult<Array<BigInt>> {
     let result = super.tryCall(
       "getQuestIdsToVideoPlaybackId",
       "getQuestIdsToVideoPlaybackId(string):(uint256[])",
-      [ethereum.Value.fromString(_playbackId)],
+      [ethereum.Value.fromString(_playbackId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2097,7 +2700,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getQuestMaxPlayerCount",
       "getQuestMaxPlayerCount(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toBigInt();
@@ -2107,7 +2710,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getQuestMaxPlayerCount",
       "getQuestMaxPlayerCount(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2120,7 +2723,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getQuestPlayers",
       "getQuestPlayers(uint256):(uint256[])",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toBigIntArray();
@@ -2130,7 +2733,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getQuestPlayers",
       "getQuestPlayers(uint256):(uint256[])",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2143,7 +2746,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getQuestProfileId",
       "getQuestProfileId(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toBigInt();
@@ -2153,7 +2756,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getQuestProfileId",
       "getQuestProfileId(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2166,7 +2769,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getQuestPubId",
       "getQuestPubId(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toBigInt();
@@ -2176,7 +2779,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getQuestPubId",
       "getQuestPubId(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2189,7 +2792,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getQuestStatus",
       "getQuestStatus(uint256):(uint8)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
 
     return result[0].toI32();
@@ -2199,7 +2802,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getQuestStatus",
       "getQuestStatus(uint256):(uint8)",
-      [ethereum.Value.fromUnsignedBigInt(_questId)],
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2210,7 +2813,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   getQuestURI(_questId: BigInt): string {
     let result = super.call("getQuestURI", "getQuestURI(uint256):(string)", [
-      ethereum.Value.fromUnsignedBigInt(_questId),
+      ethereum.Value.fromUnsignedBigInt(_questId)
     ]);
 
     return result[0].toString();
@@ -2218,7 +2821,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getQuestURI(_questId: BigInt): ethereum.CallResult<string> {
     let result = super.tryCall("getQuestURI", "getQuestURI(uint256):(string)", [
-      ethereum.Value.fromUnsignedBigInt(_questId),
+      ethereum.Value.fromUnsignedBigInt(_questId)
     ]);
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2231,7 +2834,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getTotalPlayerCount",
       "getTotalPlayerCount():(uint256)",
-      [],
+      []
     );
 
     return result[0].toBigInt();
@@ -2241,7 +2844,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getTotalPlayerCount",
       "getTotalPlayerCount():(uint256)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2254,7 +2857,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getTotalQuestCount",
       "getTotalQuestCount():(uint256)",
-      [],
+      []
     );
 
     return result[0].toBigInt();
@@ -2264,7 +2867,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getTotalQuestCount",
       "getTotalQuestCount():(uint256)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2273,14 +2876,39 @@ export class KinoraQuestData extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  getVideoBytesFromPlaybackId(_playbackId: string): string {
+    let result = super.call(
+      "getVideoBytesFromPlaybackId",
+      "getVideoBytesFromPlaybackId(string):(string)",
+      [ethereum.Value.fromString(_playbackId)]
+    );
+
+    return result[0].toString();
+  }
+
+  try_getVideoBytesFromPlaybackId(
+    _playbackId: string
+  ): ethereum.CallResult<string> {
+    let result = super.tryCall(
+      "getVideoBytesFromPlaybackId",
+      "getVideoBytesFromPlaybackId(string):(string)",
+      [ethereum.Value.fromString(_playbackId)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toString());
+  }
+
   getVideoPlaybackId(_pubId: BigInt, _profileId: BigInt): string {
     let result = super.call(
       "getVideoPlaybackId",
       "getVideoPlaybackId(uint256,uint256):(string)",
       [
         ethereum.Value.fromUnsignedBigInt(_pubId),
-        ethereum.Value.fromUnsignedBigInt(_profileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_profileId)
+      ]
     );
 
     return result[0].toString();
@@ -2288,15 +2916,15 @@ export class KinoraQuestData extends ethereum.SmartContract {
 
   try_getVideoPlaybackId(
     _pubId: BigInt,
-    _profileId: BigInt,
+    _profileId: BigInt
   ): ethereum.CallResult<string> {
     let result = super.tryCall(
       "getVideoPlaybackId",
       "getVideoPlaybackId(uint256,uint256):(string)",
       [
         ethereum.Value.fromUnsignedBigInt(_pubId),
-        ethereum.Value.fromUnsignedBigInt(_profileId),
-      ],
+        ethereum.Value.fromUnsignedBigInt(_profileId)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2309,19 +2937,19 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getVideoProfileIdFromPlaybackId",
       "getVideoProfileIdFromPlaybackId(string):(uint256)",
-      [ethereum.Value.fromString(_playbackId)],
+      [ethereum.Value.fromString(_playbackId)]
     );
 
     return result[0].toBigInt();
   }
 
   try_getVideoProfileIdFromPlaybackId(
-    _playbackId: string,
+    _playbackId: string
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getVideoProfileIdFromPlaybackId",
       "getVideoProfileIdFromPlaybackId(string):(uint256)",
-      [ethereum.Value.fromString(_playbackId)],
+      [ethereum.Value.fromString(_playbackId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2334,19 +2962,19 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "getVideoPubIdFromPlaybackId",
       "getVideoPubIdFromPlaybackId(string):(uint256)",
-      [ethereum.Value.fromString(_playbackId)],
+      [ethereum.Value.fromString(_playbackId)]
     );
 
     return result[0].toBigInt();
   }
 
   try_getVideoPubIdFromPlaybackId(
-    _playbackId: string,
+    _playbackId: string
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getVideoPubIdFromPlaybackId",
       "getVideoPubIdFromPlaybackId(string):(uint256)",
-      [ethereum.Value.fromString(_playbackId)],
+      [ethereum.Value.fromString(_playbackId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2395,7 +3023,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "kinoraMetrics",
       "kinoraMetrics():(address)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2408,7 +3036,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.call(
       "kinoraOpenAction",
       "kinoraOpenAction():(address)",
-      [],
+      []
     );
 
     return result[0].toAddress();
@@ -2418,7 +3046,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "kinoraOpenAction",
       "kinoraOpenAction():(address)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -2541,7 +3169,7 @@ export class ConfigureNewQuestCall__Inputs {
 
   get _params(): ConfigureNewQuestCall_paramsStruct {
     return changetype<ConfigureNewQuestCall_paramsStruct>(
-      this._call.inputValues[0].value.toTuple(),
+      this._call.inputValues[0].value.toTuple()
     );
   }
 }
@@ -2561,7 +3189,7 @@ export class ConfigureNewQuestCall_paramsStruct extends ethereum.Tuple {
 
   get gateLogic(): ConfigureNewQuestCall_paramsGateLogicStruct {
     return changetype<ConfigureNewQuestCall_paramsGateLogicStruct>(
-      this[1].toTuple(),
+      this[1].toTuple()
     );
   }
 
@@ -2569,16 +3197,20 @@ export class ConfigureNewQuestCall_paramsStruct extends ethereum.Tuple {
     return this[2].toTupleArray<ConfigureNewQuestCall_paramsMilestonesStruct>();
   }
 
+  get uri(): string {
+    return this[3].toString();
+  }
+
   get envokerAddress(): Address {
-    return this[3].toAddress();
+    return this[4].toAddress();
   }
 
   get pubId(): BigInt {
-    return this[4].toBigInt();
+    return this[5].toBigInt();
   }
 
   get profileId(): BigInt {
-    return this[5].toBigInt();
+    return this[6].toBigInt();
   }
 }
 
@@ -2611,7 +3243,7 @@ export class ConfigureNewQuestCall_paramsGateLogicStruct extends ethereum.Tuple 
 export class ConfigureNewQuestCall_paramsMilestonesStruct extends ethereum.Tuple {
   get gated(): ConfigureNewQuestCall_paramsMilestonesGatedStruct {
     return changetype<ConfigureNewQuestCall_paramsMilestonesGatedStruct>(
-      this[0].toTuple(),
+      this[0].toTuple()
     );
   }
 
@@ -2701,44 +3333,72 @@ export class ConfigureNewQuestCall_paramsMilestonesVideosStruct extends ethereum
     return this[4].toBigInt();
   }
 
-  get minCTR(): BigInt {
+  get minAVD(): BigInt {
     return this[5].toBigInt();
   }
 
-  get minAVD(): BigInt {
+  get minDuration(): BigInt {
     return this[6].toBigInt();
   }
 
-  get minImpressionCount(): BigInt {
+  get minSecondaryQuoteOnQuote(): BigInt {
     return this[7].toBigInt();
   }
 
-  get minEngagementRate(): BigInt {
+  get minSecondaryMirrorOnQuote(): BigInt {
     return this[8].toBigInt();
   }
 
-  get minDuration(): BigInt {
+  get minSecondaryReactOnQuote(): BigInt {
     return this[9].toBigInt();
   }
 
+  get minSecondaryCommentOnQuote(): BigInt {
+    return this[10].toBigInt();
+  }
+
+  get minSecondaryCollectOnQuote(): BigInt {
+    return this[11].toBigInt();
+  }
+
+  get minSecondaryQuoteOnComment(): BigInt {
+    return this[12].toBigInt();
+  }
+
+  get minSecondaryMirrorOnComment(): BigInt {
+    return this[13].toBigInt();
+  }
+
+  get minSecondaryReactOnComment(): BigInt {
+    return this[14].toBigInt();
+  }
+
+  get minSecondaryCommentOnComment(): BigInt {
+    return this[15].toBigInt();
+  }
+
+  get minSecondaryCollectOnComment(): BigInt {
+    return this[16].toBigInt();
+  }
+
   get quote(): boolean {
-    return this[10].toBoolean();
+    return this[17].toBoolean();
   }
 
   get mirror(): boolean {
-    return this[11].toBoolean();
+    return this[18].toBoolean();
   }
 
   get comment(): boolean {
-    return this[12].toBoolean();
+    return this[19].toBoolean();
   }
 
   get bookmark(): boolean {
-    return this[13].toBoolean();
+    return this[20].toBoolean();
   }
 
   get react(): boolean {
-    return this[14].toBoolean();
+    return this[21].toBoolean();
   }
 }
 
@@ -2961,20 +3621,12 @@ export class UpdatePlayerMetricsCall__Inputs {
 
   get _metrics(): UpdatePlayerMetricsCall_metricsStruct {
     return changetype<UpdatePlayerMetricsCall_metricsStruct>(
-      this._call.inputValues[0].value.toTuple(),
+      this._call.inputValues[0].value.toTuple()
     );
   }
 
-  get _videoPubId(): BigInt {
-    return this._call.inputValues[1].value.toBigInt();
-  }
-
-  get _videoProfileId(): BigInt {
-    return this._call.inputValues[2].value.toBigInt();
-  }
-
   get _playerProfileId(): BigInt {
-    return this._call.inputValues[3].value.toBigInt();
+    return this._call.inputValues[1].value.toBigInt();
   }
 }
 
@@ -2987,60 +3639,88 @@ export class UpdatePlayerMetricsCall__Outputs {
 }
 
 export class UpdatePlayerMetricsCall_metricsStruct extends ethereum.Tuple {
-  get playCount(): BigInt {
+  get profileId(): BigInt {
     return this[0].toBigInt();
   }
 
-  get ctr(): BigInt {
+  get pubId(): BigInt {
     return this[1].toBigInt();
   }
 
-  get avd(): BigInt {
+  get playCount(): BigInt {
     return this[2].toBigInt();
   }
 
-  get impressionCount(): BigInt {
+  get secondaryQuoteOnQuote(): BigInt {
     return this[3].toBigInt();
   }
 
-  get engagementRate(): BigInt {
+  get secondaryMirrorOnQuote(): BigInt {
     return this[4].toBigInt();
   }
 
-  get duration(): BigInt {
+  get secondaryReactOnQuote(): BigInt {
     return this[5].toBigInt();
   }
 
-  get mostViewedSegment(): BigInt {
+  get secondaryCommentOnQuote(): BigInt {
     return this[6].toBigInt();
   }
 
-  get interactionRate(): BigInt {
+  get secondaryCollectOnQuote(): BigInt {
     return this[7].toBigInt();
   }
 
-  get mostReplayedArea(): BigInt {
+  get secondaryQuoteOnComment(): BigInt {
     return this[8].toBigInt();
   }
 
+  get secondaryMirrorOnComment(): BigInt {
+    return this[9].toBigInt();
+  }
+
+  get secondaryReactOnComment(): BigInt {
+    return this[10].toBigInt();
+  }
+
+  get secondaryCommentOnComment(): BigInt {
+    return this[11].toBigInt();
+  }
+
+  get secondaryCollectOnComment(): BigInt {
+    return this[12].toBigInt();
+  }
+
+  get avd(): BigInt {
+    return this[13].toBigInt();
+  }
+
+  get duration(): BigInt {
+    return this[14].toBigInt();
+  }
+
+  get mostReplayedArea(): BigInt {
+    return this[15].toBigInt();
+  }
+
   get hasQuoted(): boolean {
-    return this[9].toBoolean();
+    return this[16].toBoolean();
   }
 
   get hasMirrored(): boolean {
-    return this[10].toBoolean();
+    return this[17].toBoolean();
   }
 
   get hasCommented(): boolean {
-    return this[11].toBoolean();
+    return this[18].toBoolean();
   }
 
   get hasBookmarked(): boolean {
-    return this[12].toBoolean();
+    return this[19].toBoolean();
   }
 
   get hasReacted(): boolean {
-    return this[13].toBoolean();
+    return this[20].toBoolean();
   }
 }
 
