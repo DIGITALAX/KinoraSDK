@@ -233,7 +233,7 @@ export function handlePlayerMetricsUpdated(
   let currentPlayer = Player.load(event.params.playerProfileId.toString());
 
   let questData = KinoraQuestData.bind(
-    Address.fromString("0x04452Ec699DA4Dd3A39c491a71b22c8C0f33fa1d"),
+    Address.fromString("0x04F1aC508F3b2b9a3d1Cf00dFAB278109D01EbA7"),
   );
 
   if (currentPlayer) {
@@ -328,7 +328,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
   entity.transactionHash = event.transaction.hash;
 
   let questData = KinoraQuestData.bind(
-    Address.fromString("0x04452Ec699DA4Dd3A39c491a71b22c8C0f33fa1d"),
+    Address.fromString("0x04F1aC508F3b2b9a3d1Cf00dFAB278109D01EbA7"),
   );
 
   entity.maxPlayerCount = questData.getQuestMaxPlayerCount(entity.questId);

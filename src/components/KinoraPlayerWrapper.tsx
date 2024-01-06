@@ -174,17 +174,16 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     // Set the SDK Context created from the Wrapper provider
     const kinoraSDKInstance = useContext(KinoraContext);
     // Initialize a new Livepeer Player for recording metrics
-    useEffect(() => {
-      if (isBrowser) {
+
+    if (typeof window !== "undefined") {
+      window.onbeforeunload = () => {
         if (mediaElementRef.current && kinoraSDKInstance && postId) {
           kinoraSDKInstance.livepeerAdd(postId, mediaElementRef.current);
 
-          return () => {
-            kinoraSDKInstance.livepeerDestroy(postId);
-          };
+          kinoraSDKInstance.livepeerDestroy(postId);
         }
-      }
-    }, [postId, mediaElementRef, kinoraSDKInstance]);
+      };
+    }
 
     // Callback to set media element and setup/cleanup event listeners
     const setMediaElement = useCallback(
@@ -389,10 +388,9 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
         const videoElement = document
           ?.getElementById(parentId)
           ?.querySelector(".c-lioqzt");
-          const loaderElement = document
+        const loaderElement = document
           ?.getElementById(parentId)
           ?.querySelector(".c-PJLV.c-IBjNz");
-
 
         const setStyles = (
           element: HTMLElement | null,
