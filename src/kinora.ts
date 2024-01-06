@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { ZeroString, ILogEntry, LogCategory } from "./@types/kinora-sdk";
+import { ZeroString } from "./@types/kinora-sdk";
 import { Sequence } from "./sequence";
 
 class Kinora {
@@ -82,6 +82,26 @@ class Kinora {
     if (!this.sequence)
       throw new Error(`Set the Kinora Provider in the root of your App.`);
     return this.sequence.getLivePlayerVideoMetrics(pubId);
+  }
+
+  public async getPlayerVideoSecondaryData(
+    playerProfileId: `0x${string}`,
+    postId: `0x${string}`,
+  ): Promise<{
+    error: boolean;
+    errorMessage?: string;
+    secondaryQuoteOnQuote?: number;
+    secondaryMirrorOnQuote?: number;
+    secondaryReactOnQuote?: number;
+    secondaryCommentOnQuote?: number;
+    secondaryCollectOnQuote?: number;
+    secondaryQuoteOnComment?: number;
+    secondaryMirrorOnComment?: number;
+    secondaryReactOnComment?: number;
+    secondaryCommentOnComment?: number;
+    secondaryCollectOnComment?: number;
+  }> {
+    return await this.sequence.secondaryData(playerProfileId, postId);
   }
 }
 

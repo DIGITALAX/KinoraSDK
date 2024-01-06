@@ -8,7 +8,7 @@ import {
   store,
   Bytes,
   BigInt,
-  BigDecimal,
+  BigDecimal
 } from "@graphprotocol/graph-ts";
 
 export class MilestoneCompleted extends Entity {
@@ -23,7 +23,7 @@ export class MilestoneCompleted extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type MilestoneCompleted must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type MilestoneCompleted must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("MilestoneCompleted", id.toBytes().toHexString(), this);
     }
@@ -31,7 +31,7 @@ export class MilestoneCompleted extends Entity {
 
   static load(id: Bytes): MilestoneCompleted | null {
     return changetype<MilestoneCompleted | null>(
-      store.get("MilestoneCompleted", id.toHexString()),
+      store.get("MilestoneCompleted", id.toHexString())
     );
   }
 
@@ -99,6 +99,7 @@ export class MilestoneCompleted extends Entity {
   }
 }
 
+
 export class QuestCompleted extends Entity {
   constructor(id: Bytes) {
     super();
@@ -111,7 +112,7 @@ export class QuestCompleted extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type QuestCompleted must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type QuestCompleted must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("QuestCompleted", id.toBytes().toHexString(), this);
     }
@@ -119,7 +120,7 @@ export class QuestCompleted extends Entity {
 
   static load(id: Bytes): QuestCompleted | null {
     return changetype<QuestCompleted | null>(
-      store.get("QuestCompleted", id.toHexString()),
+      store.get("QuestCompleted", id.toHexString())
     );
   }
 
@@ -178,6 +179,7 @@ export class QuestCompleted extends Entity {
   }
 }
 
+
 export class PlayerEligibleToClaimMilestone extends Entity {
   constructor(id: Bytes) {
     super();
@@ -188,24 +190,24 @@ export class PlayerEligibleToClaimMilestone extends Entity {
     let id = this.get("id");
     assert(
       id != null,
-      "Cannot save PlayerEligibleToClaimMilestone entity without an ID",
+      "Cannot save PlayerEligibleToClaimMilestone entity without an ID"
     );
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type PlayerEligibleToClaimMilestone must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type PlayerEligibleToClaimMilestone must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set(
         "PlayerEligibleToClaimMilestone",
         id.toBytes().toHexString(),
-        this,
+        this
       );
     }
   }
 
   static load(id: Bytes): PlayerEligibleToClaimMilestone | null {
     return changetype<PlayerEligibleToClaimMilestone | null>(
-      store.get("PlayerEligibleToClaimMilestone", id.toHexString()),
+      store.get("PlayerEligibleToClaimMilestone", id.toHexString())
     );
   }
 
@@ -294,7 +296,7 @@ export class PlayerJoinedQuest extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type PlayerJoinedQuest must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type PlayerJoinedQuest must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("PlayerJoinedQuest", id.toBytes().toHexString(), this);
     }
@@ -302,7 +304,7 @@ export class PlayerJoinedQuest extends Entity {
 
   static load(id: Bytes): PlayerJoinedQuest | null {
     return changetype<PlayerJoinedQuest | null>(
-      store.get("PlayerJoinedQuest", id.toHexString()),
+      store.get("PlayerJoinedQuest", id.toHexString())
     );
   }
 
@@ -373,7 +375,7 @@ export class PlayerMetricsUpdated extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type PlayerMetricsUpdated must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type PlayerMetricsUpdated must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("PlayerMetricsUpdated", id.toBytes().toHexString(), this);
     }
@@ -381,7 +383,7 @@ export class PlayerMetricsUpdated extends Entity {
 
   static load(id: Bytes): PlayerMetricsUpdated | null {
     return changetype<PlayerMetricsUpdated | null>(
-      store.get("PlayerMetricsUpdated", id.toHexString()),
+      store.get("PlayerMetricsUpdated", id.toHexString())
     );
   }
 
@@ -461,7 +463,7 @@ export class QuestInstantiated extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type QuestInstantiated must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type QuestInstantiated must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("QuestInstantiated", id.toBytes().toHexString(), this);
     }
@@ -469,7 +471,7 @@ export class QuestInstantiated extends Entity {
 
   static load(id: Bytes): QuestInstantiated | null {
     return changetype<QuestInstantiated | null>(
-      store.get("QuestInstantiated", id.toHexString()),
+      store.get("QuestInstantiated", id.toHexString())
     );
   }
 
@@ -527,33 +529,6 @@ export class QuestInstantiated extends Entity {
     this.set("transactionHash", Value.fromBytes(value));
   }
 
-  get maxPlayerCount(): BigInt {
-    let value = this.get("maxPlayerCount");
-    return value!.toBigInt();
-  }
-
-  set maxPlayerCount(value: BigInt) {
-    this.set("maxPlayerCount", Value.fromBigInt(value));
-  }
-
-  get pubId(): BigInt {
-    let value = this.get("pubId");
-    return value!.toBigInt();
-  }
-
-  set pubId(value: BigInt) {
-    this.set("pubId", Value.fromBigInt(value));
-  }
-
-  get profileId(): BigInt {
-    let value = this.get("profileId");
-    return value!.toBigInt();
-  }
-
-  set profileId(value: BigInt) {
-    this.set("profileId", Value.fromBigInt(value));
-  }
-
   get questMetadata(): string | null {
     let value = this.get("questMetadata");
     if (!value || value.kind == ValueKind.NULL) {
@@ -578,15 +553,6 @@ export class QuestInstantiated extends Entity {
 
   set uri(value: string) {
     this.set("uri", Value.fromString(value));
-  }
-
-  get status(): boolean {
-    let value = this.get("status");
-    return value!.toBoolean();
-  }
-
-  set status(value: boolean) {
-    this.set("status", Value.fromBoolean(value));
   }
 
   get milestones(): Array<string> | null {
@@ -639,6 +605,66 @@ export class QuestInstantiated extends Entity {
       this.set("players", Value.fromStringArray(<Array<string>>value));
     }
   }
+
+  get status(): boolean {
+    let value = this.get("status");
+    return value!.toBoolean();
+  }
+
+  set status(value: boolean) {
+    this.set("status", Value.fromBoolean(value));
+  }
+
+  get pubId(): BigInt | null {
+    let value = this.get("pubId");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set pubId(value: BigInt | null) {
+    if (!value) {
+      this.unset("pubId");
+    } else {
+      this.set("pubId", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get profileId(): BigInt | null {
+    let value = this.get("profileId");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set profileId(value: BigInt | null) {
+    if (!value) {
+      this.unset("profileId");
+    } else {
+      this.set("profileId", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get maxPlayerCount(): BigInt | null {
+    let value = this.get("maxPlayerCount");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set maxPlayerCount(value: BigInt | null) {
+    if (!value) {
+      this.unset("maxPlayerCount");
+    } else {
+      this.set("maxPlayerCount", Value.fromBigInt(<BigInt>value));
+    }
+  }
 }
 
 export class QuestStatusUpdated extends Entity {
@@ -653,7 +679,7 @@ export class QuestStatusUpdated extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type QuestStatusUpdated must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type QuestStatusUpdated must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("QuestStatusUpdated", id.toBytes().toHexString(), this);
     }
@@ -661,7 +687,7 @@ export class QuestStatusUpdated extends Entity {
 
   static load(id: Bytes): QuestStatusUpdated | null {
     return changetype<QuestStatusUpdated | null>(
-      store.get("QuestStatusUpdated", id.toHexString()),
+      store.get("QuestStatusUpdated", id.toHexString())
     );
   }
 
@@ -732,16 +758,14 @@ export class QuestMetadata extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type QuestMetadata must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type QuestMetadata must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("QuestMetadata", id.toString(), this);
     }
   }
 
   static load(id: string): QuestMetadata | null {
-    return changetype<QuestMetadata | null>(
-      store.get("QuestMetadata", id.toString()),
-    );
+    return changetype<QuestMetadata | null>(store.get("QuestMetadata", id));
   }
 
   get id(): string {
@@ -787,23 +811,6 @@ export class QuestMetadata extends Entity {
     }
   }
 
-  // get tags(): string | null {
-  //   let value = this.get("tags");
-  //   if (!value || value.kind == ValueKind.NULL) {
-  //     return null;
-  //   } else {
-  //     return value.toString();
-  //   }
-  // }
-
-  // set tags(value: string | null) {
-  //   if (!value) {
-  //     this.unset("tags");
-  //   } else {
-  //     this.set("tags", Value.fromString(<string>value));
-  //   }
-  // }
-
   get description(): string | null {
     let value = this.get("description");
     if (!value || value.kind == ValueKind.NULL) {
@@ -818,57 +825,6 @@ export class QuestMetadata extends Entity {
       this.unset("description");
     } else {
       this.set("description", Value.fromString(<string>value));
-    }
-  }
-
-  get mediaType(): string | null {
-    let value = this.get("mediaType");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toString();
-    }
-  }
-
-  set mediaType(value: string | null) {
-    if (!value) {
-      this.unset("mediaType");
-    } else {
-      this.set("mediaType", Value.fromString(<string>value));
-    }
-  }
-
-  get audio(): string | null {
-    let value = this.get("audio");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toString();
-    }
-  }
-
-  set audio(value: string | null) {
-    if (!value) {
-      this.unset("audio");
-    } else {
-      this.set("audio", Value.fromString(<string>value));
-    }
-  }
-
-  get video(): string | null {
-    let value = this.get("video");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toString();
-    }
-  }
-
-  set video(value: string | null) {
-    if (!value) {
-      this.unset("video");
-    } else {
-      this.set("video", Value.fromString(<string>value));
     }
   }
 
@@ -889,6 +845,40 @@ export class QuestMetadata extends Entity {
     }
   }
 
+  get video(): string | null {
+    let value = this.get("video");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set video(value: string | null) {
+    if (!value) {
+      this.unset("video");
+    } else {
+      this.set("video", Value.fromString(<string>value));
+    }
+  }
+
+  get audio(): string | null {
+    let value = this.get("audio");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set audio(value: string | null) {
+    if (!value) {
+      this.unset("audio");
+    } else {
+      this.set("audio", Value.fromString(<string>value));
+    }
+  }
+
   get images(): Array<string> | null {
     let value = this.get("images");
     if (!value || value.kind == ValueKind.NULL) {
@@ -905,6 +895,23 @@ export class QuestMetadata extends Entity {
       this.set("images", Value.fromStringArray(<Array<string>>value));
     }
   }
+
+  get mediaType(): string | null {
+    let value = this.get("mediaType");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set mediaType(value: string | null) {
+    if (!value) {
+      this.unset("mediaType");
+    } else {
+      this.set("mediaType", Value.fromString(<string>value));
+    }
+  }
 }
 
 export class Milestone extends Entity {
@@ -919,14 +926,14 @@ export class Milestone extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Milestone must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Milestone must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Milestone", id.toString(), this);
     }
   }
 
   static load(id: string): Milestone | null {
-    return changetype<Milestone | null>(store.get("Milestone", id.toString()));
+    return changetype<Milestone | null>(store.get("Milestone", id));
   }
 
   get id(): string {
@@ -989,23 +996,6 @@ export class Milestone extends Entity {
     }
   }
 
-  get uri(): string | null {
-    let value = this.get("uri");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toString();
-    }
-  }
-
-  set uri(value: string | null) {
-    if (!value) {
-      this.unset("uri");
-    } else {
-      this.set("uri", Value.fromString(<string>value));
-    }
-  }
-
   get milestoneMetadata(): string | null {
     let value = this.get("milestoneMetadata");
     if (!value || value.kind == ValueKind.NULL) {
@@ -1020,6 +1010,23 @@ export class Milestone extends Entity {
       this.unset("milestoneMetadata");
     } else {
       this.set("milestoneMetadata", Value.fromString(<string>value));
+    }
+  }
+
+  get uri(): string | null {
+    let value = this.get("uri");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set uri(value: string | null) {
+    if (!value) {
+      this.unset("uri");
+    } else {
+      this.set("uri", Value.fromString(<string>value));
     }
   }
 
@@ -1087,14 +1094,14 @@ export class Video extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Video must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Video must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Video", id.toString(), this);
     }
   }
 
   static load(id: string): Video | null {
-    return changetype<Video | null>(store.get("Video", id.toString()));
+    return changetype<Video | null>(store.get("Video", id));
   }
 
   get id(): string {
@@ -1209,7 +1216,7 @@ export class Video extends Entity {
   }
 
   get minSecondaryMirrorOnQuote(): BigInt | null {
-    let value = this.get("minSecondaryQuoteOnQuote");
+    let value = this.get("minSecondaryMirrorOnQuote");
     if (!value || value.kind == ValueKind.NULL) {
       return null;
     } else {
@@ -1294,7 +1301,7 @@ export class Video extends Entity {
   }
 
   get minSecondaryMirrorOnComment(): BigInt | null {
-    let value = this.get("minSecondaryQuoteOnComment");
+    let value = this.get("minSecondaryMirrorOnComment");
     if (!value || value.kind == ValueKind.NULL) {
       return null;
     } else {
@@ -1361,7 +1368,6 @@ export class Video extends Entity {
     }
   }
 
-
   get minAVD(): BigInt | null {
     let value = this.get("minAVD");
     if (!value || value.kind == ValueKind.NULL) {
@@ -1376,6 +1382,40 @@ export class Video extends Entity {
       this.unset("minAVD");
     } else {
       this.set("minAVD", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get minImpressionCount(): BigInt | null {
+    let value = this.get("minImpressionCount");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set minImpressionCount(value: BigInt | null) {
+    if (!value) {
+      this.unset("minImpressionCount");
+    } else {
+      this.set("minImpressionCount", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get minEngagementRate(): BigInt | null {
+    let value = this.get("minEngagementRate");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set minEngagementRate(value: BigInt | null) {
+    if (!value) {
+      this.unset("minEngagementRate");
+    } else {
+      this.set("minEngagementRate", Value.fromBigInt(<BigInt>value));
     }
   }
 
@@ -1454,14 +1494,14 @@ export class Reward extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Reward must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Reward must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Reward", id.toString(), this);
     }
   }
 
   static load(id: string): Reward | null {
-    return changetype<Reward | null>(store.get("Reward", id.toString()));
+    return changetype<Reward | null>(store.get("Reward", id));
   }
 
   get id(): string {
@@ -1507,23 +1547,6 @@ export class Reward extends Entity {
     }
   }
 
-  get rewardMetadata(): string | null {
-    let value = this.get("rewardMetadata");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toString();
-    }
-  }
-
-  set rewardMetadata(value: string | null) {
-    if (!value) {
-      this.unset("rewardMetadata");
-    } else {
-      this.set("rewardMetadata", Value.fromString(<string>value));
-    }
-  }
-
   get tokenAddress(): Bytes | null {
     let value = this.get("tokenAddress");
     if (!value || value.kind == ValueKind.NULL) {
@@ -1557,6 +1580,23 @@ export class Reward extends Entity {
       this.set("amount", Value.fromBigInt(<BigInt>value));
     }
   }
+
+  get rewardMetadata(): string | null {
+    let value = this.get("rewardMetadata");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set rewardMetadata(value: string | null) {
+    if (!value) {
+      this.unset("rewardMetadata");
+    } else {
+      this.set("rewardMetadata", Value.fromString(<string>value));
+    }
+  }
 }
 
 export class Gate extends Entity {
@@ -1571,14 +1611,14 @@ export class Gate extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type String must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Gate must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Gate", id.toString(), this);
     }
   }
 
   static load(id: string): Gate | null {
-    return changetype<Gate | null>(store.get("Gate", id.toString()));
+    return changetype<Gate | null>(store.get("Gate", id));
   }
 
   get id(): string {
@@ -1646,16 +1686,14 @@ export class ERC20Logic extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type ERC20Logic must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type ERC20Logic must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("ERC20Logic", id.toString(), this);
     }
   }
 
   static load(id: string): ERC20Logic | null {
-    return changetype<ERC20Logic | null>(
-      store.get("ERC20Logic", id.toString()),
-    );
+    return changetype<ERC20Logic | null>(store.get("ERC20Logic", id));
   }
 
   get id(): string {
@@ -1714,16 +1752,14 @@ export class ERC721Logic extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type ERC721Logic must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type ERC721Logic must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("ERC721Logic", id.toString(), this);
     }
   }
 
   static load(id: string): ERC721Logic | null {
-    return changetype<ERC721Logic | null>(
-      store.get("ERC721Logic", id.toString()),
-    );
+    return changetype<ERC721Logic | null>(store.get("ERC721Logic", id));
   }
 
   get id(): string {
@@ -1799,14 +1835,14 @@ export class Player extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Player must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Player must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Player", id.toString(), this);
     }
   }
 
   static load(id: string): Player | null {
-    return changetype<Player | null>(store.get("Player", id.toString()));
+    return changetype<Player | null>(store.get("Player", id));
   }
 
   get id(): string {
@@ -1884,7 +1920,7 @@ export class Player extends Entity {
     } else {
       this.set(
         "milestonesCompleted",
-        Value.fromStringArray(<Array<string>>value),
+        Value.fromStringArray(<Array<string>>value)
       );
     }
   }
@@ -1929,13 +1965,14 @@ export class CompletionActivity extends Entity {
     super();
     this.set("id", Value.fromString(id));
   }
+
   save(): void {
     let id = this.get("id");
     assert(id != null, "Cannot save CompletionActivity entity without an ID");
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type CompletionActivity must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type CompletionActivity must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("CompletionActivity", id.toString(), this);
     }
@@ -1943,7 +1980,7 @@ export class CompletionActivity extends Entity {
 
   static load(id: string): CompletionActivity | null {
     return changetype<CompletionActivity | null>(
-      store.get("CompletionActivity", id.toString()),
+      store.get("CompletionActivity", id)
     );
   }
 
@@ -2003,16 +2040,14 @@ export class VideoActivity extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type VideoActivity must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type VideoActivity must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("VideoActivity", id.toString(), this);
     }
   }
 
   static load(id: string): VideoActivity | null {
-    return changetype<VideoActivity | null>(
-      store.get("VideoActivity", id.toString()),
-    );
+    return changetype<VideoActivity | null>(store.get("VideoActivity", id));
   }
 
   get id(): string {
@@ -2075,8 +2110,8 @@ export class VideoActivity extends Entity {
     }
   }
 
-  get ctr(): BigInt | null {
-    let value = this.get("ctr");
+  get secondaryQuoteOnQuote(): BigInt | null {
+    let value = this.get("secondaryQuoteOnQuote");
     if (!value || value.kind == ValueKind.NULL) {
       return null;
     } else {
@@ -2084,11 +2119,164 @@ export class VideoActivity extends Entity {
     }
   }
 
-  set ctr(value: BigInt | null) {
+  set secondaryQuoteOnQuote(value: BigInt | null) {
     if (!value) {
-      this.unset("ctr");
+      this.unset("secondaryQuoteOnQuote");
     } else {
-      this.set("ctr", Value.fromBigInt(<BigInt>value));
+      this.set("secondaryQuoteOnQuote", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get secondaryMirrorOnQuote(): BigInt | null {
+    let value = this.get("secondaryMirrorOnQuote");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set secondaryMirrorOnQuote(value: BigInt | null) {
+    if (!value) {
+      this.unset("secondaryMirrorOnQuote");
+    } else {
+      this.set("secondaryMirrorOnQuote", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get secondaryReactOnQuote(): BigInt | null {
+    let value = this.get("secondaryReactOnQuote");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set secondaryReactOnQuote(value: BigInt | null) {
+    if (!value) {
+      this.unset("secondaryReactOnQuote");
+    } else {
+      this.set("secondaryReactOnQuote", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get secondaryCommentOnQuote(): BigInt | null {
+    let value = this.get("secondaryCommentOnQuote");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set secondaryCommentOnQuote(value: BigInt | null) {
+    if (!value) {
+      this.unset("secondaryCommentOnQuote");
+    } else {
+      this.set("secondaryCommentOnQuote", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get secondaryCollectOnQuote(): BigInt | null {
+    let value = this.get("secondaryCollectOnQuote");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set secondaryCollectOnQuote(value: BigInt | null) {
+    if (!value) {
+      this.unset("secondaryCollectOnQuote");
+    } else {
+      this.set("secondaryCollectOnQuote", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get secondaryQuoteOnComment(): BigInt | null {
+    let value = this.get("secondaryQuoteOnComment");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set secondaryQuoteOnComment(value: BigInt | null) {
+    if (!value) {
+      this.unset("secondaryQuoteOnComment");
+    } else {
+      this.set("secondaryQuoteOnComment", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get secondaryMirrorOnComment(): BigInt | null {
+    let value = this.get("secondaryMirrorOnComment");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set secondaryMirrorOnComment(value: BigInt | null) {
+    if (!value) {
+      this.unset("secondaryMirrorOnComment");
+    } else {
+      this.set("secondaryMirrorOnComment", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get secondaryReactOnComment(): BigInt | null {
+    let value = this.get("secondaryReactOnComment");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set secondaryReactOnComment(value: BigInt | null) {
+    if (!value) {
+      this.unset("secondaryReactOnComment");
+    } else {
+      this.set("secondaryReactOnComment", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get secondaryCommentOnComment(): BigInt | null {
+    let value = this.get("secondaryCommentOnComment");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set secondaryCommentOnComment(value: BigInt | null) {
+    if (!value) {
+      this.unset("secondaryCommentOnComment");
+    } else {
+      this.set("secondaryCommentOnComment", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get secondaryCollectOnComment(): BigInt | null {
+    let value = this.get("secondaryCollectOnComment");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set secondaryCollectOnComment(value: BigInt | null) {
+    if (!value) {
+      this.unset("secondaryCollectOnComment");
+    } else {
+      this.set("secondaryCollectOnComment", Value.fromBigInt(<BigInt>value));
     }
   }
 
@@ -2123,23 +2311,6 @@ export class VideoActivity extends Entity {
       this.unset("duration");
     } else {
       this.set("duration", Value.fromBigInt(<BigInt>value));
-    }
-  }
-
-  get interactionRate(): BigInt | null {
-    let value = this.get("interactionRate");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set interactionRate(value: BigInt | null) {
-    if (!value) {
-      this.unset("interactionRate");
-    } else {
-      this.set("interactionRate", Value.fromBigInt(<BigInt>value));
     }
   }
 
@@ -2218,14 +2389,14 @@ export class Eligible extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Eligible must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Eligible must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Eligible", id.toString(), this);
     }
   }
 
   static load(id: string): Eligible | null {
-    return changetype<Eligible | null>(store.get("Eligible", id.toString()));
+    return changetype<Eligible | null>(store.get("Eligible", id));
   }
 
   get id(): string {

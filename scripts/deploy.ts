@@ -59,39 +59,39 @@ const main = async () => {
     // console.log(`kinoraNFTCreator deployed at\n${kinoraNFTCreator.address}`);
 
     await run(`verify:verify`, {
-      address: "0x329148ADC391b85C247c0bfFA3B02CbFda8F5260",
+      address: "0x315689Db3f1704Ae2f0B5b22933101C3Bfd44C3C",
       constructorArguments: [],
     });
     await run(`verify:verify`, {
-      address: "0x3a27DdB8BD7d311cA1c908D3132Af131F321119C",
-      constructorArguments: ["0x329148ADC391b85C247c0bfFA3B02CbFda8F5260"],
+      address: "0x5339F0c733a325db0b4D30d8D915783D0198cb94",
+      constructorArguments: ["0x315689Db3f1704Ae2f0B5b22933101C3Bfd44C3C"],
     });
     await run(`verify:verify`, {
-      address: "0x71A584c68d5B61Df0a6FadA8dbfa4382781D9c25",
+      address: "0x32Dd59AE48B38C4Af8dE119Aee734dd25b82F477",
       constructorArguments: [
-        "0x329148ADC391b85C247c0bfFA3B02CbFda8F5260",
-        "0x7118487566985d9C2d504c705c8FFe2a17fBbDAE",
-        "0x3a27DdB8BD7d311cA1c908D3132Af131F321119C",
+        "0x315689Db3f1704Ae2f0B5b22933101C3Bfd44C3C",
+        "0x04F1aC508F3b2b9a3d1Cf00dFAB278109D01EbA7",
+        "0x5339F0c733a325db0b4D30d8D915783D0198cb94",
       ],
     });
     await run(`verify:verify`, {
-      address: "0x4b315b4463603788AFc8cdCA3F549217Dd633B55",
+      address: "0x16a1C859C4C1C1f39db98464D168c1Cc029Dc353",
       constructorArguments: [
-        "0x329148ADC391b85C247c0bfFA3B02CbFda8F5260",
-        "0x7118487566985d9C2d504c705c8FFe2a17fBbDAE",
+        "0x315689Db3f1704Ae2f0B5b22933101C3Bfd44C3C",
+        "0x04F1aC508F3b2b9a3d1Cf00dFAB278109D01EbA7",
       ],
     });
     await run(`verify:verify`, {
-      address: "0x7118487566985d9C2d504c705c8FFe2a17fBbDAE",
-      constructorArguments: ["0x329148ADC391b85C247c0bfFA3B02CbFda8F5260"],
+      address: "0x04F1aC508F3b2b9a3d1Cf00dFAB278109D01EbA7",
+      constructorArguments: ["0x315689Db3f1704Ae2f0B5b22933101C3Bfd44C3C"],
     });
     await run(`verify:verify`, {
-      address: "0x9b83de365593BF5efB754eB581387034D655aEaF",
+      address: "0x69257Ea75D2Cb2193E805FB8d31F4240B6cBba05",
       constructorArguments: [
         "metadata open action",
-        "0x9d2b23DBf065DD9f3dA152DD3c64784Ac6036c26",
-        "0x71A584c68d5B61Df0a6FadA8dbfa4382781D9c25",
-        "0x329148ADC391b85C247c0bfFA3B02CbFda8F5260",
+        "0x32Dd59AE48B38C4Af8dE119Aee734dd25b82F477",
+        "0x04F1aC508F3b2b9a3d1Cf00dFAB278109D01EbA7",
+        "0x315689Db3f1704Ae2f0B5b22933101C3Bfd44C3C",
         "0x4fbffF20302F3326B20052ab9C217C44F6480900",
         "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0",
       ],

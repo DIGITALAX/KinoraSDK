@@ -12,9 +12,9 @@ import {
 import { QuestMetadata as QuestMetadataTemplate } from "../generated/templates";
 import {
   MilestoneCompleted,
-  QuestCompleted,
   PlayerEligibleToClaimMilestone,
   PlayerJoinedQuest,
+  QuestCompleted,
   PlayerMetricsUpdated,
   QuestInstantiated,
   Milestone,
@@ -233,7 +233,7 @@ export function handlePlayerMetricsUpdated(
   let currentPlayer = Player.load(event.params.playerProfileId.toString());
 
   let questData = KinoraQuestData.bind(
-    Address.fromString("0x7118487566985d9C2d504c705c8FFe2a17fBbDAE"),
+    Address.fromString("0x04452Ec699DA4Dd3A39c491a71b22c8C0f33fa1d"),
   );
 
   if (currentPlayer) {
@@ -251,11 +251,6 @@ export function handlePlayerMetricsUpdated(
       entity.videoPubId,
       entity.videoProfileId,
     );
-    currentVideo.ctr = questData.getPlayerVideoCTR(
-      entity.playerProfileId,
-      entity.videoPubId,
-      entity.videoProfileId,
-    );
     currentVideo.avd = questData.getPlayerVideoAVD(
       entity.playerProfileId,
       entity.videoPubId,
@@ -268,11 +263,6 @@ export function handlePlayerMetricsUpdated(
       entity.videoProfileId,
     );
 
-    currentVideo.interactionRate = questData.getPlayerVideoInteractionRate(
-      entity.playerProfileId,
-      entity.videoPubId,
-      entity.videoProfileId,
-    );
     currentVideo.mostReplayedArea = questData.getPlayerVideoMostReplayedArea(
       entity.playerProfileId,
       entity.videoPubId,
@@ -338,7 +328,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
   entity.transactionHash = event.transaction.hash;
 
   let questData = KinoraQuestData.bind(
-    Address.fromString("0x7118487566985d9C2d504c705c8FFe2a17fBbDAE"),
+    Address.fromString("0x04452Ec699DA4Dd3A39c491a71b22c8C0f33fa1d"),
   );
 
   entity.maxPlayerCount = questData.getQuestMaxPlayerCount(entity.questId);

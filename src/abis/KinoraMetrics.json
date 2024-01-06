@@ -96,7 +96,52 @@
           },
           {
             "internalType": "uint256",
-            "name": "ctr",
+            "name": "secondaryQuoteOnQuote",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "secondaryMirrorOnQuote",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "secondaryReactOnQuote",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "secondaryCommentOnQuote",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "secondaryCollectOnQuote",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "secondaryQuoteOnComment",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "secondaryMirrorOnComment",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "secondaryReactOnComment",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "secondaryCommentOnComment",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "secondaryCollectOnComment",
             "type": "uint256"
           },
           {
@@ -106,27 +151,7 @@
           },
           {
             "internalType": "uint256",
-            "name": "impressionCount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "engagementRate",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
             "name": "duration",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "mostViewedSegment",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "interactionRate",
             "type": "uint256"
           },
           {

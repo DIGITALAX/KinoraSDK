@@ -8,6 +8,16 @@ type MilestoneCompleted @entity(immutable: false) {
   transactionHash: Bytes!
 }
 
+type QuestCompleted @entity(immutable: false) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  playerProfileId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+
 type PlayerEligibleToClaimMilestone @entity(immutable: false) {
   id: Bytes!
   playerProfileId: BigInt! # uint256

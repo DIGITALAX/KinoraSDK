@@ -114,6 +114,28 @@ export class PlayerMetricsUpdated__Params {
   }
 }
 
+export class QuestCompleted extends ethereum.Event {
+  get params(): QuestCompleted__Params {
+    return new QuestCompleted__Params(this);
+  }
+}
+
+export class QuestCompleted__Params {
+  _event: QuestCompleted;
+
+  constructor(event: QuestCompleted) {
+    this._event = event;
+  }
+
+  get questId(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get playerProfileId(): BigInt {
+    return this._event.parameters[1].value.toBigInt();
+  }
+}
+
 export class QuestInstantiated extends ethereum.Event {
   get params(): QuestInstantiated__Params {
     return new QuestInstantiated__Params(this);
@@ -161,6 +183,31 @@ export class QuestStatusUpdated__Params {
 export class KinoraQuestData extends ethereum.SmartContract {
   static bind(address: Address): KinoraQuestData {
     return new KinoraQuestData("KinoraQuestData", address);
+  }
+
+  getAddressToProfileId(_playerAddress: Address): BigInt {
+    let result = super.call(
+      "getAddressToProfileId",
+      "getAddressToProfileId(address):(uint256)",
+      [ethereum.Value.fromAddress(_playerAddress)]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getAddressToProfileId(
+    _playerAddress: Address
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getAddressToProfileId",
+      "getAddressToProfileId(address):(uint256)",
+      [ethereum.Value.fromAddress(_playerAddress)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
   getMilestoneCount(_questId: BigInt): BigInt {
@@ -774,49 +821,6 @@ export class KinoraQuestData extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  getMilestoneVideoMinCTR(
-    _questId: BigInt,
-    _milestone: BigInt,
-    _videoProfileId: BigInt,
-    _videoPubId: BigInt
-  ): BigInt {
-    let result = super.call(
-      "getMilestoneVideoMinCTR",
-      "getMilestoneVideoMinCTR(uint256,uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId)
-      ]
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getMilestoneVideoMinCTR(
-    _questId: BigInt,
-    _milestone: BigInt,
-    _videoProfileId: BigInt,
-    _videoPubId: BigInt
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getMilestoneVideoMinCTR",
-      "getMilestoneVideoMinCTR(uint256,uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
   getMilestoneVideoMinDuration(
     _questId: BigInt,
     _milestone: BigInt,
@@ -860,92 +864,6 @@ export class KinoraQuestData extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  getMilestoneVideoMinEngagementRate(
-    _questId: BigInt,
-    _milestone: BigInt,
-    _videoProfileId: BigInt,
-    _videoPubId: BigInt
-  ): BigInt {
-    let result = super.call(
-      "getMilestoneVideoMinEngagementRate",
-      "getMilestoneVideoMinEngagementRate(uint256,uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId)
-      ]
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getMilestoneVideoMinEngagementRate(
-    _questId: BigInt,
-    _milestone: BigInt,
-    _videoProfileId: BigInt,
-    _videoPubId: BigInt
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getMilestoneVideoMinEngagementRate",
-      "getMilestoneVideoMinEngagementRate(uint256,uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getMilestoneVideoMinImpressionCount(
-    _questId: BigInt,
-    _milestone: BigInt,
-    _videoProfileId: BigInt,
-    _videoPubId: BigInt
-  ): BigInt {
-    let result = super.call(
-      "getMilestoneVideoMinImpressionCount",
-      "getMilestoneVideoMinImpressionCount(uint256,uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId)
-      ]
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getMilestoneVideoMinImpressionCount(
-    _questId: BigInt,
-    _milestone: BigInt,
-    _videoProfileId: BigInt,
-    _videoPubId: BigInt
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getMilestoneVideoMinImpressionCount",
-      "getMilestoneVideoMinImpressionCount(uint256,uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_questId),
-        ethereum.Value.fromUnsignedBigInt(_milestone),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
   getMilestoneVideoMinPlayCount(
     _questId: BigInt,
     _milestone: BigInt,
@@ -975,6 +893,436 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getMilestoneVideoMinPlayCount",
       "getMilestoneVideoMinPlayCount(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryCollectOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryCollectOnComment",
+      "getMilestoneVideoMinSecondaryCollectOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryCollectOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryCollectOnComment",
+      "getMilestoneVideoMinSecondaryCollectOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryCollectOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryCollectOnQuote",
+      "getMilestoneVideoMinSecondaryCollectOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryCollectOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryCollectOnQuote",
+      "getMilestoneVideoMinSecondaryCollectOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryCommentOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryCommentOnComment",
+      "getMilestoneVideoMinSecondaryCommentOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryCommentOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryCommentOnComment",
+      "getMilestoneVideoMinSecondaryCommentOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryCommentOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryCommentOnQuote",
+      "getMilestoneVideoMinSecondaryCommentOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryCommentOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryCommentOnQuote",
+      "getMilestoneVideoMinSecondaryCommentOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryMirrorOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryMirrorOnComment",
+      "getMilestoneVideoMinSecondaryMirrorOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryMirrorOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryMirrorOnComment",
+      "getMilestoneVideoMinSecondaryMirrorOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryMirrorOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryMirrorOnQuote",
+      "getMilestoneVideoMinSecondaryMirrorOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryMirrorOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryMirrorOnQuote",
+      "getMilestoneVideoMinSecondaryMirrorOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryQuoteOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryQuoteOnComment",
+      "getMilestoneVideoMinSecondaryQuoteOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryQuoteOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryQuoteOnComment",
+      "getMilestoneVideoMinSecondaryQuoteOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryQuoteOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryQuoteOnQuote",
+      "getMilestoneVideoMinSecondaryQuoteOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryQuoteOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryQuoteOnQuote",
+      "getMilestoneVideoMinSecondaryQuoteOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryReactOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryReactOnComment",
+      "getMilestoneVideoMinSecondaryReactOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryReactOnComment(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryReactOnComment",
+      "getMilestoneVideoMinSecondaryReactOnComment(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getMilestoneVideoMinSecondaryReactOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getMilestoneVideoMinSecondaryReactOnQuote",
+      "getMilestoneVideoMinSecondaryReactOnQuote(uint256,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getMilestoneVideoMinSecondaryReactOnQuote(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getMilestoneVideoMinSecondaryReactOnQuote",
+      "getMilestoneVideoMinSecondaryReactOnQuote(uint256,uint256,uint256,uint256):(uint256)",
       [
         ethereum.Value.fromUnsignedBigInt(_questId),
         ethereum.Value.fromUnsignedBigInt(_milestone),
@@ -1304,6 +1652,31 @@ export class KinoraQuestData extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  getPlayerQuestsCompleted(_playerProfileId: BigInt): Array<BigInt> {
+    let result = super.call(
+      "getPlayerQuestsCompleted",
+      "getPlayerQuestsCompleted(uint256):(uint256[])",
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
+    );
+
+    return result[0].toBigIntArray();
+  }
+
+  try_getPlayerQuestsCompleted(
+    _playerProfileId: BigInt
+  ): ethereum.CallResult<Array<BigInt>> {
+    let result = super.tryCall(
+      "getPlayerQuestsCompleted",
+      "getPlayerQuestsCompleted(uint256):(uint256[])",
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigIntArray());
+  }
+
   getPlayerQuestsJoined(_playerProfileId: BigInt): Array<BigInt> {
     let result = super.call(
       "getPlayerQuestsJoined",
@@ -1407,43 +1780,29 @@ export class KinoraQuestData extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
-  getPlayerVideoCTR(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt
-  ): BigInt {
+  getPlayerVideoBytes(_playerProfileId: BigInt): Array<string> {
     let result = super.call(
-      "getPlayerVideoCTR",
-      "getPlayerVideoCTR(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
-      ]
+      "getPlayerVideoBytes",
+      "getPlayerVideoBytes(uint256):(string[])",
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
     );
 
-    return result[0].toBigInt();
+    return result[0].toStringArray();
   }
 
-  try_getPlayerVideoCTR(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt
-  ): ethereum.CallResult<BigInt> {
+  try_getPlayerVideoBytes(
+    _playerProfileId: BigInt
+  ): ethereum.CallResult<Array<string>> {
     let result = super.tryCall(
-      "getPlayerVideoCTR",
-      "getPlayerVideoCTR(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
-      ]
+      "getPlayerVideoBytes",
+      "getPlayerVideoBytes(uint256):(string[])",
+      [ethereum.Value.fromUnsignedBigInt(_playerProfileId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
+    return ethereum.CallResult.fromValue(value[0].toStringArray());
   }
 
   getPlayerVideoComment(
@@ -1524,123 +1883,6 @@ export class KinoraQuestData extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  getPlayerVideoEngagementRate(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt
-  ): BigInt {
-    let result = super.call(
-      "getPlayerVideoEngagementRate",
-      "getPlayerVideoEngagementRate(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
-      ]
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getPlayerVideoEngagementRate(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getPlayerVideoEngagementRate",
-      "getPlayerVideoEngagementRate(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getPlayerVideoImpressionCount(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt
-  ): BigInt {
-    let result = super.call(
-      "getPlayerVideoImpressionCount",
-      "getPlayerVideoImpressionCount(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
-      ]
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getPlayerVideoImpressionCount(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getPlayerVideoImpressionCount",
-      "getPlayerVideoImpressionCount(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getPlayerVideoInteractionRate(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt
-  ): BigInt {
-    let result = super.call(
-      "getPlayerVideoInteractionRate",
-      "getPlayerVideoInteractionRate(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
-      ]
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getPlayerVideoInteractionRate(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getPlayerVideoInteractionRate",
-      "getPlayerVideoInteractionRate(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
   getPlayerVideoMirror(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
@@ -1706,45 +1948,6 @@ export class KinoraQuestData extends ethereum.SmartContract {
     let result = super.tryCall(
       "getPlayerVideoMostReplayedArea",
       "getPlayerVideoMostReplayedArea(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getPlayerVideoMostViewedSegment(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt
-  ): BigInt {
-    let result = super.call(
-      "getPlayerVideoMostViewedSegment",
-      "getPlayerVideoMostViewedSegment(uint256,uint256,uint256):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
-        ethereum.Value.fromUnsignedBigInt(_videoPubId),
-        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
-      ]
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getPlayerVideoMostViewedSegment(
-    _playerProfileId: BigInt,
-    _videoPubId: BigInt,
-    _videoProfileId: BigInt
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getPlayerVideoMostViewedSegment",
-      "getPlayerVideoMostViewedSegment(uint256,uint256,uint256):(uint256)",
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
@@ -1873,6 +2076,396 @@ export class KinoraQuestData extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
+  getPlayerVideoSecondaryCollectOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryCollectOnComment",
+      "getPlayerVideoSecondaryCollectOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryCollectOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryCollectOnComment",
+      "getPlayerVideoSecondaryCollectOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryCollectOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryCollectOnQuote",
+      "getPlayerVideoSecondaryCollectOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryCollectOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryCollectOnQuote",
+      "getPlayerVideoSecondaryCollectOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryCommentOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryCommentOnComment",
+      "getPlayerVideoSecondaryCommentOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryCommentOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryCommentOnComment",
+      "getPlayerVideoSecondaryCommentOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryCommentOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryCommentOnQuote",
+      "getPlayerVideoSecondaryCommentOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryCommentOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryCommentOnQuote",
+      "getPlayerVideoSecondaryCommentOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryMirrorOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryMirrorOnComment",
+      "getPlayerVideoSecondaryMirrorOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryMirrorOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryMirrorOnComment",
+      "getPlayerVideoSecondaryMirrorOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryMirrorOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryMirrorOnQuote",
+      "getPlayerVideoSecondaryMirrorOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryMirrorOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryMirrorOnQuote",
+      "getPlayerVideoSecondaryMirrorOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryQuoteOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryQuoteOnComment",
+      "getPlayerVideoSecondaryQuoteOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryQuoteOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryQuoteOnComment",
+      "getPlayerVideoSecondaryQuoteOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryQuoteOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryQuoteOnQuote",
+      "getPlayerVideoSecondaryQuoteOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryQuoteOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryQuoteOnQuote",
+      "getPlayerVideoSecondaryQuoteOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryReactOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryReactOnComment",
+      "getPlayerVideoSecondaryReactOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryReactOnComment(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryReactOnComment",
+      "getPlayerVideoSecondaryReactOnComment(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getPlayerVideoSecondaryReactOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): BigInt {
+    let result = super.call(
+      "getPlayerVideoSecondaryReactOnQuote",
+      "getPlayerVideoSecondaryReactOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getPlayerVideoSecondaryReactOnQuote(
+    _playerProfileId: BigInt,
+    _videoPubId: BigInt,
+    _videoProfileId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getPlayerVideoSecondaryReactOnQuote",
+      "getPlayerVideoSecondaryReactOnQuote(uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_playerProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
   getQuestEnvoker(_questId: BigInt): Address {
@@ -2044,6 +2637,38 @@ export class KinoraQuestData extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
+  getQuestIdFromLensData(_profileId: BigInt, _pubId: BigInt): BigInt {
+    let result = super.call(
+      "getQuestIdFromLensData",
+      "getQuestIdFromLensData(uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_profileId),
+        ethereum.Value.fromUnsignedBigInt(_pubId)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getQuestIdFromLensData(
+    _profileId: BigInt,
+    _pubId: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getQuestIdFromLensData",
+      "getQuestIdFromLensData(uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(_profileId),
+        ethereum.Value.fromUnsignedBigInt(_pubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
   getQuestIdsToVideoPlaybackId(_playbackId: string): Array<BigInt> {
@@ -2249,6 +2874,31 @@ export class KinoraQuestData extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getVideoBytesFromPlaybackId(_playbackId: string): string {
+    let result = super.call(
+      "getVideoBytesFromPlaybackId",
+      "getVideoBytesFromPlaybackId(string):(string)",
+      [ethereum.Value.fromString(_playbackId)]
+    );
+
+    return result[0].toString();
+  }
+
+  try_getVideoBytesFromPlaybackId(
+    _playbackId: string
+  ): ethereum.CallResult<string> {
+    let result = super.tryCall(
+      "getVideoBytesFromPlaybackId",
+      "getVideoBytesFromPlaybackId(string):(string)",
+      [ethereum.Value.fromString(_playbackId)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toString());
   }
 
   getVideoPlaybackId(_pubId: BigInt, _profileId: BigInt): string {
@@ -2547,16 +3197,20 @@ export class ConfigureNewQuestCall_paramsStruct extends ethereum.Tuple {
     return this[2].toTupleArray<ConfigureNewQuestCall_paramsMilestonesStruct>();
   }
 
+  get uri(): string {
+    return this[3].toString();
+  }
+
   get envokerAddress(): Address {
-    return this[3].toAddress();
+    return this[4].toAddress();
   }
 
   get pubId(): BigInt {
-    return this[4].toBigInt();
+    return this[5].toBigInt();
   }
 
   get profileId(): BigInt {
-    return this[5].toBigInt();
+    return this[6].toBigInt();
   }
 }
 
@@ -2679,44 +3333,72 @@ export class ConfigureNewQuestCall_paramsMilestonesVideosStruct extends ethereum
     return this[4].toBigInt();
   }
 
-  get minCTR(): BigInt {
+  get minAVD(): BigInt {
     return this[5].toBigInt();
   }
 
-  get minAVD(): BigInt {
+  get minDuration(): BigInt {
     return this[6].toBigInt();
   }
 
-  get minImpressionCount(): BigInt {
+  get minSecondaryQuoteOnQuote(): BigInt {
     return this[7].toBigInt();
   }
 
-  get minEngagementRate(): BigInt {
+  get minSecondaryMirrorOnQuote(): BigInt {
     return this[8].toBigInt();
   }
 
-  get minDuration(): BigInt {
+  get minSecondaryReactOnQuote(): BigInt {
     return this[9].toBigInt();
   }
 
+  get minSecondaryCommentOnQuote(): BigInt {
+    return this[10].toBigInt();
+  }
+
+  get minSecondaryCollectOnQuote(): BigInt {
+    return this[11].toBigInt();
+  }
+
+  get minSecondaryQuoteOnComment(): BigInt {
+    return this[12].toBigInt();
+  }
+
+  get minSecondaryMirrorOnComment(): BigInt {
+    return this[13].toBigInt();
+  }
+
+  get minSecondaryReactOnComment(): BigInt {
+    return this[14].toBigInt();
+  }
+
+  get minSecondaryCommentOnComment(): BigInt {
+    return this[15].toBigInt();
+  }
+
+  get minSecondaryCollectOnComment(): BigInt {
+    return this[16].toBigInt();
+  }
+
   get quote(): boolean {
-    return this[10].toBoolean();
+    return this[17].toBoolean();
   }
 
   get mirror(): boolean {
-    return this[11].toBoolean();
+    return this[18].toBoolean();
   }
 
   get comment(): boolean {
-    return this[12].toBoolean();
+    return this[19].toBoolean();
   }
 
   get bookmark(): boolean {
-    return this[13].toBoolean();
+    return this[20].toBoolean();
   }
 
   get react(): boolean {
-    return this[14].toBoolean();
+    return this[21].toBoolean();
   }
 }
 
@@ -2943,16 +3625,8 @@ export class UpdatePlayerMetricsCall__Inputs {
     );
   }
 
-  get _videoPubId(): BigInt {
-    return this._call.inputValues[1].value.toBigInt();
-  }
-
-  get _videoProfileId(): BigInt {
-    return this._call.inputValues[2].value.toBigInt();
-  }
-
   get _playerProfileId(): BigInt {
-    return this._call.inputValues[3].value.toBigInt();
+    return this._call.inputValues[1].value.toBigInt();
   }
 }
 
@@ -2965,60 +3639,88 @@ export class UpdatePlayerMetricsCall__Outputs {
 }
 
 export class UpdatePlayerMetricsCall_metricsStruct extends ethereum.Tuple {
-  get playCount(): BigInt {
+  get profileId(): BigInt {
     return this[0].toBigInt();
   }
 
-  get ctr(): BigInt {
+  get pubId(): BigInt {
     return this[1].toBigInt();
   }
 
-  get avd(): BigInt {
+  get playCount(): BigInt {
     return this[2].toBigInt();
   }
 
-  get impressionCount(): BigInt {
+  get secondaryQuoteOnQuote(): BigInt {
     return this[3].toBigInt();
   }
 
-  get engagementRate(): BigInt {
+  get secondaryMirrorOnQuote(): BigInt {
     return this[4].toBigInt();
   }
 
-  get duration(): BigInt {
+  get secondaryReactOnQuote(): BigInt {
     return this[5].toBigInt();
   }
 
-  get mostViewedSegment(): BigInt {
+  get secondaryCommentOnQuote(): BigInt {
     return this[6].toBigInt();
   }
 
-  get interactionRate(): BigInt {
+  get secondaryCollectOnQuote(): BigInt {
     return this[7].toBigInt();
   }
 
-  get mostReplayedArea(): BigInt {
+  get secondaryQuoteOnComment(): BigInt {
     return this[8].toBigInt();
   }
 
+  get secondaryMirrorOnComment(): BigInt {
+    return this[9].toBigInt();
+  }
+
+  get secondaryReactOnComment(): BigInt {
+    return this[10].toBigInt();
+  }
+
+  get secondaryCommentOnComment(): BigInt {
+    return this[11].toBigInt();
+  }
+
+  get secondaryCollectOnComment(): BigInt {
+    return this[12].toBigInt();
+  }
+
+  get avd(): BigInt {
+    return this[13].toBigInt();
+  }
+
+  get duration(): BigInt {
+    return this[14].toBigInt();
+  }
+
+  get mostReplayedArea(): BigInt {
+    return this[15].toBigInt();
+  }
+
   get hasQuoted(): boolean {
-    return this[9].toBoolean();
+    return this[16].toBoolean();
   }
 
   get hasMirrored(): boolean {
-    return this[10].toBoolean();
+    return this[17].toBoolean();
   }
 
   get hasCommented(): boolean {
-    return this[11].toBoolean();
+    return this[18].toBoolean();
   }
 
   get hasBookmarked(): boolean {
-    return this[12].toBoolean();
+    return this[19].toBoolean();
   }
 
   get hasReacted(): boolean {
-    return this[13].toBoolean();
+    return this[20].toBoolean();
   }
 }
 
