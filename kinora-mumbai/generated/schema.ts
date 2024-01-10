@@ -1028,23 +1028,6 @@ export class Milestone extends Entity {
     }
   }
 
-  get milestoneId(): BigInt | null {
-    let value = this.get("milestoneId");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return BigInt.fromString(value.toString());
-    }
-  }
-
-  set milestoneId(value: BigInt | null) {
-    if (!value) {
-      this.unset("milestoneId");
-    } else {
-      this.set("milestoneId", Value.fromString(value.toString()));
-    }
-  }
-
   get questId(): BigInt | null {
     let value = this.get("questId");
     if (!value || value.kind == ValueKind.NULL) {
@@ -1059,6 +1042,23 @@ export class Milestone extends Entity {
       this.unset("questId");
     } else {
       this.set("questId", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get milestoneId(): BigInt | null {
+    let value = this.get("milestoneId");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set milestoneId(value: BigInt | null) {
+    if (!value) {
+      this.unset("milestoneId");
+    } else {
+      this.set("milestoneId", Value.fromBigInt(<BigInt>value));
     }
   }
 
