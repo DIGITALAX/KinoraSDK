@@ -70,7 +70,7 @@ class Kinora {
   }
 
   /**
-   * @method setPlayerMetricsOnChain
+   * @method sendPlayerMetricsOnChain
    * @description This function is responsible for sending player metrics to the blockchain.
    * @param {ZeroString} args.postId - The Lens Post Id of the video.
    * @param {ZeroString} args.playerProfileId - The Lens Profile Id of the Player.
@@ -184,15 +184,11 @@ class Kinora {
    * Asynchronously fetches a list of quests completed by a player.
    *
    * @param playerProfileId - Lens Profile ID of the player as a `0x${string}`.
-   * @param questId - Numeric ID of the quest.
    * @returns A Promise resolving to an object containing boolean status for error,
    *          optional error message, and an array of completed quests with their details.
    * @throws Any errors encountered during the process are caught and returned with their message.
    */
-  public async getPlayerCompletedQuests(
-    playerProfileId: ZeroString,
-    questId: number,
-  ): Promise<{
+  public async getPlayerCompletedQuests(playerProfileId: ZeroString): Promise<{
     error: boolean;
     errorMessage?: string;
     quests?: {
@@ -202,14 +198,13 @@ class Kinora {
     }[];
   }> {
     try {
-      const data = await getCompletedQuests(
-        parseInt(playerProfileId, 16),
-        questId,
-      );
+      const data = await getCompletedQuests(parseInt(playerProfileId, 16));
 
       return {
         error: false,
-        quests: data?.data?.questCompleteds,
+        quests: data?.data?.questCompleteds?.map(
+          (item: { questId: string }) => item.questId,
+        ),
       };
     } catch (err: any) {
       return {
@@ -491,7 +486,7 @@ class Kinora {
    * @param envokerProfileId - Lens Profile ID of the envoker as a `0x${string}`.
    * @returns A Promise resolving to an object containing error status, optional error message, and an array of quest IDs initiated by the envoker.
    */
-  public async getQuestByEnvoker(envokerProfileId: ZeroString): Promise<{
+  public async getQuestsByEnvoker(envokerProfileId: ZeroString): Promise<{
     error: boolean;
     errorMessage?: string;
     quests?: string[];
@@ -705,12 +700,12 @@ class Kinora {
   }
 
   /**
-   * Asynchronously retrieves player activity based on a specific playback ID.
+   * Asynchronously retrieves video activity based on a specific playback ID.
    *
    * @param playbackId - String ID representing the playback.
    * @returns A Promise resolving to an object with error status, optional error message, and an array of player activities related to the playback ID.
    */
-  public async getPlayerActivityByPlaybackId(playbackId: string): Promise<{
+  public async getVideoActivityByPlaybackId(playbackId: string): Promise<{
     error: boolean;
     errorMessage?: string;
     activity?: (PlayerVideoActivity & {
@@ -777,7 +772,7 @@ class Kinora {
    * @param postId - Lens publication ID of the video post as a `0x${string}`.
    * @returns A Promise resolving to an object with error status, optional error message, and an array of player activities related to the video post.
    */
-  public async getPlayerActivityByVideoPost(postId: ZeroString): Promise<{
+  public async getVideoActivityByVideoPost(postId: ZeroString): Promise<{
     error: boolean;
     errorMessage?: string;
     activity?: (PlayerVideoActivity & {
