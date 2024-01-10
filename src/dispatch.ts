@@ -124,7 +124,7 @@ export class Dispatch {
    */
   playerCompleteQuestMilestone = async (
     postId: ZeroString,
-    wallet: ethers.Signer,
+    wallet: ethers.Wallet,
   ): Promise<{
     txHash?: string;
     error: boolean;

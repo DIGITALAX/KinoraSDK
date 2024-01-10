@@ -38,20 +38,17 @@ export const getCompletedMilestones = async (
 
 export const getCompletedQuests = async (
   playerProfileId: number,
-  questId: number,
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
     query: gql(`
-        query($playerProfileId: Int, $questId: Int) {
-          questCompleteds(where: {playerProfileId: $playerProfileId, questId: $questId}, orderBy: blockTimestamp) {
+        query($playerProfileId: Int) {
+          questCompleteds(where: {playerProfileId: $playerProfileId}, orderBy: blockTimestamp) {
               questId
-              playerProfileId
-              blockTimestamp
           }
         }
       `),
-    variables: { playerProfileId, questId },
+    variables: { playerProfileId },
     fetchPolicy: "no-cache",
     errorPolicy: "all",
   });

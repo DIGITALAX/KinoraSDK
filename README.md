@@ -26,29 +26,30 @@ It handles deployment and instantiation from the Kinora Contract Suite, publishi
 import { Envoker } from "kinora-sdk";
 
 const apolloClient = new ApolloClient({
-  link: new HttpLink({ uri: 'https://api-v2.lens.dev/' }),
+  link: new HttpLink({ uri: "https://api-v2.lens.dev/" }),
   headers: {
     "x-access-token": `Bearer ${authToken}`,
   },
   cache: new InMemoryCache(),
 });
 
-const chronicleProvider = new ethers.providers.JsonRpcProvider(
-    "https://lit-protocol.calderachain.xyz/http",
-    175177,
-  );
+const polygonProvider = new ethers.providers.JsonRpcProvider(
+  "https://polygonprovider.com",
+  137,
+);
 
 const newEnvoker = new Envoker({
-    authedApolloClient: client,
-    signer: new ethers.Wallet(process.env.ENVOKER_PRIVATE_KEY, chronicleProvider)
+  authedApolloClient: client,
+  signer: new ethers.Wallet(process.env.ENVOKER_PRIVATE_KEY, polygonProvider),
 });
 
 const { postId, transactionHash } = await newEnvoker.instantiateNewQuest({
-  ipfsQuestDetails: {
+  questDetails: {
     title: "Chromadin Chronicle",
-    description: "Engage in a Chromadin video binge session for Season 1 and Season 2 of The Dial Pirate Radio . Interactions, mirrors and comments on episodes accrue bonus points.",
+    description:
+      "Engage in a Chromadin video binge session for Season 1 and Season 2 of The Dial Pirate Radio . Interactions, mirrors and comments on episodes accrue bonus points.",
     cover: "ipfs://QmQk9TqFivUqc6ktosoZVVih9o1uiY3r5Z7F3GCC1FpaJS",
-    }
+  },
   maxPlayerCount: 100,
   milestones,
   joinQuestTokenGatedLogic: tokenGatedLogic,
@@ -70,9 +71,9 @@ const apolloClient = new ApolloClient({
   cache: new InMemoryCache(),
 });
 
-const chronicleProvider = new ethers.providers.JsonRpcProvider(
-  "https://lit-protocol.calderachain.xyz/http",
-  175177,
+const polygonProvider = new ethers.providers.JsonRpcProvider(
+  "https://polygonprovider.com",
+  137,
 );
 
 const newDispatch = new Dispatch({
@@ -81,7 +82,7 @@ const newDispatch = new Dispatch({
 
 await newDispatch.playerJoinQuest(
   postId,
-  new ethers.Wallet(process.env.PLAYER_PRIVATE_KEY, chronicleProvider),
+  new ethers.Wallet(process.env.PLAYER_PRIVATE_KEY, polygonProvider),
 );
 ```
 
@@ -96,17 +97,21 @@ These improvements enable deeper media integration, more efficient state managem
 ```typescript
 import { Player } from "@livepeer/react";
 import dynamic from "next/dynamic";
-import { useWalletClient } from 'wagmi';
+import { useWalletClient } from "wagmi";
 import { KinoraProvider, KinoraPlayerWrapper } from "kinora-sdk";
 import { apolloClient } from "../../lib/lens/client";
-import { createReactClient, studioProvider, LivepeerConfig,} from "@livepeer/react";
+import {
+  createReactClient,
+  studioProvider,
+  LivepeerConfig,
+} from "@livepeer/react";
 
 const livepeerClient = createReactClient({
   provider: studioProvider({
     apiKey: process.env.LIVEPEER_STUDIO_KEY!,
   }),
 });
- 
+
 function App() {
   return (
     <LivepeerConfig client={livepeerClient}>
@@ -114,29 +119,27 @@ function App() {
         <Component {...pageProps} />
       </KinoraProvider>
     </LivepeerConfig>
-  )
+  );
 }
 
-
 function Page() {
-
-return (
-  <div id="parentId" className="w-20 h-20 flex">
-   <KinoraPlayerWrapper
-      parentId={"parentId"}
-      postId={postId}
-      customControls={true}
-      fillWidthHeight={true}
+  return (
+    <div id="parentId" className="w-20 h-20 flex">
+      <KinoraPlayerWrapper
+        parentId={"parentId"}
+        postId={postId}
+        customControls={true}
+        fillWidthHeight={true}
       >
-      {(setMediaElement: (node: HTMLVideoElement) => void) => (
-        <Player
-         mediaElementRef={setMediaElement}
-         playbackId="f5eese9wwl88k4g8"
-         objectFit="cover"
-         />
-       )}
-     </KinoraPlayerWrapper>
-   </div>
+        {(setMediaElement: (node: HTMLVideoElement) => void) => (
+          <Player
+            mediaElementRef={setMediaElement}
+            playbackId="f5eese9wwl88k4g8"
+            objectFit="cover"
+          />
+        )}
+      </KinoraPlayerWrapper>
+    </div>
   );
 }
 ```
