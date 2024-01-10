@@ -83,17 +83,17 @@ export class Envoker {
       this.lensHubProxyContract = new ethers.Contract(
         LENS_HUB_PROXY_CONTRACT,
         LensHubProxyAbi,
-        this.wallet,
+        this.wallet
       );
       this.kinoraEscrowContract = new ethers.Contract(
         KINORA_ESCROW_CONTRACT,
         KinoraEscrowAbi,
-        this.wallet,
+        this.wallet
       );
       this.kinoraMetricsContract = new ethers.Contract(
         KINORA_METRICS_CONTRACT,
         KinoraMetricsAbi,
-        this.wallet,
+        this.wallet
       );
     }
   }
@@ -131,7 +131,7 @@ export class Envoker {
   }> => {
     if (!this.questEnvokerAuthedApolloClient) {
       throw new Error(
-        `Set Quest Envoker Authed Apollo Client before Continuing.`,
+        `Set Quest Envoker Authed Apollo Client before Continuing.`
       );
     }
 
@@ -149,6 +149,70 @@ export class Envoker {
 
     if (args.wallet) {
       this.wallet = args.wallet;
+    }
+
+    if (
+      args?.milestones?.some((milestone) => {
+        milestone?.reward?.some((reward) => {
+          if (reward?.type == RewardType.ERC20) {
+            return (
+              Number(reward?.erc20tokenAmount || 0) <= 0 ||
+              reward?.erc20tokenAddress ||
+              reward?.erc20tokenAddress?.trim() == "" ||
+              reward?.erc20tokenAddress == "0x" ||
+              reward.erc20tokenAddress !== "0x00"
+            );
+          }
+        });
+      })
+    ) {
+      throw new Error(
+        "Invalid ERC20 Rewards. Make sure your addresses and amounts are correctly defined."
+      );
+    }
+
+    if (
+      (args?.joinQuestTokenGatedLogic?.erc20Thresholds &&
+        args?.joinQuestTokenGatedLogic?.erc20Addresses &&
+        args?.joinQuestTokenGatedLogic?.erc20Thresholds?.length !==
+          args?.joinQuestTokenGatedLogic?.erc20Addresses?.length) ||
+      args?.joinQuestTokenGatedLogic?.erc20Thresholds?.some(
+        (threshold) => Number(threshold || 0) <= 0
+      ) ||
+      args?.joinQuestTokenGatedLogic?.erc20Addresses?.some(
+        (address) => !address || address === "0x" || address === "0x00"
+      )
+    ) {
+      throw new Error("Invalid Quest Join Gated Logic.");
+    }
+
+    if (
+      args?.milestones?.some((milestone) => {
+        const thresholds = milestone?.gated?.erc20Thresholds;
+        const addresses = milestone?.gated?.erc20Addresses;
+
+        const sizeMismatch =
+          thresholds && addresses && thresholds.length !== addresses.length;
+
+        const invalidValue =
+          thresholds?.some((threshold) => Number(threshold || 0) <= 0) ||
+          addresses?.some(
+            (address) => !address || address === "0x" || address === "0x00"
+          );
+
+        const erc721Addresses =
+          milestone?.gated?.erc721Addresses?.filter(Boolean);
+
+        return (
+          sizeMismatch ||
+          invalidValue ||
+          erc721Addresses?.length !==
+            milestone?.gated?.erc721TokenIds?.length +
+              milestone?.gated?.erc721TokenURIs?.length
+        );
+      })
+    ) {
+      throw new Error("Invalid Milestone Gated Logic.");
     }
 
     const data: LensQuestMetadata = {
@@ -226,7 +290,7 @@ export class Envoker {
                           : reward.erc20tokenAmount,
                     };
                   }
-                }),
+                })
               ),
               videos: milestone.eligibility.internalCriteria?.map((item) => {
                 return {
@@ -234,34 +298,45 @@ export class Envoker {
                   videoBytes: item?.postId,
                   profileId: parseInt(item?.postId?.split("-")[0], 16),
                   pubId: parseInt(item?.postId?.split("-")[1], 16),
-                  minPlayCount: item.playbackCriteria.minPlayCount,
-                  minAVD: item.playbackCriteria.minAvd,
-                  minDuration: item.playbackCriteria.minDuration,
+                  minPlayCount: item.playbackCriteria.minPlayCount || 0,
+                  minAVD: item.playbackCriteria.minAvd
+                    ? (
+                        Number(item.playbackCriteria.minAvd?.toFixed(2)) *
+                        10 ** 18
+                      ).toString()
+                    : 0,
+                  minDuration: item.playbackCriteria.minDuration
+                    ? (
+                        Number(item.playbackCriteria.minDuration?.toFixed(2)) *
+                        60 *
+                        10 ** 18
+                      ).toString()
+                    : 0,
                   minSecondaryQuoteOnQuote:
-                    item.playbackCriteria.minSecondaryQuoteOnQuote,
+                    item.playbackCriteria.minSecondaryQuoteOnQuote || 0,
                   minSecondaryMirrorOnQuote:
-                    item.playbackCriteria.minSecondaryMirrorOnQuote,
+                    item.playbackCriteria.minSecondaryMirrorOnQuote || 0,
                   minSecondaryReactOnQuote:
-                    item.playbackCriteria.minSecondaryReactOnQuote,
+                    item.playbackCriteria.minSecondaryReactOnQuote || 0,
                   minSecondaryCommentOnQuote:
-                    item.playbackCriteria.minSecondaryCommentOnQuote,
+                    item.playbackCriteria.minSecondaryCommentOnQuote || 0,
                   minSecondaryCollectOnQuote:
-                    item.playbackCriteria.minSecondaryCollectOnQuote,
+                    item.playbackCriteria.minSecondaryCollectOnQuote || 0,
                   minSecondaryQuoteOnComment:
-                    item.playbackCriteria.minSecondaryQuoteOnComment,
+                    item.playbackCriteria.minSecondaryQuoteOnComment || 0,
                   minSecondaryMirrorOnComment:
-                    item.playbackCriteria.minSecondaryMirrorOnComment,
+                    item.playbackCriteria.minSecondaryMirrorOnComment || 0,
                   minSecondaryReactOnComment:
-                    item.playbackCriteria.minSecondaryReactOnComment,
+                    item.playbackCriteria.minSecondaryReactOnComment || 0,
                   minSecondaryCommentOnComment:
-                    item.playbackCriteria.minSecondaryCommentOnComment,
+                    item.playbackCriteria.minSecondaryCommentOnComment || 0,
                   minSecondaryCollectOnComment:
-                    item.playbackCriteria.minSecondaryCollectOnComment,
-                  quote: item.playbackCriteria.quote,
-                  mirror: item.playbackCriteria.mirror,
-                  comment: item.playbackCriteria.comment,
-                  bookmark: item.playbackCriteria.bookmark,
-                  react: item.playbackCriteria.react,
+                    item.playbackCriteria.minSecondaryCollectOnComment || 0,
+                  quote: item.playbackCriteria.quote || false,
+                  mirror: item.playbackCriteria.mirror || false,
+                  comment: item.playbackCriteria.comment || false,
+                  bookmark: item.playbackCriteria.bookmark || false,
+                  react: item.playbackCriteria.react || false,
                 };
               }),
               uri: (
@@ -270,18 +345,18 @@ export class Envoker {
                     title: milestone?.details?.title,
                     description: milestone?.details?.description,
                     cover: milestone?.details?.cover,
-                  }),
+                  })
                 )
               ).cid,
               milestone: milestone.milestone,
             };
-          }),
+          })
       );
 
       const moduleContract = new ethers.Contract(
         LENS_MODULE_CONTRACT,
         LensModuleAbi,
-        args.wallet,
+        args.wallet
       );
 
       // approve data
@@ -290,15 +365,15 @@ export class Envoker {
           for (const reward of item.rewards || []) {
             if (reward.rewardType === RewardType.ERC20) {
               const registered = await moduleContract.isErc20CurrencyRegistered(
-                reward.tokenAddress,
+                reward.tokenAddress
               );
               if (!registered) {
                 let tx = await moduleContract.registerErc20Currency(
-                  reward.tokenAddress,
+                  reward.tokenAddress
                 );
                 await tx.wait();
                 tx = await moduleContract.verifyErc20Currency(
-                  reward.tokenAddress,
+                  reward.tokenAddress
                 );
                 await tx.wait();
               }
@@ -331,12 +406,12 @@ export class Envoker {
                     type: "function",
                   },
                 ],
-                args.wallet,
+                args.wallet
               );
 
               const tx = await erc20Contract.approve(
                 KINORA_ESCROW_CONTRACT,
-                Number(reward.amount) * args.maxPlayerCount,
+                Number(reward.amount) * args.maxPlayerCount
               );
               await tx.wait();
             }
@@ -379,7 +454,7 @@ export class Envoker {
                 args.wallet?.getAddress()),
               maxPlayerCount: args.maxPlayerCount,
             },
-          ],
+          ]
         );
       } catch (err: any) {
         throw new Error(`There was an error encoding your data ${err.message}`);
@@ -397,7 +472,7 @@ export class Envoker {
             },
           ],
         },
-        this.questEnvokerAuthedApolloClient,
+        this.questEnvokerAuthedApolloClient
       );
 
       const typedData = data?.createOnchainPostTypedData?.typedData;
@@ -405,7 +480,7 @@ export class Envoker {
       const typedDataHash = ethers.utils._TypedDataEncoder.hash(
         omit(typedData?.domain, ["__typename"]),
         omit(typedData?.types, ["__typename"]),
-        omit(typedData?.value, ["__typename"]),
+        omit(typedData?.value, ["__typename"])
       );
       await this.wallet?.signMessage(ethers.utils.arrayify(typedDataHash));
 
@@ -413,7 +488,7 @@ export class Envoker {
         this.lensHubProxyContract = new ethers.Contract(
           LENS_HUB_PROXY_CONTRACT,
           LensHubProxyAbi,
-          args.wallet,
+          args.wallet
         );
       }
       const tx = await this.lensHubProxyContract?.post({
@@ -462,17 +537,29 @@ export class Envoker {
    * @returns {Promise<Object>} - Promise resolving to an object containing transaction hashes for termination and withdrawal processes.
    */
   terminateQuestAndWithdraw = async (
-    questId: ZeroString,
-    wallet?: ethers.Wallet,
+    questId: number,
+    wallet?: ethers.Wallet
   ): Promise<{
     txHash?: string;
     error: boolean;
     errorMessage?: string;
   }> => {
     try {
+      if (!this.kinoraEscrowContract && !wallet && !this.wallet) {
+        throw new Error(`Pass a valid Ethers wallet object.`);
+      }
+
+      if (!this.wallet) {
+        this.kinoraEscrowContract = new ethers.Contract(
+          KINORA_ESCROW_CONTRACT,
+          KinoraEscrowAbi,
+          wallet
+        );
+      }
+
       const tx = await this.kinoraEscrowContract?.emergencyWithdrawERC20(
         this.wallet?.getAddress() || wallet?.getAddress(),
-        questId,
+        questId
       );
 
       const txHash = await tx.wait();
@@ -504,18 +591,31 @@ export class Envoker {
     milestone: number,
     playerProfileId: string,
     eligible: boolean,
+    wallet?: ethers.Wallet
   ): Promise<{
     txHash?: string;
     error: boolean;
     errorMessage?: string;
   }> => {
     try {
+      if (!this.kinoraMetricsContract && !wallet && !this.wallet) {
+        throw new Error(`Pass a valid Ethers wallet object.`);
+      }
+
+      if (!this.wallet) {
+        this.kinoraMetricsContract = new ethers.Contract(
+          KINORA_METRICS_CONTRACT,
+          KinoraMetricsAbi,
+          wallet
+        );
+      }
+
       const tx =
         await this.kinoraMetricsContract?.playerEligibleToClaimMilestone(
           questId,
           milestone,
-          playerProfileId,
-          eligible,
+          parseInt(playerProfileId, 16),
+          eligible
         );
 
       const txHash = await tx.wait();
@@ -527,7 +627,7 @@ export class Envoker {
     } catch (err: any) {
       return {
         error: true,
-        errorMessage: `Error terminating Quest: ${err.message}`,
+        errorMessage: `Error Verifying Player: ${err.message}`,
       };
     }
   };

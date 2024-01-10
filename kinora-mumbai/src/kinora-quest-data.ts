@@ -1,4 +1,10 @@
-import { Address, BigInt, ByteArray, Bytes } from "@graphprotocol/graph-ts";
+import {
+  Address,
+  BigInt,
+  ByteArray,
+  Bytes,
+  log,
+} from "@graphprotocol/graph-ts";
 import {
   KinoraQuestData,
   MilestoneCompleted as MilestoneCompletedEvent,
@@ -33,6 +39,9 @@ import {
 export function handleMilestoneCompleted(event: MilestoneCompletedEvent): void {
   let entity = new MilestoneCompleted(
     event.transaction.hash.concatI32(event.logIndex.toI32()),
+  );
+  entity.id = Bytes.fromByteArray(
+    ByteArray.fromBigInt(event.params.playerProfileId),
   );
   entity.questId = event.params.questId;
   entity.playerProfileId = event.params.playerProfileId;
@@ -100,11 +109,9 @@ export function handleQuestCompleted(event: QuestCompletedEvent): void {
 
   if (currentPlayer) {
     let completedQuests: Array<BigInt> | null = currentPlayer.questsCompleted;
-
     if (!completedQuests) {
       completedQuests = [];
     }
-
     completedQuests.push(entity.questId);
 
     currentPlayer.questsCompleted = completedQuests;
@@ -222,6 +229,9 @@ export function handlePlayerMetricsUpdated(
   let entity = new PlayerMetricsUpdated(
     event.transaction.hash.concatI32(event.logIndex.toI32()),
   );
+  entity.id = Bytes.fromByteArray(
+    ByteArray.fromBigInt(event.params.playerProfileId),
+  );
   entity.playerProfileId = event.params.playerProfileId;
   entity.videoPubId = event.params.videoPubId;
   entity.videoProfileId = event.params.videoProfileId;
@@ -233,7 +243,7 @@ export function handlePlayerMetricsUpdated(
   let currentPlayer = Player.load(event.params.playerProfileId.toString());
 
   let questData = KinoraQuestData.bind(
-    Address.fromString("0x04F1aC508F3b2b9a3d1Cf00dFAB278109D01EbA7"),
+    Address.fromString("0x7484461387456E530A72601A3294972c9a9b6049"),
   );
 
   if (currentPlayer) {
@@ -243,8 +253,10 @@ export function handlePlayerMetricsUpdated(
         entity.videoProfileId.toString(),
     );
 
-    currentVideo.profileId = entity.videoPubId;
-    currentVideo.pubId = entity.videoProfileId;
+    currentVideo.playerProfileId = entity.playerProfileId;
+
+    currentVideo.profileId = entity.videoProfileId;
+    currentVideo.pubId = entity.videoPubId;
     // currentVideo.videosBytes = questData.getPlayerVideoBytes();
     currentVideo.playCount = questData.getPlayerVideoPlayCount(
       entity.playerProfileId,
@@ -294,6 +306,58 @@ export function handlePlayerMetricsUpdated(
       entity.videoProfileId,
     );
 
+    currentVideo.secondaryCollectOnComment = questData.getPlayerVideoSecondaryCollectOnComment(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.secondaryMirrorOnComment = questData.getPlayerVideoSecondaryMirrorOnComment(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.secondaryQuoteOnComment = questData.getPlayerVideoSecondaryQuoteOnComment(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.secondaryReactOnComment = questData.getPlayerVideoSecondaryReactOnComment(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.secondaryCommentOnComment = questData.getPlayerVideoSecondaryCommentOnComment(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+
+    currentVideo.secondaryCollectOnQuote = questData.getPlayerVideoSecondaryCollectOnQuote(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.secondaryMirrorOnQuote = questData.getPlayerVideoSecondaryMirrorOnQuote(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.secondaryQuoteOnQuote = questData.getPlayerVideoSecondaryQuoteOnQuote(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.secondaryReactOnQuote = questData.getPlayerVideoSecondaryReactOnQuote(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+    currentVideo.secondaryCommentOnQuote = questData.getPlayerVideoSecondaryCommentOnQuote(
+      entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+
     currentVideo.save();
 
     let videos: Array<string> | null = currentPlayer.videos;
@@ -328,7 +392,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
   entity.transactionHash = event.transaction.hash;
 
   let questData = KinoraQuestData.bind(
-    Address.fromString("0x04F1aC508F3b2b9a3d1Cf00dFAB278109D01EbA7"),
+    Address.fromString("0x7484461387456E530A72601A3294972c9a9b6049"),
   );
 
   entity.maxPlayerCount = questData.getQuestMaxPlayerCount(entity.questId);
@@ -362,23 +426,25 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
   let erc721Logic: Array<string> = [];
 
   for (let h = 0; h < addressesErc20.length; h++) {
-    let erc20 = new ERC20Logic(
-      entity.uri.split("/").pop() +
-        entity.questId.toString() +
-        h.toString() +
-        addressesErc20[h].toHexString(),
-    );
+    if (h < thresholdsErc20.length) {
+      let erc20 = new ERC20Logic(
+        entity.uri.split("/").pop() +
+          entity.questId.toString() +
+          h.toString() +
+          addressesErc20[h].toHexString(),
+      );
 
-    erc20.amount = thresholdsErc20[h];
-    erc20.address = addressesErc20[h];
-    erc20.save();
+      erc20.amount = thresholdsErc20[h];
+      erc20.address = addressesErc20[h];
+      erc20.save();
 
-    erc20Logic.push(
-      entity.uri.split("/").pop() +
-        entity.questId.toString() +
-        h.toString() +
-        addressesErc20[h].toHexString(),
-    );
+      erc20Logic.push(
+        entity.uri.split("/").pop() +
+          entity.questId.toString() +
+          h.toString() +
+          addressesErc20[h].toHexString(),
+      );
+    }
   }
 
   const addressesErc721 = questData.getQuestGatedERC721Addresses(
@@ -437,8 +503,8 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
   for (let i = 0; i < milestoneCount; i++) {
     let milestoneId = (i + 1 + entity.questId.toI32()).toString();
     let milestone = new Milestone(milestoneId);
-    milestone.milestoneId = BigInt.fromString((i + 1).toString());
-
+    milestone.milestoneId = BigInt.fromI32(i + 1);
+    milestone.questId = entity.questId;
     let milestoneURI = questData.getMilestoneURI(
       entity.questId,
       <BigInt>milestone.milestoneId,
@@ -551,6 +617,8 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
           entity.questId.toString() +
           (<BigInt>milestone.milestoneId).toString(),
       );
+
+      currentVideo.questId = entity.questId;
 
       currentVideo.pubId = BigInt.fromString(
         parseInt(allVideos[j].split("-")[1], 16)

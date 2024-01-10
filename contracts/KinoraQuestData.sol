@@ -411,7 +411,7 @@ contract KinoraQuestData {
     uint256 _playerProfileId,
     uint256 _videoPubId,
     uint256 _videoProfileId
-  ) public view returns (uint256) {
+  ) public view returns (string memory) {
     return
       _allPlayers[_playerProfileId]
       .videoMetrics[_videoProfileId][_videoPubId].mostReplayedArea;

@@ -303,6 +303,28 @@ contract KinoraOpenAction is
         _videoProfileId,
         _videoPubId
       ) ||
+      kinoraQuestData.getPlayerVideoPlayCount(
+        _playerProfileId,
+        _videoPubId,
+        _videoProfileId
+      ) <
+      kinoraQuestData.getMilestoneVideoMinPlayCount(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) ||
+      kinoraQuestData.getPlayerVideoDuration(
+        _playerProfileId,
+        _videoPubId,
+        _videoProfileId
+      ) <
+      kinoraQuestData.getMilestoneVideoMinDuration(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) ||
       kinoraQuestData.getPlayerVideoSecondaryQuoteOnQuote(
         _playerProfileId,
         _videoPubId,
@@ -412,29 +434,18 @@ contract KinoraOpenAction is
         _milestone,
         _videoProfileId,
         _videoPubId
-      )  ||
-      kinoraQuestData.getPlayerVideoPlayCount(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinPlayCount(
+      )
+    ) {
+      revert KinoraErrors.MilestoneInvalid();
+    }
+
+    if (
+      kinoraQuestData.getMilestoneVideoBookmark(
         _questId,
         _milestone,
         _videoProfileId,
         _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoDuration(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinDuration(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
+      ) &&
       kinoraQuestData.getPlayerVideoBookmark(
         _playerProfileId,
         _videoPubId,
@@ -445,7 +456,18 @@ contract KinoraOpenAction is
         _milestone,
         _videoProfileId,
         _videoPubId
-      ) ||
+      )
+    ) {
+      revert KinoraErrors.MilestoneInvalid();
+    }
+
+    if (
+      kinoraQuestData.getMilestoneVideoComment(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) &&
       kinoraQuestData.getPlayerVideoComment(
         _playerProfileId,
         _videoPubId,
@@ -456,7 +478,18 @@ contract KinoraOpenAction is
         _milestone,
         _videoProfileId,
         _videoPubId
-      ) ||
+      )
+    ) {
+      revert KinoraErrors.MilestoneInvalid();
+    }
+
+    if (
+      kinoraQuestData.getMilestoneVideoReact(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) &&
       kinoraQuestData.getPlayerVideoReact(
         _playerProfileId,
         _videoPubId,
@@ -467,7 +500,18 @@ contract KinoraOpenAction is
         _milestone,
         _videoProfileId,
         _videoPubId
-      ) ||
+      )
+    ) {
+      revert KinoraErrors.MilestoneInvalid();
+    }
+
+    if (
+      kinoraQuestData.getMilestoneVideoQuote(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) &&
       kinoraQuestData.getPlayerVideoQuote(
         _playerProfileId,
         _videoPubId,
@@ -478,7 +522,18 @@ contract KinoraOpenAction is
         _milestone,
         _videoProfileId,
         _videoPubId
-      ) ||
+      )
+    ) {
+      revert KinoraErrors.MilestoneInvalid();
+    }
+
+    if (
+      kinoraQuestData.getMilestoneVideoMirror(
+        _questId,
+        _milestone,
+        _videoProfileId,
+        _videoPubId
+      ) &&
       kinoraQuestData.getPlayerVideoMirror(
         _playerProfileId,
         _videoPubId,

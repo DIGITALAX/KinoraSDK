@@ -7,9 +7,10 @@ import {
 } from "./constants/index";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
 import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
-import getPublicationClient from "./graphql/queries/getPublicationClient";
-import getPublicationsClient from "./graphql/queries/getPublicationsClient";
 import { Post, Comment, Quote } from "./@types/generated";
+import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
+import getPublication from "./graphql/queries/getPublication";
+import getPublications from "./graphql/queries/getPublications";
 
 export class Sequence {
   /**
@@ -27,6 +28,16 @@ export class Sequence {
   private playerMap: { [postId: ZeroString]: PlayerData } = {};
 
   /**
+   * @private
+   * @type {ApolloClient<NormalizedCacheObject>}
+   * @description Authenticated Apollo Client for player interactions.
+   */
+  private playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>;
+
+  constructor(playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>) {
+    this.playerAuthedApolloClient = playerAuthedApolloClient;
+  }
+  /**
    * Initializes a Livepeer video player with given Id and associates event handlers to the video element.
    *
    * @param postId - Lens publication Id associated with the video.
@@ -34,7 +45,7 @@ export class Sequence {
    */
   initializePlayer = (
     postId: ZeroString,
-    videoElement: HTMLVideoElement,
+    videoElement: HTMLVideoElement
   ): void => {
     if (!this.metrics[postId]) {
       this.metrics[postId] = new Metrics();
@@ -58,44 +69,46 @@ export class Sequence {
           click: () => this.metrics[postId].onClick(),
           onTimeUpdate: () => this.metrics[postId].onTimeUpdate(videoElement),
           onSeeked: () => this.metrics[postId].onSeeked(videoElement),
+          onSeeking: () => this.metrics[postId].onSeeking(),
         },
       };
       videoElement.addEventListener("ended", () =>
-        this.playerMap[postId].eventHandlers.end(videoElement),
+        this.playerMap[postId].eventHandlers.end(videoElement)
       );
       videoElement.addEventListener("play", () =>
-        this.playerMap[postId].eventHandlers.play(videoElement),
+        this.playerMap[postId].eventHandlers.play(videoElement)
       );
       videoElement.addEventListener(
         "pause",
-        this.playerMap[postId].eventHandlers.pause,
+        this.playerMap[postId].eventHandlers.pause
       );
+      videoElement.addEventListener("seeking", this.metrics[postId].onSeeking);
       videoElement.addEventListener("seeked", () =>
-        this.metrics[postId].onSeeked(videoElement),
+        this.metrics[postId].onSeeked(videoElement)
       );
       videoElement.addEventListener(
         "volumechange",
-        this.playerMap[postId].eventHandlers.volumeChange,
+        this.playerMap[postId].eventHandlers.volumeChange
       );
       videoElement.addEventListener(
         "click",
-        this.playerMap[postId].eventHandlers.click,
+        this.playerMap[postId].eventHandlers.click
       );
 
       videoElement.addEventListener(
         "qualityChange",
-        this.playerMap[postId].eventHandlers.qualityChange,
+        this.playerMap[postId].eventHandlers.qualityChange
       );
       videoElement.addEventListener(
         "muteToggle",
-        this.playerMap[postId].eventHandlers.muteToggle,
+        this.playerMap[postId].eventHandlers.muteToggle
       );
       videoElement.addEventListener(
         "fullscreenToggle",
-        this.playerMap[postId].eventHandlers.fullscreenToggle,
+        this.playerMap[postId].eventHandlers.fullscreenToggle
       );
       videoElement.addEventListener("timeupdate", () =>
-        this.metrics[postId].onTimeUpdate(videoElement),
+        this.metrics[postId].onTimeUpdate(videoElement)
       );
     }
   };
@@ -124,7 +137,7 @@ export class Sequence {
   sendMetricsOnChain = async (
     postId: ZeroString,
     playerProfileId: ZeroString,
-    wallet: ethers.Wallet,
+    wallet: ethers.Wallet
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -132,29 +145,35 @@ export class Sequence {
   }> => {
     if (Object.keys(this.playerMap).length === 0)
       throw new Error(
-        "No video elements detected. Make sure to set your Livepeer Player component in your app.",
+        "No video elements detected. Make sure to set your Livepeer Player component in your app."
       );
 
     if (!this.metrics[postId]) {
       throw new Error(
-        "Player Not Found in App. Make sure you've correctly added the Post Id.",
+        "Player Not Found in App. Make sure you've correctly added the Post Id."
       );
     }
 
     try {
-      const { data } = await getPublicationClient({
-        forId: postId,
-      });
+      const { data } = await getPublication(
+        {
+          forId: postId,
+        },
+        this.playerAuthedApolloClient
+      );
       let commentData: Comment[] = [];
       if ((data?.publication as Post)?.stats?.comments > 0) {
-        const { data } = await getPublicationsClient({
-          where: {
-            commentOn: {
-              id: postId,
+        const { data } = await getPublications(
+          {
+            where: {
+              commentOn: {
+                id: postId,
+              },
+              from: [playerProfileId],
             },
-            from: [playerProfileId],
           },
-        });
+          this.playerAuthedApolloClient
+        );
 
         commentData = data?.publications?.items as Comment[];
       }
@@ -162,7 +181,7 @@ export class Sequence {
       const kinoraMetricsContract = new ethers.Contract(
         KINORA_METRICS_CONTRACT,
         KinoraMetricsAbi,
-        wallet,
+        wallet
       );
 
       const {
@@ -176,7 +195,7 @@ export class Sequence {
         wallet,
         parseInt(playerProfileId, 16),
         parseInt(postId?.split("-")[1], 16),
-        parseInt(postId?.split("-")[0], 16),
+        parseInt(postId?.split("-")[0], 16)
       );
 
       if (error) {
@@ -212,27 +231,42 @@ export class Sequence {
         profileId: parseInt(postId?.split("-")[0], 16),
         pubId: parseInt(postId?.split("-")[1], 16),
         playCount: Number(playCount) + this.metrics[postId]?.getPlayCount(),
-        secondaryQuoteOnQuote,
-        secondaryMirrorOnQuote,
-        secondaryReactOnQuote,
-        secondaryCommentOnQuote,
-        secondaryCollectOnQuote,
-        secondaryQuoteOnComment,
-        secondaryMirrorOnComment,
-        secondaryReactOnComment,
-        secondaryCommentOnComment,
-        secondaryCollectOnComment,
-        avd:
-          (Number(avd) * Number(duration) +
-            this.metrics[postId]?.getAVD() *
-              this.metrics[postId]?.getTotalDuration()) /
-          (Number(duration) + this.metrics[postId]?.getTotalDuration()) /
-          1000,
-        duration: Number(duration) + this.metrics[postId]?.getTotalDuration(),
-        mostReplayedArea: this.reconcileMostReplayedArea(
-          mostReplayedArea!,
-          this.metrics[postId]?.getMostReplayedArea(),
-        ),
+        secondaryQuoteOnQuote: secondaryQuoteOnQuote || 0,
+        secondaryMirrorOnQuote: secondaryMirrorOnQuote || 0,
+        secondaryReactOnQuote: secondaryReactOnQuote || 0,
+        secondaryCommentOnQuote: secondaryCommentOnQuote || 0,
+        secondaryCollectOnQuote: secondaryCollectOnQuote || 0,
+        secondaryQuoteOnComment: secondaryQuoteOnComment || 0,
+        secondaryMirrorOnComment: secondaryMirrorOnComment || 0,
+        secondaryReactOnComment: secondaryReactOnComment || 0,
+        secondaryCommentOnComment: secondaryCommentOnComment || 0,
+        secondaryCollectOnComment: secondaryCollectOnComment || 0,
+        avd: (
+          Number(
+            (Number(duration) + this.metrics[postId]?.getTotalDuration() == 0
+              ? 0
+              : (Number(avd) * Number(duration) +
+                  this.metrics[postId]?.getAVD() *
+                    this.metrics[postId]?.getTotalDuration()) /
+                (Number(duration) + this.metrics[postId]?.getTotalDuration()) /
+                1000
+            ).toFixed(2)
+          ) *
+          10 ** 18
+        ).toString(),
+        duration: (
+          Number(
+            (
+              Number(duration) + this.metrics[postId]?.getTotalDuration()
+            ).toFixed(2)
+          ) *
+          10 ** 18
+        ).toString(),
+        mostReplayedArea: "",
+        // this.reconcileMostReplayedArea(
+        //   mostReplayedArea!,
+        //   this.metrics[postId]?.getMostReplayedArea()
+        // ),
         hasQuoted: (data?.publication as Post)?.operations?.hasQuoted,
         hasMirrored: (data?.publication as Post)?.operations.hasMirrored,
         hasCommented: commentData?.length > 0 ? true : false,
@@ -257,12 +291,12 @@ export class Sequence {
   };
 
   getLivePlayerVideoMetrics = (
-    postId: `0x${string}`,
+    postId: `0x${string}`
   ): {
     playCount: number;
     avd: number;
     duration: number;
-    mostReplayedArea: string;
+    mostReplayedArea: Map<number, number>;
     totalInteractions: number;
   } => {
     return {
@@ -286,45 +320,49 @@ export class Sequence {
     }
     this.playerMap[postId].videoElement.removeEventListener("ended", () =>
       this.playerMap[postId].eventHandlers.end(
-        this.playerMap[postId].videoElement,
-      ),
+        this.playerMap[postId].videoElement
+      )
     );
     this.playerMap[postId].videoElement.removeEventListener("play", () =>
       this.playerMap[postId].eventHandlers.play(
-        this.playerMap[postId].videoElement,
-      ),
+        this.playerMap[postId].videoElement
+      )
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "pause",
-      this.playerMap[postId].eventHandlers.pause,
+      this.playerMap[postId].eventHandlers.pause
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "volumechange",
-      this.playerMap[postId].eventHandlers.volumeChange,
+      this.playerMap[postId].eventHandlers.volumeChange
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "click",
-      this.playerMap[postId].eventHandlers.click,
+      this.playerMap[postId].eventHandlers.click
     );
-    this.playerMap[postId].videoElement.addEventListener("seeked", () =>
+    this.playerMap[postId].videoElement.removeEventListener(
+      "seeking",
+      this.playerMap[postId].eventHandlers.onSeeking
+    );
+    this.playerMap[postId].videoElement.removeEventListener("seeked", () =>
       this.playerMap[postId].eventHandlers.onSeeked(
-        this.playerMap[postId].videoElement,
-      ),
+        this.playerMap[postId].videoElement
+      )
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "qualityChange",
-      this.playerMap[postId].eventHandlers.qualityChange,
+      this.playerMap[postId].eventHandlers.qualityChange
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "muteToggle",
-      this.playerMap[postId].eventHandlers.muteToggle,
+      this.playerMap[postId].eventHandlers.muteToggle
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "fullscreenToggle",
-      this.playerMap[postId].eventHandlers.fullscreenToggle,
+      this.playerMap[postId].eventHandlers.fullscreenToggle
     );
     this.playerMap[postId].videoElement.removeEventListener("timeupdate", () =>
-      this.metrics[postId].onTimeUpdate(this.playerMap[postId].videoElement),
+      this.metrics[postId].onTimeUpdate(this.playerMap[postId].videoElement)
     );
   };
 
@@ -332,7 +370,7 @@ export class Sequence {
     wallet: ethers.Wallet,
     playerProfileId: number,
     videoPubId: number,
-    videoProfileId: number,
+    videoProfileId: number
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -345,37 +383,37 @@ export class Sequence {
       const kinoraQuestData = new ethers.Contract(
         KINORA_QUEST_DATA_CONTRACT,
         KinoraQuestDataAbi,
-        wallet,
+        wallet
       );
 
       const duration = await kinoraQuestData.getPlayerVideoDuration(
         playerProfileId,
         videoPubId,
-        videoProfileId,
+        videoProfileId
       );
       const mostReplayedArea =
         await kinoraQuestData.getPlayerVideoMostReplayedArea(
           playerProfileId,
           videoPubId,
-          videoProfileId,
+          videoProfileId
         );
       const playCount = await kinoraQuestData.getPlayerVideoPlayCount(
         playerProfileId,
         videoPubId,
-        videoProfileId,
+        videoProfileId
       );
       const avd = await kinoraQuestData.getPlayerVideoAVD(
         playerProfileId,
         videoPubId,
-        videoProfileId,
+        videoProfileId
       );
 
       return {
         error: false,
-        mostReplayedArea,
-        playCount,
-        avd,
-        duration,
+        mostReplayedArea: mostReplayedArea?.toString(),
+        playCount: Number(playCount) || 0,
+        avd: (Number(avd) || 0) / 10 ** 18,
+        duration: (Number(duration) || 0) / 10 ** 18,
       };
     } catch (err: any) {
       return {
@@ -387,27 +425,36 @@ export class Sequence {
 
   public reconcileMostReplayedArea = (
     previousArea: string,
-    currentArea: string,
-  ): string => {
-    const [prevStart] = previousArea.split("-");
-    const [currStart] = currentArea.split("-");
-
-    const prevStartTime = new Date(`1970-01-01T${prevStart}Z`);
-    const currStartTime = new Date(`1970-01-01T${currStart}Z`);
-
-    const prevMilliseconds = prevStartTime.getTime();
-    const currMilliseconds = currStartTime.getTime();
-
-    if (currMilliseconds > prevMilliseconds) {
-      return currentArea;
-    } else {
-      return previousArea;
+    currentArea: string
+  ): number => {
+    if (currentArea === "No replays") {
+      if (previousArea?.toString() == "0") {
+        return 0;
+      }
+      return Number(this.formatToNumber(previousArea).start);
     }
+
+    if (previousArea == "No replays") {
+      return Number(this.formatToNumber(currentArea).start);
+    }
+
+    return this.formatToNumber(currentArea).start >
+      this.formatToNumber(previousArea).start
+      ? Number(
+          this.formatToNumber(currentArea).start.toString() +
+            "0000" +
+            this.formatToNumber(currentArea).end.toString()
+        )
+      : Number(
+          this.formatToNumber(previousArea).start.toString() +
+            "0000" +
+            this.formatToNumber(previousArea).end.toString()
+        );
   };
 
   secondaryData = async (
     playerProfileId: `0x${string}`,
-    postId: `0x${string}`,
+    postId: `0x${string}`
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -423,14 +470,17 @@ export class Sequence {
     secondaryCollectOnComment?: number;
   }> => {
     try {
-      const { data: commentData } = await getPublicationsClient({
-        where: {
-          commentOn: {
-            id: postId,
+      const { data: commentData } = await getPublications(
+        {
+          where: {
+            commentOn: {
+              id: postId,
+            },
+            from: [playerProfileId],
           },
-          from: [playerProfileId],
         },
-      });
+        this.playerAuthedApolloClient
+      );
       let secondaryQuoteOnComment: number = 0,
         secondaryMirrorOnComment: number = 0,
         secondaryReactOnComment: number = 0,
@@ -453,7 +503,7 @@ export class Sequence {
               secondaryQuoteOnComment = item?.stats?.quotes;
             if (item?.stats?.comments > secondaryCommentOnComment)
               secondaryCommentOnComment = item?.stats?.comments;
-          },
+          }
         );
       }
 
@@ -462,14 +512,15 @@ export class Sequence {
         secondaryReactOnQuote: number = 0,
         secondaryCommentOnQuote: number = 0,
         secondaryCollectOnQuote: number = 0;
-      const { data: quoteData } = await getPublicationsClient({
-        where: {
-          quoteOn: {
-            id: postId,
+      const { data: quoteData } = await getPublications(
+        {
+          where: {
+            quoteOn: postId,
+            from: [playerProfileId],
           },
-          from: [playerProfileId],
         },
-      });
+        this.playerAuthedApolloClient
+      );
 
       if (
         quoteData?.publications?.items &&
@@ -509,4 +560,22 @@ export class Sequence {
       };
     }
   };
+
+  private formatToNumber(timeString: string) {
+    const [s, e] = timeString.split("-");
+    let start: number | undefined, end: number | undefined;
+    if (s) {
+      const [shh, smm, sss, sms] = s.split(":");
+      start = parseInt(`${shh}${smm}${sss}${sms}`);
+    }
+    if (e) {
+      const [ehh, emm, ess, ems] = e.split(":");
+      end = parseInt(`${ehh}${emm}${ess}${ems}`);
+    }
+
+    return {
+      start: start ? start : "00000000",
+      end: end ? end : "00000000",
+    };
+  }
 }
