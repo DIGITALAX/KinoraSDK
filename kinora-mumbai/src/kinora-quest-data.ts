@@ -53,11 +53,17 @@ export function handleMilestoneCompleted(event: MilestoneCompletedEvent): void {
 
   let currentPlayer = Player.load(event.params.playerProfileId.toString());
 
+  let questData = KinoraQuestData.bind(
+    Address.fromString("0x7484461387456E530A72601A3294972c9a9b6049"),
+  );
+  const uri = questData.getQuestURI(entity.questId);
+
   if (currentPlayer) {
     let currentEligible = new Eligible(
       event.params.milestone.toString() +
         event.params.playerProfileId.toString() +
-        event.params.questId.toString(),
+        event.params.questId.toString() +
+        uri,
     );
 
     currentEligible.status = false;
@@ -67,7 +73,8 @@ export function handleMilestoneCompleted(event: MilestoneCompletedEvent): void {
     let currentCompleted = new CompletionActivity(
       event.params.milestone.toString() +
         event.params.playerProfileId.toString() +
-        event.params.questId.toString(),
+        event.params.questId.toString() +
+        uri,
     );
 
     currentCompleted.questId = entity.questId;
@@ -139,11 +146,17 @@ export function handlePlayerEligibleToClaimMilestone(
 
   let currentPlayer = Player.load(event.params.playerProfileId.toString());
 
+  let questData = KinoraQuestData.bind(
+    Address.fromString("0x7484461387456E530A72601A3294972c9a9b6049"),
+  );
+  const uri = questData.getQuestURI(entity.questId);
+
   if (currentPlayer) {
     let currentEligible = new Eligible(
       event.params.milestone.toString() +
         event.params.playerProfileId.toString() +
-        event.params.questId.toString(),
+        event.params.questId.toString() +
+        uri,
     );
 
     currentEligible.milestone = entity.milestone;
@@ -431,7 +444,8 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
         entity.uri.split("/").pop() +
           entity.questId.toString() +
           h.toString() +
-          addressesErc20[h].toHexString(),
+          addressesErc20[h].toHexString() +
+          entity.uri,
       );
 
       erc20.amount = thresholdsErc20[h];
@@ -466,7 +480,8 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       entity.uri.split("/").pop() +
         entity.questId.toString() +
         h.toString() +
-        addressesErc721[h].toHexString(),
+        addressesErc721[h].toHexString() +
+        entity.uri,
     );
 
     erc721.address = addressesErc721[h];
@@ -498,24 +513,27 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
   entity.gate = entity.uri.split("/").pop();
 
   let milestones: Array<string> = [];
-  let milestoneCount = entity.milestoneCount.toI32();
 
-  for (let i = 0; i < milestoneCount; i++) {
-    let milestoneId = (i + 1 + entity.questId.toI32()).toString();
-    let milestone = new Milestone(milestoneId);
-    milestone.milestoneId = BigInt.fromI32(i + 1);
-    milestone.questId = entity.questId;
+  for (let i = 0; i < entity.milestoneCount.toI32(); i++) {
+    let milestoneCounter = BigInt.fromI32(i + 1);
+
     let milestoneURI = questData.getMilestoneURI(
       entity.questId,
-      <BigInt>milestone.milestoneId,
+      <BigInt>milestoneCounter,
     );
     if (milestoneURI.includes("ipfs://")) {
       milestoneURI = milestoneURI.split("/").pop();
     }
+    let milestoneId =
+      (i + 1 + entity.questId.toI32()).toString() + milestoneURI;
+
+    let milestone = new Milestone(milestoneId);
+    milestone.milestoneId = <BigInt>milestoneCounter;
+
+    milestone.questId = entity.questId;
 
     if (milestoneURI !== null) {
       milestone.uri = milestoneURI;
-
       milestone.milestoneMetadata = milestoneURI;
       QuestMetadataTemplate.create(milestoneURI);
     }
@@ -524,11 +542,11 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
 
     const addressesErc20 = questData.getMilestoneGatedERC20Addresses(
       entity.questId,
-      <BigInt>milestone.milestoneId,
+      <BigInt>milestoneCounter,
     );
     const thresholdsErc20 = questData.getMilestoneGatedERC20Thresholds(
       entity.questId,
-      <BigInt>milestone.milestoneId,
+      <BigInt>milestoneCounter,
     );
 
     let erc20Logic: Array<string> = [];
@@ -536,7 +554,10 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
 
     for (let h = 0; h < addressesErc20.length; h++) {
       let erc20 = new ERC20Logic(
-        milestoneId + h.toString() + addressesErc20[h].toHexString(),
+        milestoneId +
+          h.toString() +
+          addressesErc20[h].toHexString() +
+          milestoneURI,
       );
 
       erc20.amount = thresholdsErc20[h];
@@ -550,15 +571,15 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
 
     const addressesErc721 = questData.getMilestoneGatedERC721Addresses(
       entity.questId,
-      <BigInt>milestone.milestoneId,
+      <BigInt>milestoneCounter,
     );
     let tokenIds = questData.getMilestoneGatedERC721TokenIds(
       entity.questId,
-      <BigInt>milestone.milestoneId,
+      <BigInt>milestoneCounter,
     );
     let tokenURIs = questData.getMilestoneGatedERC721TokenURIs(
       entity.questId,
-      <BigInt>milestone.milestoneId,
+      <BigInt>milestoneCounter,
     );
 
     if (!tokenIds) {
@@ -571,7 +592,10 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
 
     for (let h = 0; h < addressesErc721.length; h++) {
       let erc721 = new ERC721Logic(
-        milestoneId + h.toString() + addressesErc721[h].toHexString(),
+        milestoneId +
+          h.toString() +
+          addressesErc721[h].toHexString() +
+          milestoneURI,
       );
 
       erc721.address = addressesErc721[h];
@@ -594,7 +618,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
 
     gated.oneOf = questData.getMilestoneGatedOneOf(
       entity.questId,
-      <BigInt>milestone.milestoneId,
+      <BigInt>milestoneCounter,
     );
 
     gated.save();
@@ -602,20 +626,21 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
     milestone.gated = milestoneURI + milestoneId.toString();
     milestone.videoLength = questData.getMilestoneVideoLength(
       entity.questId,
-      <BigInt>milestone.milestoneId,
+      <BigInt>milestoneCounter,
     );
 
     let videos: Array<string> = [];
     const allVideos = questData.getMilestoneVideos(
       entity.questId,
-      <BigInt>milestone.milestoneId,
+      <BigInt>milestoneCounter,
     );
 
     for (let j = 0; j < allVideos.length; j++) {
       let currentVideo = new Video(
         allVideos[j].toString() +
           entity.questId.toString() +
-          (<BigInt>milestone.milestoneId).toString(),
+          (<BigInt>milestoneCounter).toString() +
+          milestoneURI,
       );
 
       currentVideo.questId = entity.questId;
@@ -639,109 +664,109 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
 
         currentVideo.minPlayCount = questData.getMilestoneVideoMinPlayCount(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minAVD = questData.getMilestoneVideoMinAVD(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minSecondaryQuoteOnQuote = questData.getMilestoneVideoMinSecondaryQuoteOnQuote(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minSecondaryMirrorOnQuote = questData.getMilestoneVideoMinSecondaryMirrorOnQuote(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minSecondaryReactOnQuote = questData.getMilestoneVideoMinSecondaryReactOnQuote(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minSecondaryCommentOnQuote = questData.getMilestoneVideoMinSecondaryCommentOnQuote(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minSecondaryCollectOnQuote = questData.getMilestoneVideoMinSecondaryCollectOnQuote(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minSecondaryQuoteOnComment = questData.getMilestoneVideoMinSecondaryQuoteOnComment(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minSecondaryMirrorOnComment = questData.getMilestoneVideoMinSecondaryMirrorOnComment(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minSecondaryReactOnComment = questData.getMilestoneVideoMinSecondaryReactOnComment(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minSecondaryCommentOnComment = questData.getMilestoneVideoMinSecondaryCommentOnComment(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minSecondaryCollectOnComment = questData.getMilestoneVideoMinSecondaryCollectOnComment(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.minDuration = questData.getMilestoneVideoMinDuration(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.quote = questData.getMilestoneVideoQuote(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.mirror = questData.getMilestoneVideoMirror(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.react = questData.getMilestoneVideoReact(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.comment = questData.getMilestoneVideoComment(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
         currentVideo.bookmark = questData.getMilestoneVideoBookmark(
           entity.questId,
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
@@ -749,7 +774,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
         videos.push(
           allVideos[j].toString() +
             entity.questId.toString() +
-            (<BigInt>milestone.milestoneId).toString(),
+            (<BigInt>milestoneCounter).toString(),
         );
       }
 
@@ -760,7 +785,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
 
     const rewardLength = questData.getMilestoneRewardsLength(
       entity.questId,
-      <BigInt>milestone.milestoneId,
+      <BigInt>milestoneCounter,
     );
 
     milestone.rewardsLength = rewardLength;
@@ -771,24 +796,24 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       currentReward.amount = questData.getMilestoneRewardTokenAmount(
         entity.questId,
         BigInt.fromI32(j),
-        <BigInt>milestone.milestoneId,
+        <BigInt>milestoneCounter,
       );
       currentReward.tokenAddress = questData.getMilestoneRewardTokenAddress(
         entity.questId,
         BigInt.fromI32(j),
-        <BigInt>milestone.milestoneId,
+        <BigInt>milestoneCounter,
       );
       currentReward.type = BigInt.fromI32(
         questData.getMilestoneRewardType(
           entity.questId,
           BigInt.fromI32(j),
-          <BigInt>milestone.milestoneId,
+          <BigInt>milestoneCounter,
         ),
       );
       currentReward.uri = questData.getMilestoneRewardURI(
         entity.questId,
         BigInt.fromI32(j),
-        <BigInt>milestone.milestoneId,
+        <BigInt>milestoneCounter,
       );
 
       if (currentReward.uri) {
@@ -805,7 +830,6 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
     milestone.videos = videos;
 
     milestone.save();
-
     milestones.push(milestoneId);
   }
 
