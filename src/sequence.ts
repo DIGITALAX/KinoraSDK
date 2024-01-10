@@ -45,7 +45,7 @@ export class Sequence {
    */
   initializePlayer = (
     postId: ZeroString,
-    videoElement: HTMLVideoElement
+    videoElement: HTMLVideoElement,
   ): void => {
     if (!this.metrics[postId]) {
       this.metrics[postId] = new Metrics();
@@ -73,42 +73,42 @@ export class Sequence {
         },
       };
       videoElement.addEventListener("ended", () =>
-        this.playerMap[postId].eventHandlers.end(videoElement)
+        this.playerMap[postId].eventHandlers.end(videoElement),
       );
       videoElement.addEventListener("play", () =>
-        this.playerMap[postId].eventHandlers.play(videoElement)
+        this.playerMap[postId].eventHandlers.play(videoElement),
       );
       videoElement.addEventListener(
         "pause",
-        this.playerMap[postId].eventHandlers.pause
+        this.playerMap[postId].eventHandlers.pause,
       );
       videoElement.addEventListener("seeking", this.metrics[postId].onSeeking);
       videoElement.addEventListener("seeked", () =>
-        this.metrics[postId].onSeeked(videoElement)
+        this.metrics[postId].onSeeked(videoElement),
       );
       videoElement.addEventListener(
         "volumechange",
-        this.playerMap[postId].eventHandlers.volumeChange
+        this.playerMap[postId].eventHandlers.volumeChange,
       );
       videoElement.addEventListener(
         "click",
-        this.playerMap[postId].eventHandlers.click
+        this.playerMap[postId].eventHandlers.click,
       );
 
       videoElement.addEventListener(
         "qualityChange",
-        this.playerMap[postId].eventHandlers.qualityChange
+        this.playerMap[postId].eventHandlers.qualityChange,
       );
       videoElement.addEventListener(
         "muteToggle",
-        this.playerMap[postId].eventHandlers.muteToggle
+        this.playerMap[postId].eventHandlers.muteToggle,
       );
       videoElement.addEventListener(
         "fullscreenToggle",
-        this.playerMap[postId].eventHandlers.fullscreenToggle
+        this.playerMap[postId].eventHandlers.fullscreenToggle,
       );
       videoElement.addEventListener("timeupdate", () =>
-        this.metrics[postId].onTimeUpdate(videoElement)
+        this.metrics[postId].onTimeUpdate(videoElement),
       );
     }
   };
@@ -137,7 +137,7 @@ export class Sequence {
   sendMetricsOnChain = async (
     postId: ZeroString,
     playerProfileId: ZeroString,
-    wallet: ethers.Wallet
+    wallet: ethers.Wallet,
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -145,12 +145,12 @@ export class Sequence {
   }> => {
     if (Object.keys(this.playerMap).length === 0)
       throw new Error(
-        "No video elements detected. Make sure to set your Livepeer Player component in your app."
+        "No video elements detected. Make sure to set your Livepeer Player component in your app.",
       );
 
     if (!this.metrics[postId]) {
       throw new Error(
-        "Player Not Found in App. Make sure you've correctly added the Post Id."
+        "Player Not Found in App. Make sure you've correctly added the Post Id.",
       );
     }
 
@@ -159,7 +159,7 @@ export class Sequence {
         {
           forId: postId,
         },
-        this.playerAuthedApolloClient
+        this.playerAuthedApolloClient,
       );
       let commentData: Comment[] = [];
       if ((data?.publication as Post)?.stats?.comments > 0) {
@@ -172,7 +172,7 @@ export class Sequence {
               from: [playerProfileId],
             },
           },
-          this.playerAuthedApolloClient
+          this.playerAuthedApolloClient,
         );
 
         commentData = data?.publications?.items as Comment[];
@@ -181,7 +181,7 @@ export class Sequence {
       const kinoraMetricsContract = new ethers.Contract(
         KINORA_METRICS_CONTRACT,
         KinoraMetricsAbi,
-        wallet
+        wallet,
       );
 
       const {
@@ -195,7 +195,7 @@ export class Sequence {
         wallet,
         parseInt(playerProfileId, 16),
         parseInt(postId?.split("-")[1], 16),
-        parseInt(postId?.split("-")[0], 16)
+        parseInt(postId?.split("-")[0], 16),
       );
 
       if (error) {
@@ -250,7 +250,7 @@ export class Sequence {
                     this.metrics[postId]?.getTotalDuration()) /
                 (Number(duration) + this.metrics[postId]?.getTotalDuration()) /
                 1000
-            ).toFixed(2)
+            ).toFixed(2),
           ) *
           10 ** 18
         ).toString(),
@@ -258,7 +258,7 @@ export class Sequence {
           Number(
             (
               Number(duration) + this.metrics[postId]?.getTotalDuration()
-            ).toFixed(2)
+            ).toFixed(2),
           ) *
           10 ** 18
         ).toString(),
@@ -290,8 +290,16 @@ export class Sequence {
     }
   };
 
+  /**
+   * Retrieves the live video metrics for a specific post.
+   *
+   * @param postId - Lens Profile ID of the post in the format `0x${string}`.
+   * @returns An object containing the play count, average view duration (avd),
+   *          total duration of the video, total interactions, and most replayed area of the video.
+   *          Returns undefined metrics for non-existent postId.
+   */
   getLivePlayerVideoMetrics = (
-    postId: `0x${string}`
+    postId: ZeroString,
   ): {
     playCount: number;
     avd: number;
@@ -307,6 +315,7 @@ export class Sequence {
       mostReplayedArea: this.metrics[postId]?.getMostReplayedArea(),
     };
   };
+
   /**
    * @method cleanUpListeners
    * @description Removes event listeners related to video metrics collection.
@@ -320,57 +329,67 @@ export class Sequence {
     }
     this.playerMap[postId].videoElement.removeEventListener("ended", () =>
       this.playerMap[postId].eventHandlers.end(
-        this.playerMap[postId].videoElement
-      )
+        this.playerMap[postId].videoElement,
+      ),
     );
     this.playerMap[postId].videoElement.removeEventListener("play", () =>
       this.playerMap[postId].eventHandlers.play(
-        this.playerMap[postId].videoElement
-      )
+        this.playerMap[postId].videoElement,
+      ),
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "pause",
-      this.playerMap[postId].eventHandlers.pause
+      this.playerMap[postId].eventHandlers.pause,
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "volumechange",
-      this.playerMap[postId].eventHandlers.volumeChange
+      this.playerMap[postId].eventHandlers.volumeChange,
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "click",
-      this.playerMap[postId].eventHandlers.click
+      this.playerMap[postId].eventHandlers.click,
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "seeking",
-      this.playerMap[postId].eventHandlers.onSeeking
+      this.playerMap[postId].eventHandlers.onSeeking,
     );
     this.playerMap[postId].videoElement.removeEventListener("seeked", () =>
       this.playerMap[postId].eventHandlers.onSeeked(
-        this.playerMap[postId].videoElement
-      )
+        this.playerMap[postId].videoElement,
+      ),
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "qualityChange",
-      this.playerMap[postId].eventHandlers.qualityChange
+      this.playerMap[postId].eventHandlers.qualityChange,
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "muteToggle",
-      this.playerMap[postId].eventHandlers.muteToggle
+      this.playerMap[postId].eventHandlers.muteToggle,
     );
     this.playerMap[postId].videoElement.removeEventListener(
       "fullscreenToggle",
-      this.playerMap[postId].eventHandlers.fullscreenToggle
+      this.playerMap[postId].eventHandlers.fullscreenToggle,
     );
     this.playerMap[postId].videoElement.removeEventListener("timeupdate", () =>
-      this.metrics[postId].onTimeUpdate(this.playerMap[postId].videoElement)
+      this.metrics[postId].onTimeUpdate(this.playerMap[postId].videoElement),
     );
   };
 
+  /**
+   * Asynchronously retrieves current metrics for a video associated with a player's profile.
+   *
+   * @param wallet - ethers.Wallet instance for transactions.
+   * @param playerProfileId - Numeric ID of the player's profile.
+   * @param videoPubId - Numeric ID of the video publication.
+   * @param videoProfileId - Numeric ID of the video's profile.
+   * @returns A Promise resolving to an object with error status, optional error message,
+   *          and metrics including most replayed area, play count, average view duration, and total duration.
+   */
   private getCurrentMetrics = async (
     wallet: ethers.Wallet,
     playerProfileId: number,
     videoPubId: number,
-    videoProfileId: number
+    videoProfileId: number,
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -383,29 +402,29 @@ export class Sequence {
       const kinoraQuestData = new ethers.Contract(
         KINORA_QUEST_DATA_CONTRACT,
         KinoraQuestDataAbi,
-        wallet
+        wallet,
       );
 
       const duration = await kinoraQuestData.getPlayerVideoDuration(
         playerProfileId,
         videoPubId,
-        videoProfileId
+        videoProfileId,
       );
       const mostReplayedArea =
         await kinoraQuestData.getPlayerVideoMostReplayedArea(
           playerProfileId,
           videoPubId,
-          videoProfileId
+          videoProfileId,
         );
       const playCount = await kinoraQuestData.getPlayerVideoPlayCount(
         playerProfileId,
         videoPubId,
-        videoProfileId
+        videoProfileId,
       );
       const avd = await kinoraQuestData.getPlayerVideoAVD(
         playerProfileId,
         videoPubId,
-        videoProfileId
+        videoProfileId,
       );
 
       return {
@@ -423,9 +442,16 @@ export class Sequence {
     }
   };
 
-  public reconcileMostReplayedArea = (
+  /**
+   * Reconciles and calculates the most replayed area between previous and current video data.
+   *
+   * @param previousArea - String representing the previous most replayed area.
+   * @param currentArea - String representing the current most replayed area.
+   * @returns A number representing the reconciled most replayed area, considering both previous and current data.
+   */
+  private reconcileMostReplayedArea = (
     previousArea: string,
-    currentArea: string
+    currentArea: string,
   ): number => {
     if (currentArea === "No replays") {
       if (previousArea?.toString() == "0") {
@@ -443,18 +469,26 @@ export class Sequence {
       ? Number(
           this.formatToNumber(currentArea).start.toString() +
             "0000" +
-            this.formatToNumber(currentArea).end.toString()
+            this.formatToNumber(currentArea).end.toString(),
         )
       : Number(
           this.formatToNumber(previousArea).start.toString() +
             "0000" +
-            this.formatToNumber(previousArea).end.toString()
+            this.formatToNumber(previousArea).end.toString(),
         );
   };
 
+  /**
+   * Asynchronously fetches secondary data related to a player's interactions on specific posts, such as quotes and comments.
+   *
+   * @param playerProfileId - Lens Profile ID of the player in the format `0x${string}`.
+   * @param postId - Lens Profile ID of the post in the format `0x${string}`.
+   * @returns A Promise resolving to an object containing error status, optional error message,
+   *          and counts of various secondary interactions (quote, mirror, react, comment, collect) on quotes and comments.
+   */
   secondaryData = async (
-    playerProfileId: `0x${string}`,
-    postId: `0x${string}`
+    playerProfileId: ZeroString,
+    postId: ZeroString,
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -479,7 +513,7 @@ export class Sequence {
             from: [playerProfileId],
           },
         },
-        this.playerAuthedApolloClient
+        this.playerAuthedApolloClient,
       );
       let secondaryQuoteOnComment: number = 0,
         secondaryMirrorOnComment: number = 0,
@@ -503,7 +537,7 @@ export class Sequence {
               secondaryQuoteOnComment = item?.stats?.quotes;
             if (item?.stats?.comments > secondaryCommentOnComment)
               secondaryCommentOnComment = item?.stats?.comments;
-          }
+          },
         );
       }
 
@@ -519,7 +553,7 @@ export class Sequence {
             from: [playerProfileId],
           },
         },
-        this.playerAuthedApolloClient
+        this.playerAuthedApolloClient,
       );
 
       if (
@@ -561,6 +595,12 @@ export class Sequence {
     }
   };
 
+  /**
+   * Converts a time string to a numerical representation.
+   *
+   * @param timeString - String representing a time range in the format "HH:MM:SS:MS".
+   * @returns An object with 'start' and 'end' properties as numerical values derived from the time string.
+   */
   private formatToNumber(timeString: string) {
     const [s, e] = timeString.split("-");
     let start: number | undefined, end: number | undefined;

@@ -69,9 +69,8 @@ export class Envoker {
    * and contracts based on the provided arguments.
    *
    * @param args - An object encompassing the necessary parameters for constructor invocation.
-   * @param args.questEnvokerProfileId - A string representing the quest envoker's Lens Profile Id.
    * @param args.authedApolloClient - An authenticated Apollo client for interacting with the GraphQL API with Lens Protocol.
-   * @param args.signer - A signer instance for authorizing transactions.
+   * @param args.wallet - (Optional) A ethers wallet instance for authorizing transactions.
    */
   constructor(args: {
     authedApolloClient: ApolloClient<NormalizedCacheObject>;
@@ -532,7 +531,7 @@ export class Envoker {
    * @method
    * @description Terminates a quest and triggers the withdrawal process for any remaining funds. Ensures necessary setups and data are present before proceeding.
    * @param {ZeroString} questId - The Quest Id.
-   * @param {ZeroString} wallet - (Optional) Ethereum wallet boject for signing the transaction.
+   * @param {ethers.Wallet} wallet - (Optional) Ethereum wallet boject for signing the transaction.
    * @throws Will throw an error if necessary setups or data are missing.
    * @returns {Promise<Object>} - Promise resolving to an object containing transaction hashes for termination and withdrawal processes.
    */
@@ -581,8 +580,9 @@ export class Envoker {
    *
    * @param questId - The Quest Id.
    * @param milestone - The Milestone to verify.
-   * @param playerProfileId - The Player's profile Id.
+   * @param playerProfileId - The Player's Lens profile Id.
    * @param eligible - The eligibility boolean.
+   * @param wallet - (Optional) 
    * @returns {Promise<Object>} - Promise resolving to an object containing transaction hashes for termination and withdrawal processes.
    *
    */

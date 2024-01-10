@@ -90,7 +90,8 @@ export function handleMilestoneCompleted(event: MilestoneCompletedEvent): void {
     completed.push(
       event.params.milestone.toString() +
         event.params.playerProfileId.toString() +
-        event.params.questId.toString(),
+        event.params.questId.toString() +
+        uri,
     );
 
     currentPlayer.milestonesCompleted = completed;
@@ -173,7 +174,8 @@ export function handlePlayerEligibleToClaimMilestone(
     eligibile.push(
       event.params.milestone.toString() +
         event.params.playerProfileId.toString() +
-        event.params.questId.toString(),
+        event.params.questId.toString() +
+        uri,
     );
 
     currentPlayer.eligibile = eligibile;
@@ -284,6 +286,11 @@ export function handlePlayerMetricsUpdated(
 
     currentVideo.duration = questData.getPlayerVideoDuration(
       entity.playerProfileId,
+      entity.videoPubId,
+      entity.videoProfileId,
+    );
+
+    currentVideo.playerId = questData.getVideoPlaybackId(
       entity.videoPubId,
       entity.videoProfileId,
     );
@@ -456,7 +463,8 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
         entity.uri.split("/").pop() +
           entity.questId.toString() +
           h.toString() +
-          addressesErc20[h].toHexString(),
+          addressesErc20[h].toHexString() +
+          entity.uri,
       );
     }
   }
@@ -499,7 +507,8 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       entity.uri.split("/").pop() +
         entity.questId.toString() +
         h.toString() +
-        addressesErc721[h].toHexString(),
+        addressesErc721[h].toHexString() +
+        entity.uri,
     );
   }
 
@@ -565,7 +574,10 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       erc20.save();
 
       erc20Logic.push(
-        milestoneId + h.toString() + addressesErc20[h].toHexString(),
+        milestoneId +
+          h.toString() +
+          addressesErc20[h].toHexString() +
+          milestoneURI,
       );
     }
 
@@ -609,7 +621,10 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       }
       erc721.save();
       erc721Logic.push(
-        milestoneId + h.toString() + addressesErc721[h].toHexString(),
+        milestoneId +
+          h.toString() +
+          addressesErc721[h].toHexString() +
+          milestoneURI,
       );
     }
 
@@ -639,8 +654,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       let currentVideo = new Video(
         allVideos[j].toString() +
           entity.questId.toString() +
-          (<BigInt>milestoneCounter).toString() +
-          milestoneURI,
+          (<BigInt>milestoneCounter).toString(),
       );
 
       currentVideo.questId = entity.questId;
@@ -660,6 +674,9 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
         currentVideo.playerId = questData.getVideoPlaybackId(
           <BigInt>currentVideo.pubId,
           <BigInt>currentVideo.profileId,
+        );
+        currentVideo.videoBytes = questData.getVideoBytesFromPlaybackId(
+          <string>currentVideo.playerId,
         );
 
         currentVideo.minPlayCount = questData.getMilestoneVideoMinPlayCount(

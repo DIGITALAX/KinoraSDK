@@ -118,8 +118,6 @@ type Video @entity(immutable: false) {
   minSecondaryCommentOnComment: BigInt
   minSecondaryCollectOnComment: BigInt
   minAVD: BigInt
-  minImpressionCount: BigInt
-  minEngagementRate: BigInt
   minDuration: BigInt
   quote: Boolean
   mirror: Boolean
@@ -179,6 +177,7 @@ type VideoActivity @entity(immutable: false) {
   profileId: BigInt
   playerProfileId: BigInt
   playCount: BigInt
+  playerId: String
   secondaryQuoteOnQuote: BigInt
   secondaryMirrorOnQuote: BigInt
   secondaryReactOnQuote: BigInt

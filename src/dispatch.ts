@@ -50,7 +50,7 @@ export class Dispatch {
    */
   playerJoinQuest = async (
     postId: ZeroString,
-    wallet: ethers.Wallet
+    wallet: ethers.Wallet,
   ): Promise<{
     txHash?: string;
     error: boolean;
@@ -63,7 +63,7 @@ export class Dispatch {
       this.lensHubProxyContract = new ethers.Contract(
         LENS_HUB_PROXY_CONTRACT,
         LensHubProxyAbi,
-        wallet
+        wallet,
       );
 
       const { data } = await act(
@@ -76,7 +76,7 @@ export class Dispatch {
           },
           for: postId,
         },
-        this.playerAuthedApolloClient
+        this.playerAuthedApolloClient,
       );
 
       const typedData = data?.createActOnOpenActionTypedData.typedData;
@@ -84,13 +84,13 @@ export class Dispatch {
       const typedDataHash = ethers.utils._TypedDataEncoder.hash(
         omit(typedData?.domain, ["__typename"]),
         omit(typedData?.types, ["__typename"]),
-        omit(typedData?.value, ["__typename"])
+        omit(typedData?.value, ["__typename"]),
       );
       await wallet?.signMessage(ethers.utils.arrayify(typedDataHash));
       const tx = await this.lensHubProxyContract.act({
         publicationActedProfileId: parseInt(
           typedData?.value.publicationActedProfileId,
-          16
+          16,
         ),
         publicationActedId: parseInt(typedData?.value.publicationActedId, 16),
         actorProfileId: parseInt(typedData?.value.actorProfileId, 16),
@@ -116,7 +116,7 @@ export class Dispatch {
 
   /**
    * @method
-   * @description Allows a player to complete a milestone in a quest. Ensures a Player Authed Apollo Client is set before proceeding.
+   * @description Player to complete Milestone and claim associated rewards. Ensures a Player Authed Apollo Client is set before proceeding.
    * @param {string} postId - The Lens Pub Id of the quest.
    * @param {ethers.Wallet} wallet - The Player's wallet for signing and broadcasting the tx.
    * @throws Will throw an error if the Player Authed Apollo Client is not set.
@@ -124,7 +124,7 @@ export class Dispatch {
    */
   playerCompleteQuestMilestone = async (
     postId: ZeroString,
-    wallet: ethers.Signer
+    wallet: ethers.Signer,
   ): Promise<{
     txHash?: string;
     error: boolean;
@@ -145,7 +145,7 @@ export class Dispatch {
           },
           for: postId,
         },
-        this.playerAuthedApolloClient
+        this.playerAuthedApolloClient,
       );
 
       const typedData = data?.createActOnOpenActionTypedData?.typedData;
@@ -153,20 +153,20 @@ export class Dispatch {
       const typedDataHash = ethers.utils._TypedDataEncoder.hash(
         omit(typedData?.domain, ["__typename"]),
         omit(typedData?.types, ["__typename"]),
-        omit(typedData?.value, ["__typename"])
+        omit(typedData?.value, ["__typename"]),
       );
       await wallet?.signMessage(ethers.utils.arrayify(typedDataHash));
 
       this.lensHubProxyContract = new ethers.Contract(
         LENS_HUB_PROXY_CONTRACT,
         LensHubProxyAbi,
-        wallet
+        wallet,
       );
 
       const tx = await this.lensHubProxyContract?.act({
         publicationActedProfileId: parseInt(
           typedData?.value.publicationActedProfileId,
-          16
+          16,
         ),
         publicationActedId: parseInt(typedData?.value.publicationActedId, 16),
         actorProfileId: parseInt(typedData?.value.actorProfileId, 16),
@@ -190,10 +190,20 @@ export class Dispatch {
     }
   };
 
+  /**
+   * Asynchronously checks the eligibility of a player for a specific milestone in a quest.
+   *
+   * @param playerProfileId - Lens Profile ID of the player as a ZeroString.
+   * @param questId - Numeric ID of the quest.
+   * @param milestone - Numeric ID of the milestone within the quest.
+   * @returns A Promise resolving to an object containing eligibility status, lists of completed
+   *          and remaining video activities for the milestone, error status, and an optional error message.
+   * @throws Error with a detailed message if there's an issue fetching milestone data or processing eligibility.
+   */
   playerMilestoneEligibilityCheck = async (
     playerProfileId: ZeroString,
     questId: number,
-    milestone: number
+    milestone: number,
   ): Promise<{
     eligible?: boolean;
     completed?: PlayerVideoActivity[];
@@ -213,7 +223,7 @@ export class Dispatch {
           milestoneData?.data?.milestones?.[0]?.videos?.length < 1)
       ) {
         throw new Error(
-          `Error fetching data. Ensure the correct milestone, quest Id and player profile Id are provided.`
+          `Error fetching data. Ensure the correct milestone, quest Id and player profile Id are provided.`,
         );
       }
 
@@ -223,14 +233,14 @@ export class Dispatch {
             video: MilestoneEligibilityCriteria & {
               pubId: string;
               profileId: string;
-            }
+            },
           ) => {
             let currentCompleteVideo = {},
               currentToCompleteVideo = {};
             const playerData = await getPlayerVideoData(
               Number(video?.pubId),
               Number(video?.profileId),
-              parseInt(playerProfileId, 16)
+              parseInt(playerProfileId, 16),
             );
 
             const allVideoData: PlayerVideoActivity =
@@ -491,7 +501,7 @@ export class Dispatch {
 
             completed.push(currentCompleteVideo as PlayerVideoActivity);
             toComplete.push(currentToCompleteVideo as PlayerVideoActivity);
-          }
+          },
         );
 
       await Promise.all(milestonePromises);
@@ -500,13 +510,13 @@ export class Dispatch {
         eligible: completed?.every(
           (obj) =>
             Object.keys(obj).length === 18 &&
-            Object.values(obj).every((item) => item !== undefined)
+            Object.values(obj).every((item) => item !== undefined),
         ),
         completed: completed?.filter((obj) =>
-          Object.values(obj).every((value) => value !== undefined)
+          Object.values(obj).every((value) => value !== undefined),
         ),
         toComplete: toComplete?.filter((obj) =>
-          Object.values(obj).every((value) => value !== undefined)
+          Object.values(obj).every((value) => value !== undefined),
         ),
         error: false,
       };
