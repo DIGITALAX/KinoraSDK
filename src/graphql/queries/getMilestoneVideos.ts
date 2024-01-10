@@ -30,8 +30,6 @@ export const getMilestoneVideos = async (
               minSecondaryCollectOnQuote
               minSecondaryCollectOnComment
               minPlayCount
-              minImpressionCount
-              minEngagementRate
               minDuration
               minAVD
               comment

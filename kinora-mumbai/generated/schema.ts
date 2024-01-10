@@ -1417,40 +1417,6 @@ export class Video extends Entity {
     }
   }
 
-  get minImpressionCount(): BigInt | null {
-    let value = this.get("minImpressionCount");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set minImpressionCount(value: BigInt | null) {
-    if (!value) {
-      this.unset("minImpressionCount");
-    } else {
-      this.set("minImpressionCount", Value.fromBigInt(<BigInt>value));
-    }
-  }
-
-  get minEngagementRate(): BigInt | null {
-    let value = this.get("minEngagementRate");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set minEngagementRate(value: BigInt | null) {
-    if (!value) {
-      this.unset("minEngagementRate");
-    } else {
-      this.set("minEngagementRate", Value.fromBigInt(<BigInt>value));
-    }
-  }
-
   get minDuration(): BigInt | null {
     let value = this.get("minDuration");
     if (!value || value.kind == ValueKind.NULL) {
@@ -2105,6 +2071,23 @@ export class VideoActivity extends Entity {
       this.unset("pubId");
     } else {
       this.set("pubId", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get playerId(): string | null {
+    let value = this.get("playerId");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set playerId(value: string | null) {
+    if (!value) {
+      this.unset("playerId");
+    } else {
+      this.set("playerId", Value.fromString(<string>value));
     }
   }
 

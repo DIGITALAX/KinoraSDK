@@ -17,9 +17,10 @@ npm i kinora-sdk
 # Quick Start
 
 ## Envoker
+
 The Envoker class simplifies Quest setup.
 
-It handles deployment and instantiation from the Kinora Factory Contract Suite, publishing to Lens Protocol with integrated Kinora Open Actions and the configuration of milestones, escrowed rewards and token gated participation.
+It handles deployment and instantiation from the Kinora Contract Suite, publishing to Lens Protocol with integrated Kinora Open Actions and the configuration of milestones, escrowed rewards and token gated participation.
 
 ```typescript
 import { Envoker } from "kinora-sdk";
@@ -38,32 +39,31 @@ const chronicleProvider = new ethers.providers.JsonRpcProvider(
   );
 
 const newEnvoker = new Envoker({
-    questEnvokerProfileId: "0x12d",
     authedApolloClient: client,
-    signer: new ethers.Wallet(process.env.PRIVATE_KEY, chronicleProvider)
+    signer: new ethers.Wallet(process.env.ENVOKER_PRIVATE_KEY, chronicleProvider)
 });
 
-const { metricsLitActionCodeToHash, milestonesLitActionCodeToHash} = await newEnvoker.instantiateNewQuest({
-  ipfsQuestDetailsCID: "QmbDaqhDLdpvvf1A8x5cMdxLyuiUCaeEH4TgMRgKfaems9",
+const { postId, transactionHash } = await newEnvoker.instantiateNewQuest({
+  ipfsQuestDetails: {
+    title: "Chromadin Chronicle",
+    description: "Engage in a Chromadin video binge session for Season 1 and Season 2 of The Dial Pirate Radio . Interactions, mirrors and comments on episodes accrue bonus points.",
+    cover: "ipfs://QmQk9TqFivUqc6ktosoZVVih9o1uiY3r5Z7F3GCC1FpaJS",
+    }
   maxPlayerCount: 100,
   milestones,
-  joinQuestTokenGatedLogic: tokenGatedLogic 
+  joinQuestTokenGatedLogic: tokenGatedLogic,
 });
-
-// upload LitActionCode to IPFS externally from the SDK
-const {metricHash, milestoneHashes} await uploadToIPFS(metricsLitActionCodeToHash, milestonesLitActionCodeToHash)
-
-await newEnvoker.assignQuestActionsToPKP(milestoneHashes, metricHash)
 ```
 
 ## Dispatch
+
 The Dispatch class orchestrates player engagements with Quests, encompassing the joining of quests pursuant to entry conditions, and the accomplishment of milestones to obtain rewards upon satisfying milestone completion requisites.
 
 ```typescript
 import { Dispatch } from "kinora-sdk";
 
 const apolloClient = new ApolloClient({
-  link: new HttpLink({ uri: 'https://api-v2.lens.dev/' }),
+  link: new HttpLink({ uri: "https://api-v2.lens.dev/" }),
   headers: {
     "x-access-token": `Bearer ${authToken}`,
   },
@@ -71,17 +71,18 @@ const apolloClient = new ApolloClient({
 });
 
 const chronicleProvider = new ethers.providers.JsonRpcProvider(
-    "https://lit-protocol.calderachain.xyz/http",
-    175177,
-  );
+  "https://lit-protocol.calderachain.xyz/http",
+  175177,
+);
 
 const newDispatch = new Dispatch({
-    questEnvokerPKPPublicKey: "0x048f63a3a3c2a8a2df8b7f2b81dcb412a1a051edbb46887098f664afdb887f5bcf9b4d927a4f68f6d65535f13a86b533fec7011e4c0b6ad695105004ef075667a7",
-    questEnvokerPKPTokenId: "16231414281147777870610732835611384406132483269808716433057419637128471329408",
-    playerAuthedApolloClient: client,
+  playerAuthedApolloClient: client,
 });
 
-await newDispatch.playerJoinQuest("0x0106")
+await newDispatch.playerJoinQuest(
+  postId,
+  new ethers.Wallet(process.env.PLAYER_PRIVATE_KEY, chronicleProvider),
+);
 ```
 
 ## Kinora Player Wrapper
@@ -93,65 +94,49 @@ It empowers personalized on-chain video feeds, links to quest milestone criteria
 These improvements enable deeper media integration, more efficient state management, customized visual layout options, and a direct interface with corresponding Lens Protocol data.
 
 ```typescript
-import { KinoraProvider } from "kinora-sdk";
 import { Player } from "@livepeer/react";
 import dynamic from "next/dynamic";
-import { Kinora } from "kinora-sdk";
 import { useWalletClient } from 'wagmi';
-const KinoraPlayerWrapper = dynamic(
-  () => import("kinora-sdk").then((mod) => mod.KinoraPlayerWrapper),
-  { ssr: false },
-);
+import { KinoraProvider, KinoraPlayerWrapper } from "kinora-sdk";
+import { apolloClient } from "../../lib/lens/client";
+import { createReactClient, studioProvider, LivepeerConfig,} from "@livepeer/react";
 
-const config = createConfig({
-  questEnvokerProfileId: "0x12d",
-  questEnvokerPKPData: {
-    publicKey: "0x048f63a3a3c2a8a2df8b7f2b81dcb412a1a051edbb46887098f664afdb887f5bcf9b4d927a4f68f6d65535f13a86b533fec7011e4c0b6ad695105004ef075667a7",
-    tokenId: "16231414281147777870610732835611384406132483269808716433057419637128471329408"
-  },
-  rpcURL: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
-  multihashDevKey: `${process.env.MULTIHASH_DEV_KEY}`,
-  kinoraMetricsContractAddress: "0x4eFA13A04abC97C2EebaAeb29FBe62572ec4B675",
-    kinoraQuestContractAddress: "0xEebaAeb29FBeTeFA13A0ec4B6754abC97C262572"
-})
+const livepeerClient = createReactClient({
+  provider: studioProvider({
+    apiKey: process.env.LIVEPEER_STUDIO_KEY!,
+  }),
+});
  
 function App() {
   return (
-    <KinoraProvider config={config}>
-      <YourRoutes />
-    </KinoraProvider>
+    <LivepeerConfig client={livepeerClient}>
+      <KinoraProvider playerAuthedApolloClient={apolloClient}>
+        <Component {...pageProps} />
+      </KinoraProvider>
+    </LivepeerConfig>
   )
 }
 
 
 function Page() {
 
-const { data: walletClient } = useWalletClient()
-const litAuthSig = await Kinora.generateLitAuthSigHelper(walletClient);
-
 return (
-    <div>
-      <LivepeerConfig client={client}>
-          <div id="parentId">
-            <KinoraPlayerWrapper
-            parentId={"parentId"}
-            pubId={"0x012d-0x0106"}
-            playbackId={"f5eese9wwl88k4g8"}
-            litAuthSig={litAuthSig}
-            customControls={true}
-            fillWidthHeight={true}
-            >
-              {(setMediaElement: (node: HTMLVideoElement) => void) => (
-                <Player
-                  mediaElementRef={setMediaElement}
-                  playbackId="f5eese9wwl88k4g8"
-                  objectFit="cover"
-                />
-              )}
-            </KinoraPlayerWrapper>
-          </div>
-      </LivepeerConfig>
-    </div>
+  <div id="parentId" className="w-20 h-20 flex">
+   <KinoraPlayerWrapper
+      parentId={"parentId"}
+      postId={postId}
+      customControls={true}
+      fillWidthHeight={true}
+      >
+      {(setMediaElement: (node: HTMLVideoElement) => void) => (
+        <Player
+         mediaElementRef={setMediaElement}
+         playbackId="f5eese9wwl88k4g8"
+         objectFit="cover"
+         />
+       )}
+     </KinoraPlayerWrapper>
+   </div>
   );
 }
 ```
