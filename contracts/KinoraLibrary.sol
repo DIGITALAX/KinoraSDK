@@ -86,6 +86,7 @@ contract KinoraLibrary {
     bool oneOf;
   }
   struct PlayerVideoMetrics {
+    string mostReplayedArea;
     uint256 profileId;
     uint256 pubId;
     uint256 playCount;
@@ -101,7 +102,6 @@ contract KinoraLibrary {
     uint256 secondaryCollectOnComment;
     uint256 avd;
     uint256 duration;
-    uint256 mostReplayedArea;
     bool hasQuoted;
     bool hasMirrored;
     bool hasCommented;

@@ -1819,9 +1819,9 @@
     "name": "getPlayerVideoMostReplayedArea",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "string",
         "name": "",
-        "type": "uint256"
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -2787,6 +2787,11 @@
       {
         "components": [
           {
+            "internalType": "string",
+            "name": "mostReplayedArea",
+            "type": "string"
+          },
+          {
             "internalType": "uint256",
             "name": "profileId",
             "type": "uint256"
@@ -2859,11 +2864,6 @@
           {
             "internalType": "uint256",
             "name": "duration",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "mostReplayedArea",
             "type": "uint256"
           },
           {

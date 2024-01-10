@@ -1,6 +1,9 @@
 import { ethers } from "ethers";
 import { ZeroString } from "./@types/kinora-sdk";
 import { Sequence } from "./sequence";
+import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
+import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
+import { KINORA_QUEST_DATA_CONTRACT } from "./constants";
 
 class Kinora {
   private static instance: Kinora;
@@ -9,8 +12,10 @@ class Kinora {
   /**
    * Constructs a new instance of the Kinora SDK with the provided configuration.
    */
-  private constructor() {
-    this.sequence = new Sequence();
+  private constructor(
+    playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>
+  ) {
+    this.sequence = new Sequence(playerAuthedApolloClient);
   }
 
   /**
@@ -18,9 +23,11 @@ class Kinora {
    *
    * @returns The singleton instance of Kinora.
    */
-  static getInstance(): Kinora {
+  static getInstance(
+    playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>
+  ): Kinora {
     if (!Kinora.instance) {
-      Kinora.instance = new Kinora();
+      Kinora.instance = new Kinora(playerAuthedApolloClient);
     }
     return Kinora.instance;
   }
@@ -57,7 +64,7 @@ class Kinora {
   public async sendPlayerMetricsOnChain(
     postId: ZeroString,
     playerProfileId: ZeroString,
-    wallet: ethers.Wallet,
+    wallet: ethers.Wallet
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -68,7 +75,7 @@ class Kinora {
     return await this.sequence.sendMetricsOnChain(
       postId,
       playerProfileId,
-      wallet,
+      wallet
     );
   }
 
@@ -76,7 +83,7 @@ class Kinora {
     playCount: number;
     avd: number;
     duration: number;
-    mostReplayedArea: string;
+    mostReplayedArea: Map<number, number>;
     totalInteractions: number;
   } {
     if (!this.sequence)
@@ -86,7 +93,7 @@ class Kinora {
 
   public async getPlayerVideoSecondaryData(
     playerProfileId: `0x${string}`,
-    postId: `0x${string}`,
+    postId: `0x${string}`
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -102,6 +109,33 @@ class Kinora {
     secondaryCollectOnComment?: number;
   }> {
     return await this.sequence.secondaryData(playerProfileId, postId);
+  }
+
+  public async getQuestIdFromPublication(postId: `0x${string}`): Promise<{
+    error: boolean;
+    questId?: number;
+    errorMessage?: string;
+  }> {
+    try {
+      const kinoraQuestData = new ethers.Contract(
+        KINORA_QUEST_DATA_CONTRACT,
+        KinoraQuestDataAbi
+      );
+
+      const questId = await kinoraQuestData.getQuestIdFromLensData(
+        parseInt(postId?.split("-")?.[0], 16),
+        parseInt(postId?.split("-")?.[1], 16)
+      );
+      return {
+        error: false,
+        questId: Number(questId),
+      };
+    } catch (err: any) {
+      return {
+        error: true,
+        errorMessage: err.message,
+      };
+    }
   }
 }
 

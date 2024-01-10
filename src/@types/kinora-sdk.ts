@@ -151,5 +151,28 @@ export interface PlayerData {
     click: (event: Event) => void;
     onTimeUpdate: (videoElement: HTMLVideoElement) => void;
     onSeeked: (videoElement: HTMLVideoElement) => void;
+    onSeeking: (event: Event) => void;
   };
+}
+
+
+export interface PlayerVideoActivity {
+  secondaryCollectOnComment: number;
+  secondaryCollectOnQuote: number;
+  secondaryCommentOnQuote: number;
+  secondaryCommentOnComment: number;
+  secondaryMirrorOnComment: number;
+  secondaryMirrorOnQuote: number;
+  secondaryQuoteOnComment: number;
+  secondaryQuoteOnQuote: number;
+  secondaryReactOnQuote: number;
+  secondaryReactOnComment: number;
+  hasReacted: boolean;
+  hasQuoted: boolean;
+  hasMirrored: boolean;
+  hasCommented: boolean;
+  hasBookmarked: boolean;
+  duration: number;
+  avd: number;
+  playCount: number
 }

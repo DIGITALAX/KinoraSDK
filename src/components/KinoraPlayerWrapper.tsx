@@ -178,12 +178,18 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     if (typeof window !== "undefined") {
       window.onbeforeunload = () => {
         if (mediaElementRef.current && kinoraSDKInstance && postId) {
-          kinoraSDKInstance.livepeerAdd(postId, mediaElementRef.current);
-
           kinoraSDKInstance.livepeerDestroy(postId);
         }
       };
     }
+
+    useEffect(() => {
+      if (isBrowser) {
+        if (mediaElementRef.current && kinoraSDKInstance && postId) {
+          kinoraSDKInstance.livepeerAdd(postId, mediaElementRef.current);
+        }
+      }
+    }, [postId, mediaElementRef, kinoraSDKInstance]);
 
     // Callback to set media element and setup/cleanup event listeners
     const setMediaElement = useCallback(
@@ -469,6 +475,12 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
             ...filteredStyles,
           });
           setStyles(videoElement as HTMLElement, {
+            width: "",
+            height: "",
+            objectFit: undefined,
+            ...filteredStyles,
+          });
+          setStyles(loaderElement as HTMLElement, {
             width: "",
             height: "",
             objectFit: undefined,

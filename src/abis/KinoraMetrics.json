@@ -80,6 +80,11 @@
       {
         "components": [
           {
+            "internalType": "string",
+            "name": "mostReplayedArea",
+            "type": "string"
+          },
+          {
             "internalType": "uint256",
             "name": "profileId",
             "type": "uint256"
@@ -152,11 +157,6 @@
           {
             "internalType": "uint256",
             "name": "duration",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "mostReplayedArea",
             "type": "uint256"
           },
           {

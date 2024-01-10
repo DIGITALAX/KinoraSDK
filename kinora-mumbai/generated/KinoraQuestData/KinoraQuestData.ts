@@ -1926,10 +1926,10 @@ export class KinoraQuestData extends ethereum.SmartContract {
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
     _videoProfileId: BigInt
-  ): BigInt {
+  ): string {
     let result = super.call(
       "getPlayerVideoMostReplayedArea",
-      "getPlayerVideoMostReplayedArea(uint256,uint256,uint256):(uint256)",
+      "getPlayerVideoMostReplayedArea(uint256,uint256,uint256):(string)",
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
@@ -1937,17 +1937,17 @@ export class KinoraQuestData extends ethereum.SmartContract {
       ]
     );
 
-    return result[0].toBigInt();
+    return result[0].toString();
   }
 
   try_getPlayerVideoMostReplayedArea(
     _playerProfileId: BigInt,
     _videoPubId: BigInt,
     _videoProfileId: BigInt
-  ): ethereum.CallResult<BigInt> {
+  ): ethereum.CallResult<string> {
     let result = super.tryCall(
       "getPlayerVideoMostReplayedArea",
-      "getPlayerVideoMostReplayedArea(uint256,uint256,uint256):(uint256)",
+      "getPlayerVideoMostReplayedArea(uint256,uint256,uint256):(string)",
       [
         ethereum.Value.fromUnsignedBigInt(_playerProfileId),
         ethereum.Value.fromUnsignedBigInt(_videoPubId),
@@ -1958,7 +1958,7 @@ export class KinoraQuestData extends ethereum.SmartContract {
       return new ethereum.CallResult();
     }
     let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
+    return ethereum.CallResult.fromValue(value[0].toString());
   }
 
   getPlayerVideoPlayCount(
@@ -3639,67 +3639,67 @@ export class UpdatePlayerMetricsCall__Outputs {
 }
 
 export class UpdatePlayerMetricsCall_metricsStruct extends ethereum.Tuple {
-  get profileId(): BigInt {
-    return this[0].toBigInt();
+  get mostReplayedArea(): string {
+    return this[0].toString();
   }
 
-  get pubId(): BigInt {
+  get profileId(): BigInt {
     return this[1].toBigInt();
   }
 
-  get playCount(): BigInt {
+  get pubId(): BigInt {
     return this[2].toBigInt();
   }
 
-  get secondaryQuoteOnQuote(): BigInt {
+  get playCount(): BigInt {
     return this[3].toBigInt();
   }
 
-  get secondaryMirrorOnQuote(): BigInt {
+  get secondaryQuoteOnQuote(): BigInt {
     return this[4].toBigInt();
   }
 
-  get secondaryReactOnQuote(): BigInt {
+  get secondaryMirrorOnQuote(): BigInt {
     return this[5].toBigInt();
   }
 
-  get secondaryCommentOnQuote(): BigInt {
+  get secondaryReactOnQuote(): BigInt {
     return this[6].toBigInt();
   }
 
-  get secondaryCollectOnQuote(): BigInt {
+  get secondaryCommentOnQuote(): BigInt {
     return this[7].toBigInt();
   }
 
-  get secondaryQuoteOnComment(): BigInt {
+  get secondaryCollectOnQuote(): BigInt {
     return this[8].toBigInt();
   }
 
-  get secondaryMirrorOnComment(): BigInt {
+  get secondaryQuoteOnComment(): BigInt {
     return this[9].toBigInt();
   }
 
-  get secondaryReactOnComment(): BigInt {
+  get secondaryMirrorOnComment(): BigInt {
     return this[10].toBigInt();
   }
 
-  get secondaryCommentOnComment(): BigInt {
+  get secondaryReactOnComment(): BigInt {
     return this[11].toBigInt();
   }
 
-  get secondaryCollectOnComment(): BigInt {
+  get secondaryCommentOnComment(): BigInt {
     return this[12].toBigInt();
   }
 
-  get avd(): BigInt {
+  get secondaryCollectOnComment(): BigInt {
     return this[13].toBigInt();
   }
 
-  get duration(): BigInt {
+  get avd(): BigInt {
     return this[14].toBigInt();
   }
 
-  get mostReplayedArea(): BigInt {
+  get duration(): BigInt {
     return this[15].toBigInt();
   }
 
