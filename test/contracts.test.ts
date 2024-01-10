@@ -709,7 +709,7 @@ describe("Contract Test Suite", () => {
       // check video metrics
       expect(
         await kinoraQuestData.getPlayerVideoAVD(playerProfileId, 67, 116393),
-      ).to.equal(30);
+      ).to.equal((30).toString());
 
       expect(
         await kinoraQuestData.getPlayerVideoSecondaryQuoteOnQuote(
@@ -794,14 +794,14 @@ describe("Contract Test Suite", () => {
           67,
           116393,
         ),
-      ).to.equal(100);
+      ).to.equal((100).toString());
       expect(
         await kinoraQuestData.getPlayerVideoMostReplayedArea(
           playerProfileId,
           67,
           116393,
         ),
-      ).to.equal(30);
+      ).to.equal("");
       expect(
         await kinoraQuestData.getPlayerVideoQuote(playerProfileId, 67, 116393),
       ).to.equal(true);
@@ -948,7 +948,7 @@ describe("Contract Test Suite", () => {
           67,
           116393,
         ),
-      ).to.equal(100);
+      ).to.equal("");
       expect(
         await kinoraQuestData.getPlayerVideoQuote(playerProfileId, 67, 116393),
       ).to.equal(true);

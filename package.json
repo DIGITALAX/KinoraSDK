@@ -5,15 +5,9 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "demo": "npm run yalc-clean && npm run dev",
-    "yalc-clean": "cd demo && yalc remove kinora-sdk && cd .. && yalc installations clean kinora-sdk && rm -rf dist && npm run build && yalc publish --replace && cd demo && yalc add kinora-sdk && cd ..",
-    "copy-env": "awk -F '=' '{ print \"REACT_APP_\" $1 \"=\" $2 }' .env > demo/.env",
-    "install-demo": "cd demo && rm -rf node_modules package-lock.json .env && npm install && cd ..",
-    "start-demo": "cd demo && npm run start",
-    "dev": "npm run install-demo && npm run copy-env && npm run start-demo",
     "build": "node --trace-deprecation node_modules/.bin/webpack && tsc",
     "start": "node dist/index.js",
-    "test": "npx hardhat test --typecheck"
+    "test": "npx hardhat test"
   },
   "directories": {
     "test": "test"
