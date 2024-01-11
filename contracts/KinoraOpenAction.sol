@@ -48,7 +48,6 @@ contract KinoraOpenAction is
     address envokerAddress
   );
 
-  // Ensures the caller is the maintainer.
   modifier onlyMaintainer() {
     if (!kinoraAccess.isAdmin(msg.sender)) {
       revert KinoraErrors.InvalidAddress();

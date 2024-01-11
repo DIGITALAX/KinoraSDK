@@ -1,0 +1,55 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: KinoraQuestData
+    network: matic
+    source:
+      address: "0x4a3298205F64cFdc794DF374Acb439843218fA45"
+      abi: KinoraQuestData
+      startBlock: 52177668
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - MilestoneCompleted
+        - PlayerEligibleToClaimMilestone
+        - PlayerJoinedQuest
+        - PlayerMetricsUpdated
+        - QuestCompleted
+        - QuestInstantiated
+        - QuestStatusUpdated
+      abis:
+        - name: KinoraQuestData
+          file: ./abis/KinoraQuestData.json
+      eventHandlers:
+        - event: MilestoneCompleted(uint256,uint256,uint256)
+          handler: handleMilestoneCompleted
+        - event: PlayerEligibleToClaimMilestone(uint256,uint256,uint256,bool)
+          handler: handlePlayerEligibleToClaimMilestone
+        - event: PlayerJoinedQuest(uint256,uint256)
+          handler: handlePlayerJoinedQuest
+        - event: PlayerMetricsUpdated(uint256,uint256,uint256)
+          handler: handlePlayerMetricsUpdated
+        - event: QuestCompleted(uint256,uint256)
+          handler: handleQuestCompleted
+        - event: QuestInstantiated(uint256,uint256)
+          handler: handleQuestInstantiated
+        - event: QuestStatusUpdated(uint256,uint8)
+          handler: handleQuestStatusUpdated
+      file: ./src/kinora-quest-data.ts
+templates:
+  - name: QuestMetadata
+    kind: file/ipfs
+    mapping:
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/ds-handlers.ts
+      handler: handleQuestMetadata
+      entities:
+        - QuestMetadata
+      abis:
+        - name: KinoraQuestData
+          file: ./abis/KinoraQuestData.json

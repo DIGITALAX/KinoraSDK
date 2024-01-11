@@ -33,12 +33,12 @@ const main = async () => {
     //   kinoraQuestData.address,
     // );
     // const kinoraOpenAction = await KinoraOpenAction.deploy(
-    //   "metadata open action",
+    //   "ipfs://QmWF5gk291QnyS2WpxtMdWjm98pzxvnXeZgtqq3Lx4zDBf",
     //   kinoraEscrow.address,
     //   kinoraQuestData.address,
     //   kinoraAccessControl.address,
-    //   "0x4fbffF20302F3326B20052ab9C217C44F6480900",
-    //   "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0",
+    //   "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d",
+    //   "0x1eD5983F0c883B96f7C35528a1e22EEA67DE3Ff9",
     // );
 
     // const WAIT_BLOCK_CONFIRMATIONS = 20;
@@ -59,41 +59,41 @@ const main = async () => {
     // console.log(`kinoraNFTCreator deployed at\n${kinoraNFTCreator.address}`);
 
     await run(`verify:verify`, {
-      address: "0x5E4b3a0Cb5213fAed8F52E22d79bbaCd8C60b9C9",
+      address: "0xE59DB9d446aE270B68Ff12756A9A6111536C5555",
       constructorArguments: [],
     });
     await run(`verify:verify`, {
-      address: "0xC2f4b95412a1A16e073F21bae1ECf30B2f78c06E",
-      constructorArguments: ["0x5E4b3a0Cb5213fAed8F52E22d79bbaCd8C60b9C9"],
+      address: "0xd3fc6D84451eE32243409Cfe1d364edeFf6c4be9",
+      constructorArguments: ["0xE59DB9d446aE270B68Ff12756A9A6111536C5555"],
     });
     await run(`verify:verify`, {
-      address: "0x044E0155CF3d2e4c1F64f20870663c2A2C7ff689",
+      address: "0x0a6a1CfCE6d5DD6f277BaC5FB17C1C9bd2Dd6E9D",
       constructorArguments: [
-        "0x5E4b3a0Cb5213fAed8F52E22d79bbaCd8C60b9C9",
-        "0x7484461387456E530A72601A3294972c9a9b6049",
-        "0xC2f4b95412a1A16e073F21bae1ECf30B2f78c06E",
+        "0xE59DB9d446aE270B68Ff12756A9A6111536C5555",
+        "0x4a3298205F64cFdc794DF374Acb439843218fA45",
+        "0xd3fc6D84451eE32243409Cfe1d364edeFf6c4be9",
       ],
     });
     await run(`verify:verify`, {
-      address: "0x967Bd674F5cc3E5D96c76C1Ddc25D6Be87bbd062",
+      address: "0x3310E657715F0c091Cf795609EE8c285820b6e80",
       constructorArguments: [
-        "0x5E4b3a0Cb5213fAed8F52E22d79bbaCd8C60b9C9",
-        "0x7484461387456E530A72601A3294972c9a9b6049",
+        "0xE59DB9d446aE270B68Ff12756A9A6111536C5555",
+        "0x4a3298205F64cFdc794DF374Acb439843218fA45",
       ],
     });
     await run(`verify:verify`, {
-      address: "0x7484461387456E530A72601A3294972c9a9b6049",
-      constructorArguments: ["0x5E4b3a0Cb5213fAed8F52E22d79bbaCd8C60b9C9"],
+      address: "0x4a3298205F64cFdc794DF374Acb439843218fA45",
+      constructorArguments: ["0xE59DB9d446aE270B68Ff12756A9A6111536C5555"],
     });
     await run(`verify:verify`, {
-      address: "0xD4b3b444899df0692eDEA44f606145c52b99647E",
+      address: "0x6369b7a2A256ec2834d117b280Cec2e94Ebf3439",
       constructorArguments: [
-        "metadata open action",
-        "0x044E0155CF3d2e4c1F64f20870663c2A2C7ff689",
-        "0x7484461387456E530A72601A3294972c9a9b6049",
-        "0x5E4b3a0Cb5213fAed8F52E22d79bbaCd8C60b9C9",
-        "0x4fbffF20302F3326B20052ab9C217C44F6480900",
-        "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0",
+        "ipfs://QmWF5gk291QnyS2WpxtMdWjm98pzxvnXeZgtqq3Lx4zDBf",
+        "0x0a6a1CfCE6d5DD6f277BaC5FB17C1C9bd2Dd6E9D",
+        "0x4a3298205F64cFdc794DF374Acb439843218fA45",
+        "0xE59DB9d446aE270B68Ff12756A9A6111536C5555",
+        "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d",
+        "0x1eD5983F0c883B96f7C35528a1e22EEA67DE3Ff9",
       ],
     });
   } catch (err: any) {
