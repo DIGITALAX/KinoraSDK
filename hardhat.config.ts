@@ -31,6 +31,10 @@ const config: HardhatUserConfig = {
       url: "https://rpc-mumbai.maticvigil.com",
       accounts: [process.env.PRIVATE_KEY!],
     },
+    polygon: {
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+      accounts: [process.env.PRIVATE_KEY!],
+    },
     localhost: {
       url: "http://127.0.0.1:8545",
     },

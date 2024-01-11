@@ -4,12 +4,12 @@ import { ZeroString } from "./../@types/kinora-sdk";
  * @constant KINORA_OPEN_ACTION_CONTRACT Lens Kinora Open Action Address Matic Network.
  */
 export const KINORA_OPEN_ACTION_CONTRACT: ZeroString =
-  "0xD4b3b444899df0692eDEA44f606145c52b99647E";
+  "0x6369b7a2A256ec2834d117b280Cec2e94Ebf3439";
 /**
  * @constant LENS_MODULE_CONTRACT Lens Module Contract.
  */
 export const LENS_MODULE_CONTRACT: ZeroString =
-  "0x4BeB63842BB800A1Da77a62F2c74dE3CA39AF7C0";
+  "0x1eD5983F0c883B96f7C35528a1e22EEA67DE3Ff9";
 /**
  * @constant ZERO_ADDRESS Zero Address.
  */
@@ -19,26 +19,26 @@ export const ZERO_ADDRESS: ZeroString =
  * @constant KINORA_METRICS_CONTRACT Lens Kinora Metrics Address Matic Network.
  */
 export const KINORA_METRICS_CONTRACT: ZeroString =
-  "0x967Bd674F5cc3E5D96c76C1Ddc25D6Be87bbd062";
+  "0x3310E657715F0c091Cf795609EE8c285820b6e80";
 /**
  * @constant KINORA_ESCROW_CONTRACT Lens Kinora Escrow Address Matic Network.
  */
 export const KINORA_ESCROW_CONTRACT: ZeroString =
-  "0x044E0155CF3d2e4c1F64f20870663c2A2C7ff689";
+  "0x0a6a1CfCE6d5DD6f277BaC5FB17C1C9bd2Dd6E9D";
 /**
  * @constant LENS_HUB_PROXY_CONTRACT Lens Hubs Proxy Address Matic Network.
  */
 export const LENS_HUB_PROXY_CONTRACT: ZeroString =
-  "0x4fbffF20302F3326B20052ab9C217C44F6480900";
+  "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d";
 /**
  * @constant KINORA_QUEST_DATA_CONTRACT Kinora Quest Data Address Matic Network.
  */
 export const KINORA_QUEST_DATA_CONTRACT: ZeroString =
-  "0x7484461387456E530A72601A3294972c9a9b6049";
+  "0x4a3298205F64cFdc794DF374Acb439843218fA45";
 /**
  * @constant LENS_BASE_URL Base URL for the Lens V2 API.
  */
-export const LENS_BASE_URL: string = "https://api-v2-mumbai-live.lens.dev";
+export const LENS_BASE_URL: string = "https://api-v2.lens.dev";
 
 /**
  * @constant IPFS_REGEX IPFS Regex Check.
