@@ -189,7 +189,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
           kinoraSDKInstance.livepeerAdd(postId, mediaElementRef.current);
         }
       }
-    }, [postId, mediaElementRef, kinoraSDKInstance]);
+    }, [postId, mediaElementRef.current, kinoraSDKInstance]);
 
     // Callback to set media element and setup/cleanup event listeners
     const setMediaElement = useCallback(
