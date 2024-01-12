@@ -39,7 +39,7 @@ const polygonProvider = new ethers.providers.JsonRpcProvider(
 );
 
 const newEnvoker = new Envoker({
-  authedApolloClient: client,
+  authedApolloClient: apolloClient,
   signer: new ethers.Wallet(process.env.ENVOKER_PRIVATE_KEY, polygonProvider),
 });
 
@@ -77,7 +77,7 @@ const polygonProvider = new ethers.providers.JsonRpcProvider(
 );
 
 const newDispatch = new Dispatch({
-  playerAuthedApolloClient: client,
+  playerAuthedApolloClient: apolloClient,
 });
 
 await newDispatch.playerJoinQuest(

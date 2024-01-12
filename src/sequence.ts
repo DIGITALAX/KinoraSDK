@@ -304,7 +304,7 @@ export class Sequence {
     playCount: number;
     avd: number;
     duration: number;
-    mostReplayedArea: Map<number, number>;
+    mostReplayedArea: (Map<number, number>);
     totalInteractions: number;
   } => {
     return {
