@@ -9,12 +9,12 @@ import "./KinoraQuestData.sol";
 import "./KinoraErrors.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "hardhat/console.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract KinoraEscrow {
   string public name;
   string public symbol;
-  KinoraAccessControl public accessControl;
+  KinoraAccessControl public kinoraAccess;
   KinoraQuestData public kinoraQuestData;
   KinoraNFTCreator public kinoraNFTCreator;
   address public kinoraOpenAction;
@@ -31,13 +31,7 @@ contract KinoraEscrow {
     _;
   }
   modifier onlyMaintainer() {
-    if (!accessControl.isAdmin(msg.sender)) {
-      revert KinoraErrors.InvalidAddress();
-    }
-    _;
-  }
-  modifier onlyQuestEnvoker(uint256 _questId) {
-    if (kinoraQuestData.getQuestEnvoker(_questId) != msg.sender) {
+    if (!kinoraAccess.isEnvoker(msg.sender)) {
       revert KinoraErrors.InvalidAddress();
     }
     _;
@@ -54,26 +48,34 @@ contract KinoraEscrow {
   event EmergencyERC20Withdrawn(address toAddress, uint256 questId);
   event ERC721Minted(address playerAddress, uint256 questId, uint256 milestone);
 
-  constructor(
-    address _accessControlAddress,
+  function initialize(
+    address _kinoraAccessAddress,
     address _kinoraQuestDataAddress,
-    address _kinoraNFTCreatorAddress
-  ) {
+    address _kinoraNFTCreatorAddress,
+    address _kinoraOpenActionAddress
+  ) external {
+    if (address(kinoraAccess) != address(0)) {
+      revert KinoraErrors.AlreadyInitialized();
+    }
     name = "KinoraEscrow";
     symbol = "KES";
-    accessControl = KinoraAccessControl(_accessControlAddress);
+    kinoraAccess = KinoraAccessControl(_kinoraAccessAddress);
     kinoraQuestData = KinoraQuestData(_kinoraQuestDataAddress);
     kinoraNFTCreator = KinoraNFTCreator(_kinoraNFTCreatorAddress);
+    kinoraOpenAction = _kinoraOpenActionAddress;
   }
 
   function depositERC20(
     address _tokenAddress,
-    address _fromAddress,
     uint256 _amount,
     uint256 _questId,
     uint256 _milestone
   ) external onlyOpenAction {
-    IERC20(_tokenAddress).transferFrom(_fromAddress, address(this), _amount);
+    IERC20(_tokenAddress).transferFrom(
+      address(kinoraOpenAction),
+      address(this),
+      _amount
+    );
 
     _questMilestoneERC20Deposit[_questId][_milestone][_tokenAddress] = _amount;
 
@@ -111,10 +113,18 @@ contract KinoraEscrow {
     emit ERC20Withdrawn(_toAddress, _questId, _milestone);
   }
 
-  function emergencyWithdrawERC20(
-    address _toAddress,
-    uint256 _questId
-  ) public onlyQuestEnvoker(_questId) {
+  function emergencyWithdrawERC20(address _toAddress, uint256 _questId) public {
+    if (
+      kinoraQuestData.getQuestEnvoker(_questId) != msg.sender &&
+      msg.sender != address(this)
+    ) {
+      revert KinoraErrors.InvalidAddress();
+    }
+
+    if (kinoraQuestData.getQuestEnvoker(_questId) == address(0)) {
+      revert KinoraErrors.QuestDoesntExist();
+    }
+
     uint256 _milestoneCount = kinoraQuestData.getMilestoneCount(_questId);
 
     for (uint256 i = 0; i < _milestoneCount; i++) {
@@ -189,6 +199,21 @@ contract KinoraEscrow {
     emit ERC721Minted(_playerAddress, _questId, _milestone);
   }
 
+  function deleteQuest(uint256 _questId) public {
+    if (kinoraQuestData.getQuestEnvoker(_questId) == address(0)) {
+      revert KinoraErrors.QuestDoesntExist();
+    }
+    if (kinoraQuestData.getQuestEnvoker(_questId) != msg.sender) {
+      revert KinoraErrors.InvalidAddress();
+    }
+
+    if (kinoraQuestData.getQuestStatus(_questId) == KinoraLibrary.Status.Open) {
+      emergencyWithdrawERC20(msg.sender, _questId);
+    }
+
+    kinoraQuestData.deleteQuest(_questId);
+  }
+
   function getQuestMilestoneERC20TotalDeposit(
     address _tokenAddress,
     uint256 _questId,
@@ -214,7 +239,7 @@ contract KinoraEscrow {
   function setKinoraAccessContract(
     address _newAccessContract
   ) external onlyMaintainer {
-    accessControl = KinoraAccessControl(_newAccessContract);
+    kinoraAccess = KinoraAccessControl(_newAccessContract);
   }
 
   function setKinoraNFTCreatorContract(
@@ -227,5 +252,9 @@ contract KinoraEscrow {
     address _newOpenActionContract
   ) external onlyMaintainer {
     kinoraOpenAction = _newOpenActionContract;
+  }
+
+  function getKinoraQuestDataAddress() public view returns (address) {
+    return address(kinoraQuestData);
   }
 }

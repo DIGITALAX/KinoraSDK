@@ -10,22 +10,30 @@ import "./KinoraLibrary.sol";
 import "./KinoraEscrow.sol";
 import "./KinoraErrors.sol";
 import "./KinoraAccessControl.sol";
+import "./KinoraMetrics.sol";
+import "./KinoraAccessControl.sol";
 import "./KinoraQuestData.sol";
+import "./KinoraMilestoneCheckLogic.sol";
 import {ILensModule} from "./v2/interfaces/ILensModule.sol";
 import {IModuleRegistry} from "./v2/interfaces/IModuleRegistry.sol";
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract KinoraOpenAction is
   HubRestricted,
   ILensModule,
   IPublicationActionModule
 {
-  KinoraEscrow public kinoraEscrow;
-  KinoraQuestData public kinoraQuestData;
-  KinoraAccessControl public kinoraAccess;
+  KinoraMilestoneCheckLogic private kinoraMilestoneCheckLogic;
   string private _metadata;
-
-  mapping(uint256 => mapping(uint256 => uint256)) _questGroups;
+  address public kinoraEscrowI;
+  address public kinoraAccessControlI;
+  address public kinoraQuestDataI;
+  address public kinoraMetricsI;
+  address public kinoraNFTCreatorI;
+  uint256 private _factoryCounter;
+  mapping(uint256 => mapping(uint256 => mapping(uint256 => uint256))) _questGroups;
+  mapping(uint256 => mapping(uint256 => uint256)) _factoryGroups;
+  mapping(uint256 => address) _factoryMap;
 
   IModuleRegistry public immutable MODULE_GLOBALS;
 
@@ -41,6 +49,13 @@ contract KinoraOpenAction is
     address envokerAddress
   );
   event PlayerJoinedQuest(uint256 playerProfileId, uint256 questId);
+  event NewFactoryDeployment(
+    address kac,
+    address ke,
+    address kqd,
+    address km,
+    address knc
+  );
   event QuestInitialized(
     uint256 questId,
     uint256 pubId,
@@ -48,38 +63,39 @@ contract KinoraOpenAction is
     address envokerAddress
   );
 
-  modifier onlyMaintainer() {
-    if (!kinoraAccess.isAdmin(msg.sender)) {
-      revert KinoraErrors.InvalidAddress();
-    }
-    _;
-  }
-
   constructor(
     string memory _metadataDetails,
     address _kinoraEscrow,
     address _kinoraQuestData,
     address _kinoraAccess,
+    address _kinoraMetrics,
+    address _kinoraNFTCreator,
     address _hub,
-    address _moduleGlobals
+    address _moduleGlobals,
+    address _kinoraMilestoneCheckLogic
   ) HubRestricted(_hub) {
     MODULE_GLOBALS = IModuleRegistry(_moduleGlobals);
-    kinoraEscrow = KinoraEscrow(_kinoraEscrow);
-    kinoraAccess = KinoraAccessControl(_kinoraAccess);
-    kinoraQuestData = KinoraQuestData(_kinoraQuestData);
+    kinoraAccessControlI = _kinoraAccess;
+    kinoraEscrowI = _kinoraEscrow;
+    kinoraQuestDataI = _kinoraQuestData;
+    kinoraMetricsI = _kinoraMetrics;
+    kinoraNFTCreatorI = _kinoraNFTCreator;
+    kinoraMilestoneCheckLogic = KinoraMilestoneCheckLogic(
+      _kinoraMilestoneCheckLogic
+    );
+
     _metadata = _metadataDetails;
+    _factoryCounter = 0;
   }
 
   function initializePublicationAction(
     uint256 _profileId,
     uint256 _pubId,
-    address,
+    address _address,
     bytes calldata _data
   ) external override onlyHub returns (bytes memory) {
-    KinoraLibrary.ActionParameters memory _params = abi.decode(
-      _data,
-      (KinoraLibrary.ActionParameters)
-    );
+    (KinoraLibrary.ActionParameters memory _params, uint256 _factoryId) = abi
+      .decode(_data, (KinoraLibrary.ActionParameters, uint256));
 
     if (_params.gateLogic.erc721Addresses.length > 0) {
       for (uint256 k = 0; k < _params.gateLogic.erc721Addresses.length; k++) {
@@ -95,13 +111,13 @@ contract KinoraOpenAction is
           _params.milestones[i].rewards[j].rewardType ==
           KinoraLibrary.RewardType.ERC20
         ) {
-          if (
-            !MODULE_GLOBALS.isErc20CurrencyRegistered(
-              _params.milestones[i].rewards[j].tokenAddress
-            )
-          ) {
-            revert KinoraErrors.CurrencyNotWhitelisted();
-          }
+          // if (
+          //   !MODULE_GLOBALS.isErc20CurrencyRegistered(
+          //     _params.milestones[i].rewards[j].tokenAddress
+          //   )
+          // ) {
+          //   revert KinoraErrors.CurrencyNotWhitelisted();
+          // }
 
           if (_params.milestones[i].rewards[j].amount <= 0) {
             revert KinoraErrors.InvalidRewardAmount();
@@ -124,104 +140,102 @@ contract KinoraOpenAction is
       }
     }
 
-    uint256 _questId = kinoraQuestData.getTotalQuestCount() + 1;
-    _configureRewardEscrow(
-      _params.milestones,
-      _params.envokerAddress,
-      _questId,
-      _params.maxPlayerCount
+    (address _newKE, address _newKQD) = _createFactory(
+      _address,
+      _factoryId,
+      true
     );
 
-    kinoraQuestData.configureNewQuest(
-      KinoraLibrary.NewQuestParams({
-        maxPlayerCount: _params.maxPlayerCount,
-        gateLogic: _params.gateLogic,
-        milestones: _params.milestones,
-        uri: _params.uri,
-        envokerAddress: _params.envokerAddress,
-        pubId: _pubId,
-        profileId: _profileId
-      })
+    uint256 _questId = KinoraQuestData(_newKQD).getTotalQuestCount() + 1;
+
+    _questConfigure(
+      _params,
+      _address,
+      _newKE,
+      _newKQD,
+      _profileId,
+      _pubId,
+      _questId
     );
-
-    _questGroups[_profileId][_pubId] = _questId;
-
-    emit QuestInitialized(_questId, _profileId, _pubId, _params.envokerAddress);
-
     return abi.encode(_questId, _profileId, _pubId);
   }
 
   function processPublicationAction(
     Types.ProcessActionParams calldata _params
   ) external override onlyHub returns (bytes memory) {
-    uint256 _questId = _questGroups[_params.publicationActedProfileId][
+    uint256 _factoryId = _factoryGroups[_params.publicationActedProfileId][
       _params.publicationActedId
     ];
+    uint256 _questId = _questGroups[_factoryId][
+      _params.publicationActedProfileId
+    ][_params.publicationActedId];
 
-    bool _playerJoined = kinoraQuestData.getPlayerHasJoinedQuest(
+    (address _ke, address _kqd) = _createFactory(address(0), _factoryId, false);
+
+    if (KinoraQuestData(_kqd).getQuestEnvoker(_questId) == address(0)) {
+      revert KinoraErrors.QuestDoesntExist();
+    }
+
+    bool _playerJoined = KinoraQuestData(_kqd).getPlayerHasJoinedQuest(
       _params.actorProfileId,
       _questId
     );
 
     if (_playerJoined) {
-      uint256 _playerMilestone = kinoraQuestData
+      uint256 _playerMilestone = KinoraQuestData(_kqd)
         .getPlayerMilestonesCompletedPerQuest(_params.actorProfileId, _questId);
-      string[] memory _videoBytes = kinoraQuestData.getMilestoneVideos(
+      string[] memory _videoBytes = KinoraQuestData(_kqd).getMilestoneVideos(
         _questId,
         _playerMilestone + 1
       );
 
       if (
-        !kinoraQuestData.getPlayerEligibleToClaimMilestone(
+        !KinoraQuestData(_kqd).getPlayerEligibleToClaimMilestone(
           _params.actorProfileId,
           _questId,
           _playerMilestone + 1
-        ) || _playerMilestone == kinoraQuestData.getMilestoneCount(_questId)
+        ) ||
+        _playerMilestone == KinoraQuestData(_kqd).getMilestoneCount(_questId)
       ) {
         revert KinoraErrors.PlayerNotEligible();
       }
 
-      for (uint256 i = 0; i < _videoBytes.length; i++) {
-        (uint256 _videoProfileId, uint256 _videoPubId) = _splitString(
-          _videoBytes[i]
-        );
-
-        _checkMilestoneEligibility(
-          _playerMilestone + 1,
-          _questId,
-          _params.actorProfileId,
-          _videoPubId,
-          _videoProfileId
-        );
-      }
-
-      _checkMilestoneGate(
-        _questId,
+      _checkMilestoneLogic(
+        _videoBytes,
+        _kqd,
         _playerMilestone + 1,
-        _params.actorProfileOwner
+        _questId,
+        _params.actorProfileId
       );
 
-      uint256 _rewardLength = kinoraQuestData.getMilestoneRewardsLength(
+      _checkMilestoneGate(
+        _params.actorProfileOwner,
+        _kqd,
+        _questId,
+        _playerMilestone + 1
+      );
+
+      uint256 _rewardLength = KinoraQuestData(_kqd).getMilestoneRewardsLength(
         _questId,
         _playerMilestone + 1
       );
 
       for (uint256 k = 0; k < _rewardLength; k++) {
         if (
-          kinoraQuestData.getMilestoneRewardType(
+          KinoraQuestData(_kqd).getMilestoneRewardType(
             _questId,
             k,
             _playerMilestone + 1
           ) == KinoraLibrary.RewardType.ERC20
         ) {
-          kinoraEscrow.withdrawERC20(
+          KinoraEscrow(_ke).withdrawERC20(
             _params.actorProfileOwner,
             _questId,
             _playerMilestone + 1,
             k
           );
         } else {
-          kinoraEscrow.mintERC721(
+          KinoraEscrow(_ke).mintERC721(
             _params.actorProfileOwner,
             _questId,
             _playerMilestone + 1,
@@ -230,7 +244,7 @@ contract KinoraOpenAction is
         }
       }
 
-      kinoraQuestData.completeMilestone(_questId, _params.actorProfileId);
+      KinoraQuestData(_kqd).completeMilestone(_questId, _params.actorProfileId);
 
       emit PlayerCompletedMilestone(
         _questId,
@@ -239,21 +253,22 @@ contract KinoraOpenAction is
       );
     } else {
       if (
-        kinoraQuestData.getQuestMaxPlayerCount(_questId) ==
-        kinoraQuestData.getQuestPlayers(_questId).length
+        KinoraQuestData(_kqd).getQuestMaxPlayerCount(_questId) ==
+        KinoraQuestData(_kqd).getQuestPlayers(_questId).length
       ) {
         revert KinoraErrors.MaxPlayerCountReached();
       }
 
       if (
-        kinoraQuestData.getQuestStatus(_questId) == KinoraLibrary.Status.Closed
+        KinoraQuestData(_kqd).getQuestStatus(_questId) ==
+        KinoraLibrary.Status.Closed
       ) {
         revert KinoraErrors.QuestClosed();
       }
 
-      _checkJoinEligibility(_questId, _params.actorProfileOwner);
+      _checkJoinEligibility(_params.actorProfileOwner, _kqd, _questId);
 
-      kinoraQuestData.joinQuest(
+      KinoraQuestData(_kqd).joinQuest(
         _params.actorProfileOwner,
         _questId,
         _params.actorProfileId
@@ -265,293 +280,68 @@ contract KinoraOpenAction is
     return abi.encode(_questId);
   }
 
-  function setKinoraQuestDataContract(
-    address _newKinoraQuestDataAddress
-  ) public onlyMaintainer {
-    kinoraQuestData = KinoraQuestData(_newKinoraQuestDataAddress);
-  }
-
-  function setKinoraEscrowContract(
-    address _newKinoraEscrowAddress
-  ) public onlyMaintainer {
-    kinoraEscrow = KinoraEscrow(_newKinoraEscrowAddress);
-  }
-
-  function setKinoraAccessContract(
-    address _newKinoraAccessAddress
-  ) public onlyMaintainer {
-    kinoraAccess = KinoraAccessControl(_newKinoraAccessAddress);
-  }
-
-  function _checkMilestoneEligibility(
+  function _checkMilestoneLogic(
+    string[] memory _videoBytes,
+    address _kqd,
     uint256 _milestone,
     uint256 _questId,
-    uint256 _playerProfileId,
-    uint256 _videoPubId,
-    uint256 _videoProfileId
-  ) private view {
-    if (
-      kinoraQuestData.getPlayerVideoAVD(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinAVD(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoPlayCount(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinPlayCount(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoDuration(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinDuration(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoSecondaryQuoteOnQuote(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinSecondaryQuoteOnQuote(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoSecondaryMirrorOnQuote(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinSecondaryMirrorOnQuote(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoSecondaryReactOnQuote(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinSecondaryReactOnQuote(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoSecondaryCommentOnQuote(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinSecondaryCommentOnQuote(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoSecondaryCollectOnQuote(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinSecondaryCollectOnQuote(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoSecondaryQuoteOnComment(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinSecondaryQuoteOnComment(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoSecondaryMirrorOnComment(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinSecondaryMirrorOnComment(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoSecondaryReactOnComment(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinSecondaryReactOnComment(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoSecondaryCommentOnComment(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinSecondaryCommentOnComment(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) ||
-      kinoraQuestData.getPlayerVideoSecondaryCollectOnComment(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) <
-      kinoraQuestData.getMilestoneVideoMinSecondaryCollectOnComment(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      )
-    ) {
-      revert KinoraErrors.MilestoneInvalid();
-    }
+    uint256 _playerProfileId
+  ) private {
+    for (uint256 i = 0; i < _videoBytes.length; i++) {
+      (uint256 _videoProfileId, uint256 _videoPubId) = _splitString(
+        _videoBytes[i]
+      );
 
-    if (
-      kinoraQuestData.getMilestoneVideoBookmark(
-        _questId,
+      kinoraMilestoneCheckLogic.checkMilestoneLogic(
+        _kqd,
         _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) &&
-      kinoraQuestData.getPlayerVideoBookmark(
+        _questId,
         _playerProfileId,
         _videoPubId,
         _videoProfileId
-      ) !=
-      kinoraQuestData.getMilestoneVideoBookmark(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      )
-    ) {
-      revert KinoraErrors.MilestoneInvalid();
+      );
     }
+  }
 
-    if (
-      kinoraQuestData.getMilestoneVideoComment(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) &&
-      kinoraQuestData.getPlayerVideoComment(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) !=
-      kinoraQuestData.getMilestoneVideoComment(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      )
-    ) {
-      revert KinoraErrors.MilestoneInvalid();
-    }
+  function _questConfigure(
+    KinoraLibrary.ActionParameters memory _params,
+    address _address,
+    address _newKE,
+    address _newKQD,
+    uint256 _profileId,
+    uint256 _pubId,
+    uint256 _questId
+  ) private {
+    _configureRewardEscrow(
+      _params.milestones,
+      _address,
+      _newKE,
+      _questId,
+      _params.maxPlayerCount
+    );
 
-    if (
-      kinoraQuestData.getMilestoneVideoReact(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) &&
-      kinoraQuestData.getPlayerVideoReact(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) !=
-      kinoraQuestData.getMilestoneVideoReact(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      )
-    ) {
-      revert KinoraErrors.MilestoneInvalid();
-    }
+    KinoraQuestData(_newKQD).configureNewQuest(
+      KinoraLibrary.NewQuestParams({
+        maxPlayerCount: _params.maxPlayerCount,
+        gateLogic: _params.gateLogic,
+        milestones: _params.milestones,
+        uri: _params.uri,
+        envokerAddress: _address,
+        pubId: _pubId,
+        profileId: _profileId
+      })
+    );
 
-    if (
-      kinoraQuestData.getMilestoneVideoQuote(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) &&
-      kinoraQuestData.getPlayerVideoQuote(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) !=
-      kinoraQuestData.getMilestoneVideoQuote(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      )
-    ) {
-      revert KinoraErrors.MilestoneInvalid();
-    }
+    _questGroups[_factoryCounter][_profileId][_pubId] = _questId;
+    _factoryGroups[_profileId][_pubId] = _factoryCounter;
 
-    if (
-      kinoraQuestData.getMilestoneVideoMirror(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      ) &&
-      kinoraQuestData.getPlayerVideoMirror(
-        _playerProfileId,
-        _videoPubId,
-        _videoProfileId
-      ) !=
-      kinoraQuestData.getMilestoneVideoMirror(
-        _questId,
-        _milestone,
-        _videoProfileId,
-        _videoPubId
-      )
-    ) {
-      revert KinoraErrors.MilestoneInvalid();
-    }
+    emit QuestInitialized(_questId, _profileId, _pubId, _address);
   }
 
   function _configureRewardEscrow(
     KinoraLibrary.MilestoneParameter[] memory _milestones,
     address _envokerAddress,
+    address _newKE,
     uint256 _questId,
     uint256 _maxPlayerCount
   ) private {
@@ -562,15 +352,24 @@ contract KinoraOpenAction is
             _milestones[i].rewards[j].rewardType ==
             KinoraLibrary.RewardType.ERC20
           ) {
-            kinoraEscrow.depositERC20(
-              _milestones[i].rewards[j].tokenAddress,
+            IERC20(_milestones[i].rewards[j].tokenAddress).approve(
+              _newKE,
+              _milestones[i].rewards[j].amount * _maxPlayerCount
+            );
+            IERC20(_milestones[i].rewards[j].tokenAddress).transferFrom(
               _envokerAddress,
+              address(this),
+              _milestones[i].rewards[j].amount * _maxPlayerCount
+            );
+
+            KinoraEscrow(_newKE).depositERC20(
+              _milestones[i].rewards[j].tokenAddress,
               _milestones[i].rewards[j].amount * _maxPlayerCount,
               _questId,
               i
             );
           } else {
-            kinoraEscrow.depositERC721(
+            KinoraEscrow(_newKE).depositERC721(
               _milestones[i].rewards[j].uri,
               _questId,
               i,
@@ -583,23 +382,24 @@ contract KinoraOpenAction is
   }
 
   function _checkMilestoneGate(
+    address _playerAddress,
+    address _kqd,
     uint256 _questId,
-    uint256 _milestone,
-    address _playerAddress
+    uint256 _milestone
   ) private view {
-    bool _isOneOf = kinoraQuestData.getMilestoneGatedOneOf(
+    bool _isOneOf = KinoraQuestData(_kqd).getMilestoneGatedOneOf(
       _questId,
       _milestone
     );
-    address[] memory _erc20Addresses = kinoraQuestData
+    address[] memory _erc20Addresses = KinoraQuestData(_kqd)
       .getMilestoneGatedERC20Addresses(_questId, _milestone);
-    uint256[] memory _erc20Thresholds = kinoraQuestData
+    uint256[] memory _erc20Thresholds = KinoraQuestData(_kqd)
       .getMilestoneGatedERC20Thresholds(_questId, _milestone);
-    address[] memory _erc721Addresses = kinoraQuestData
+    address[] memory _erc721Addresses = KinoraQuestData(_kqd)
       .getMilestoneGatedERC721Addresses(_questId, _milestone);
-    uint256[][] memory _erc721TokenIds = kinoraQuestData
+    uint256[][] memory _erc721TokenIds = KinoraQuestData(_kqd)
       .getMilestoneGatedERC721TokenIds(_questId, _milestone);
-    string[][] memory _erc721TokenUris = kinoraQuestData
+    string[][] memory _erc721TokenUris = KinoraQuestData(_kqd)
       .getMilestoneGatedERC721TokenURIs(_questId, _milestone);
     if (
       !_gateChecker(
@@ -617,19 +417,20 @@ contract KinoraOpenAction is
   }
 
   function _checkJoinEligibility(
-    uint256 _questId,
-    address _playerAddress
+    address _playerAddress,
+    address _kqd,
+    uint256 _questId
   ) private view {
-    bool _isOneOf = kinoraQuestData.getQuestGatedOneOf(_questId);
-    address[] memory _erc20Addresses = kinoraQuestData
+    bool _isOneOf = KinoraQuestData(_kqd).getQuestGatedOneOf(_questId);
+    address[] memory _erc20Addresses = KinoraQuestData(_kqd)
       .getQuestGatedERC20Addresses(_questId);
-    uint256[] memory _erc20Thresholds = kinoraQuestData
+    uint256[] memory _erc20Thresholds = KinoraQuestData(_kqd)
       .getQuestGatedERC20Thresholds(_questId);
-    address[] memory _erc721Addresses = kinoraQuestData
+    address[] memory _erc721Addresses = KinoraQuestData(_kqd)
       .getQuestGatedERC721Addresses(_questId);
-    uint256[][] memory _erc721TokenIds = kinoraQuestData
+    uint256[][] memory _erc721TokenIds = KinoraQuestData(_kqd)
       .getQuestGatedERC721TokenIds(_questId);
-    string[][] memory _erc721TokenUris = kinoraQuestData
+    string[][] memory _erc721TokenUris = KinoraQuestData(_kqd)
       .getQuestGatedERC721TokenURIs(_questId);
 
     if (
@@ -840,6 +641,55 @@ contract KinoraOpenAction is
     return returnedData.length > 0;
   }
 
+  function _createFactory(
+    address _envokerAddress,
+    uint256 _factoryId,
+    bool _initialize
+  ) private returns (address, address) {
+    if (_factoryId == 0) {
+      address _newKAC = Clones.clone(kinoraAccessControlI);
+      address _newKE = Clones.clone(kinoraEscrowI);
+      address _newKQD = Clones.clone(kinoraQuestDataI);
+      address _newKM = Clones.clone(kinoraMetricsI);
+      address _newKNC = Clones.clone(kinoraNFTCreatorI);
+
+      KinoraAccessControl(_newKAC).initialize(_envokerAddress, address(this));
+      KinoraQuestData(_newKQD).initialize(_newKAC, address(this));
+      KinoraMetrics(_newKM).initialize(_newKAC, _newKQD);
+      KinoraNFTCreator(_newKNC).initialize(_newKAC, address(this));
+      KinoraEscrow(_newKE).initialize(_newKAC, _newKQD, _newKNC, address(this));
+      KinoraAccessControl(_newKAC).setRelatedContract(
+        _newKE,
+        _newKQD,
+        _newKM,
+        _newKNC
+      );
+      KinoraNFTCreator(_newKNC).setKinoraEscrowContract(_newKE);
+      KinoraQuestData(_newKQD).setKinoraEscrowContract(_newKE);
+      KinoraQuestData(_newKQD).setKinoraMetricsContract(_newKM);
+
+      _factoryCounter++;
+
+      _factoryMap[_factoryCounter] = _newKAC;
+      emit NewFactoryDeployment(_newKAC, _newKE, _newKQD, _newKM, _newKNC);
+
+      return (_newKE, _newKQD);
+    } else {
+      address _kac = _factoryMap[_factoryCounter];
+      if (
+        !KinoraAccessControl(_kac).isEnvoker(_envokerAddress) && _initialize
+      ) {
+        revert KinoraErrors.InvalidAddress();
+      }
+      address _ke = KinoraAccessControl(_kac).getKinoraEscrow();
+      address _kqd = KinoraAccessControl(_kac).getKinoraQuestData();
+      KinoraAccessControl(_kac).getKinoraMetrics();
+      KinoraAccessControl(_kac).getKinoraNFTCreator();
+
+      return (_ke, _kqd);
+    }
+  }
+
   function supportsInterface(
     bytes4 interfaceId
   ) external view override returns (bool) {
@@ -855,5 +705,34 @@ contract KinoraOpenAction is
     returns (string memory)
   {
     return _metadata;
+  }
+
+  function getContractFactoryMap(
+    uint256 _factoryId
+  ) public view returns (address) {
+    return _factoryMap[_factoryId];
+  }
+
+  function getQuestId(
+    uint256 _factoryId,
+    uint256 _profileId,
+    uint256 _pubId
+  ) public view returns (uint256) {
+    return _questGroups[_factoryId][_profileId][_pubId];
+  }
+
+  function getContractFactoryId(
+    uint256 _profileId,
+    uint256 _pubId
+  ) public view returns (uint256) {
+    return _factoryGroups[_profileId][_pubId];
+  }
+
+  function getTotalContractFactoryCount() public view returns (uint256) {
+    return _factoryCounter;
+  }
+
+  function getKinoraMilestoneCheckLogicAddress() public view returns (address) {
+    return address(kinoraMilestoneCheckLogic);
   }
 }

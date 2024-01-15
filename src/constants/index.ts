@@ -16,25 +16,10 @@ export const LENS_MODULE_CONTRACT: ZeroString =
 export const ZERO_ADDRESS: ZeroString =
   "0x0000000000000000000000000000000000000000";
 /**
- * @constant KINORA_METRICS_CONTRACT Lens Kinora Metrics Address Matic Network.
- */
-export const KINORA_METRICS_CONTRACT: ZeroString =
-  "0x3310E657715F0c091Cf795609EE8c285820b6e80";
-/**
- * @constant KINORA_ESCROW_CONTRACT Lens Kinora Escrow Address Matic Network.
- */
-export const KINORA_ESCROW_CONTRACT: ZeroString =
-  "0x0a6a1CfCE6d5DD6f277BaC5FB17C1C9bd2Dd6E9D";
-/**
  * @constant LENS_HUB_PROXY_CONTRACT Lens Hubs Proxy Address Matic Network.
  */
 export const LENS_HUB_PROXY_CONTRACT: ZeroString =
   "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d";
-/**
- * @constant KINORA_QUEST_DATA_CONTRACT Kinora Quest Data Address Matic Network.
- */
-export const KINORA_QUEST_DATA_CONTRACT: ZeroString =
-  "0x4a3298205F64cFdc794DF374Acb439843218fA45";
 /**
  * @constant LENS_BASE_URL Base URL for the Lens V2 API.
  */

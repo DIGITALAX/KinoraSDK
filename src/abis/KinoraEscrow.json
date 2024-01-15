@@ -1,24 +1,8 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_accessControlAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_kinoraQuestDataAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_kinoraNFTCreatorAddress",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
+    "inputs": [],
+    "name": "AlreadyInitialized",
+    "type": "error"
   },
   {
     "inputs": [],
@@ -33,6 +17,11 @@
   {
     "inputs": [],
     "name": "QuestClosed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "QuestDoesntExist",
     "type": "error"
   },
   {
@@ -161,16 +150,16 @@
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "accessControl",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "contract KinoraAccessControl",
-        "name": "",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "_questId",
+        "type": "uint256"
       }
     ],
-    "stateMutability": "view",
+    "name": "deleteQuest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -178,11 +167,6 @@
       {
         "internalType": "address",
         "name": "_tokenAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_fromAddress",
         "type": "address"
       },
       {
@@ -253,6 +237,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getKinoraQuestDataAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -305,6 +302,47 @@
         "internalType": "string",
         "name": "",
         "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_kinoraAccessAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraQuestDataAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraNFTCreatorAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraOpenActionAddress",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraAccess",
+    "outputs": [
+      {
+        "internalType": "contract KinoraAccessControl",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",

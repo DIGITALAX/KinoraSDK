@@ -230,11 +230,9 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
             }
           };
 
-          // Registering play and pause event handlers
           mediaElement.addEventListener("play", handlePlay);
           mediaElement.addEventListener("pause", handlePause);
 
-          // Cleanup function to remove event listeners
           return () => {
             eventProps.forEach((key) => {
               if (
@@ -253,7 +251,6 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
           };
         };
 
-        // Setting up event listeners based on media element's ready state
         if (mediaElement) {
           if (mediaElement.readyState >= 1) {
             return setupEventListeners();

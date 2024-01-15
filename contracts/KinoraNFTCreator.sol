@@ -7,16 +7,24 @@ import "./KinoraErrors.sol";
 import "./KinoraEscrow.sol";
 import "./KinoraAccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract KinoraNFTCreator is ERC721Enumerable {
-  address public kinoraEscrow;
   KinoraAccessControl public kinoraAccess;
+    address public kinoraEscrow;
+      address public kinoraOpenAction;
   uint256 private _tokenSupply;
 
   mapping(uint256 => string) private _tokenIdURI;
 
   modifier onlyMaintainer() {
-    if (!kinoraAccess.isAdmin(msg.sender)) {
+    if (!kinoraAccess.isEnvoker(msg.sender)) {
+      revert KinoraErrors.InvalidAddress();
+    }
+    _;
+  }
+  modifier onlyMaintainerOrOpenAction() {
+    if (!kinoraAccess.isEnvoker(msg.sender) && msg.sender != kinoraOpenAction) {
       revert KinoraErrors.InvalidAddress();
     }
     _;
@@ -30,10 +38,14 @@ contract KinoraNFTCreator is ERC721Enumerable {
 
   event TokenMinted(address playerAddress, uint256 tokenId);
 
-  constructor(
-    address _kinoraAccessAddress
-  ) ERC721("KinoraNFTCreator", "KNC") {
+  constructor() ERC721("KinoraNFTCreator", "KNC") {}
+
+  function initialize(address _kinoraAccessAddress, address _kinoraOpenActionAddress) external {
+    if (address(kinoraAccess) != address(0)) {
+      revert KinoraErrors.AlreadyInitialized();
+    }
     kinoraAccess = KinoraAccessControl(_kinoraAccessAddress);
+    kinoraOpenAction = _kinoraOpenActionAddress;
     _tokenSupply = 0;
   }
 
@@ -62,7 +74,7 @@ contract KinoraNFTCreator is ERC721Enumerable {
 
   function setKinoraEscrowContract(
     address _newEscrowContract
-  ) external onlyMaintainer {
+  ) external onlyMaintainerOrOpenAction {
     kinoraEscrow = _newEscrowContract;
   }
 

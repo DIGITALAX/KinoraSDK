@@ -69,6 +69,11 @@ export interface Milestone {
     title: string;
     description: string;
     cover: `ipfs://${string}`;
+    videoInfo: {
+      title: string;
+      description: string;
+      cover: `ipfs://${string}`;
+    }[];
   }; // Milestone details
   eligibility: MilestoneEligibility; // Eligibility criteria
 }
@@ -78,8 +83,9 @@ export interface Milestone {
  */
 export interface MilestoneEligibility {
   internalCriteria?: {
+    factoryIds: number[];
     playbackId: string;
-    postId: string;
+    postId: ZeroString;
     playbackCriteria: MilestoneEligibilityCriteria;
   }[];
 }
@@ -155,7 +161,9 @@ export interface PlayerData {
   };
 }
 
-
+/**
+ * Player video activity object recorded for each video the player has interacted with and recorded their metrics on-chain.
+ */
 export interface PlayerVideoActivity {
   secondaryCollectOnComment: number;
   secondaryCollectOnQuote: number;
@@ -174,5 +182,13 @@ export interface PlayerVideoActivity {
   hasBookmarked: boolean;
   duration: number;
   avd: number;
-  playCount: number
+  playCount: number;
+}
+
+/**
+ * Engagement interface for Metrics class.
+ */
+export interface EngagementInfo {
+  viewCount: number;
+  totalWatchTime: number;
 }

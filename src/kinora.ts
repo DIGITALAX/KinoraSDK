@@ -3,7 +3,6 @@ import { PlayerVideoActivity, ZeroString } from "./@types/kinora-sdk";
 import { Sequence } from "./sequence";
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
-import { KINORA_QUEST_DATA_CONTRACT } from "./constants";
 import {
   getActivityByPlayerId,
   getActivityByPostId,
@@ -72,15 +71,19 @@ class Kinora {
   /**
    * @method sendPlayerMetricsOnChain
    * @description This function is responsible for sending player metrics to the blockchain.
-   * @param {ZeroString} args.postId - The Lens Post Id of the video.
-   * @param {ZeroString} args.playerProfileId - The Lens Profile Id of the Player.
-   * @param {ethers.Wallet} args.wallet - The Player's wallet object for signing the metrics on-chain.
+   * @param {ZeroString} postId - The Lens Post Id of the video.
+   * @param {ZeroString} playerProfileId - The Lens Profile Id of the Player.
+   * @param {ethers.Wallet} wallet - The Player's wallet object for signing the metrics on-chain.
+   * @param {`0x${string}`} kinoraMetricsContractAddress - Instantiated Kinora Metrics Contract.
+   * @param {`0x${string}`} kinoraQuestDataContractAddress - Instantiated Kinora Quest Data Contract.
    * @returns {Promise<void>} - A Promise that resolves when the operation completes.
    */
   public async sendPlayerMetricsOnChain(
     postId: ZeroString,
     playerProfileId: ZeroString,
     wallet: ethers.Wallet,
+    kinoraMetricsContractAddress: ZeroString,
+    kinoraQuestDataContractAddress: ZeroString,
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -92,6 +95,8 @@ class Kinora {
       postId,
       playerProfileId,
       wallet,
+      kinoraMetricsContractAddress,
+      kinoraQuestDataContractAddress,
     );
   }
 
@@ -108,7 +113,7 @@ class Kinora {
     playCount: number;
     avd: number;
     duration: number;
-    mostReplayedArea: Map<number, number>;
+    // mostReplayedArea: Map<number, number>;
     totalInteractions: number;
   } {
     if (!this.sequence)
@@ -149,18 +154,22 @@ class Kinora {
    * Asynchronously retrieves the quest ID associated with a given publication.
    *
    * @param postId - Lens Post ID of the post in the format `0x${string}`.
+   * @param kinoraQuestDataContract - Instantiated Kinora Quest Data Contract.
    * @returns A Promise resolving to an object containing boolean status for error,
    *          optional quest ID, and an optional error message.
    * @throws Any errors encountered during the process are caught and returned with their message.
    */
-  public async getQuestIdFromPublication(postId: ZeroString): Promise<{
+  public async getQuestIdFromPublication(
+    postId: ZeroString,
+    kinoraQuestDataContract: `0x${string}`,
+  ): Promise<{
     error: boolean;
     questId?: number;
     errorMessage?: string;
   }> {
     try {
       const kinoraQuestData = new ethers.Contract(
-        KINORA_QUEST_DATA_CONTRACT,
+        kinoraQuestDataContract,
         KinoraQuestDataAbi,
       );
 
@@ -566,6 +575,7 @@ class Kinora {
       minAVD: number;
       minDuration: number;
       minPlayCount: number;
+      factoryIds: number[];
     }[];
   }> {
     try {
@@ -597,6 +607,7 @@ class Kinora {
             minAVD: string;
             minDuration: string;
             minPlayCount: string;
+            factoryIds: string[];
           }) => ({
             ...video,
             profileId: toHex(Number(video?.profileId)),
@@ -629,6 +640,7 @@ class Kinora {
             minAVD: Number(video?.minAVD) / 10 ** 18,
             minDuration: Number(video?.minDuration) / 10 ** 18,
             minPlayCount: Number(video?.minPlayCount),
+            factoryIds: video?.factoryIds?.map((item) => Number(item)),
           }),
         ),
       };

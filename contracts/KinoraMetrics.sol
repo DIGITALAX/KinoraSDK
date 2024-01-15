@@ -5,7 +5,7 @@ pragma solidity ^0.8.19;
 import "./KinoraAccessControl.sol";
 import "./KinoraLibrary.sol";
 import "./KinoraQuestData.sol";
-import "hardhat/console.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract KinoraMetrics {
   string public symbol;
@@ -42,13 +42,19 @@ contract KinoraMetrics {
   }
 
   modifier onlyMaintainer() {
-    if (!kinoraAccess.isAdmin(msg.sender)) {
+    if (!kinoraAccess.isEnvoker(msg.sender)) {
       revert KinoraErrors.InvalidAddress();
     }
     _;
   }
 
-  constructor(address _kinoraAccessAddress, address _kinoraQuestDataAddress) {
+  function initialize(
+    address _kinoraAccessAddress,
+    address _kinoraQuestDataAddress
+  ) external {
+    if (address(kinoraAccess) != address(0)) {
+      revert KinoraErrors.AlreadyInitialized();
+    }
     name = "KinoraMetrics";
     symbol = "KME";
     kinoraAccess = KinoraAccessControl(_kinoraAccessAddress);

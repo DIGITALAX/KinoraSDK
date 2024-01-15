@@ -105,7 +105,6 @@ main();
 
 /* 
 - set kinora nft creator > escrow
-- set kinora escrow > open action
 - set kinora open > register action
-- set kinora quest data > metrics & escrow & action
+- set kinora quest data > metrics & escrow
 */

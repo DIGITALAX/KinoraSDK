@@ -1,3 +1,5 @@
+import { EngagementInfo } from "./@types/kinora-sdk";
+
 /**
  * @class Metrics
  * @description A class that tracks various metrics related to video playback and user interactions.
@@ -10,7 +12,7 @@ export class Metrics {
   private videoStarted: boolean = false; // Flag to check if video started playing.
   private isActive: boolean = false; // Flag to check if video is actively being played.
   private isSeeking: boolean = false; // Flag to check if video is in seeking state.
-  private engagementData: Map<number, number> = new Map(); // Map to store engagement data based on video's current time.
+  private engagementData: Map<number, EngagementInfo> = new Map();
 
   // Event handler for play event, updating activity status and last update time.
   public onPlay = (videoElement: HTMLVideoElement) => {
@@ -38,6 +40,14 @@ export class Metrics {
   // Event handler for time update event, capturing engagement data.
   public onTimeUpdate = (videoElement: HTMLVideoElement) => {
     const currentTime = videoElement.currentTime;
+    const engagementInfo = this.engagementData.get(currentTime) || {
+      viewCount: 0,
+      totalWatchTime: 0,
+    };
+    engagementInfo.viewCount++;
+    engagementInfo.totalWatchTime +=
+      videoElement.currentTime - this.lastUpdateTime;
+    this.engagementData.set(currentTime, engagementInfo);
     if (this.isActive && this.lastUpdateTime > 0 && !this.isSeeking) {
       const timeWatched = currentTime - this.lastUpdateTime;
       if (timeWatched > 0) {
@@ -45,10 +55,6 @@ export class Metrics {
       }
     }
     this.lastUpdateTime = currentTime;
-    this.engagementData.set(
-      currentTime * 1000,
-      (this.engagementData.get(currentTime * 1000) || 0) + 1,
-    );
   };
 
   // Event handler for pause event, increments total interactions and updates activity status.
@@ -100,9 +106,33 @@ export class Metrics {
   };
 
   // Returns the engagement data map.
-  public getMostReplayedArea(): Map<number, number> {
-    return this.engagementData;
-  }
+  public getMostReplayedArea = (): { peaks: number[]; valleys: number[] } => {
+    // Lógica para procesar engagementData y encontrar picos y valles.
+    let peakViewCount = 0;
+    let valleyViewCount = Infinity;
+    const peaks: number[] = [];
+    const valleys: number[] = [];
+
+    this.engagementData.forEach((info, time) => {
+      if (info.viewCount > peakViewCount) {
+        peakViewCount = info.viewCount;
+        peaks.length = 0; // Reset peaks array
+        peaks.push(time);
+      } else if (info.viewCount === peakViewCount) {
+        peaks.push(time);
+      }
+
+      if (info.viewCount < valleyViewCount) {
+        valleyViewCount = info.viewCount;
+        valleys.length = 0; // Reset valleys array
+        valleys.push(time);
+      } else if (info.viewCount === valleyViewCount) {
+        valleys.push(time);
+      }
+    });
+
+    return { peaks, valleys };
+  };
 
   // Calculates and returns the average view duration (AVD).
   public getAVD = (): number => {

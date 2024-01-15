@@ -1,10 +1,6 @@
 import { ZeroString, PlayerData } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import { ethers } from "ethers";
-import {
-  KINORA_METRICS_CONTRACT,
-  KINORA_QUEST_DATA_CONTRACT,
-} from "./constants/index";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
 import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
 import { Post, Comment, Quote } from "./@types/generated";
@@ -131,6 +127,8 @@ export class Sequence {
    * @param {ZeroString} postId - The Lens Post Id of the for the connected video.
    * @param {ZeroString} playerProfileId - The Profile Id of the Player.
    * @param {ethers.Wallet} wallet - The Ethers.Wallet object of the Player.
+   * @param {ZeroString} kinoraMetricsContractAddress - Instantiated Kinora Metrics Contract.
+   * @param {ZeroString} kinoraQuestDataContractAddress - Instantiated Kinora Quest Data Contract.
    * @throws Will throw an error if required data is missing or if transaction generation or execution fails.
    * @returns {Promise<void>} - A Promise that resolves when the operation completes.
    */
@@ -138,6 +136,8 @@ export class Sequence {
     postId: ZeroString,
     playerProfileId: ZeroString,
     wallet: ethers.Wallet,
+    kinoraMetricsContractAddress: ZeroString,
+    kinoraQuestDataContractAddress: ZeroString,
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -179,7 +179,7 @@ export class Sequence {
       }
 
       const kinoraMetricsContract = new ethers.Contract(
-        KINORA_METRICS_CONTRACT,
+        kinoraMetricsContractAddress,
         KinoraMetricsAbi,
         wallet,
       );
@@ -196,6 +196,7 @@ export class Sequence {
         parseInt(playerProfileId, 16),
         parseInt(postId?.split("-")[1], 16),
         parseInt(postId?.split("-")[0], 16),
+        kinoraQuestDataContractAddress,
       );
 
       if (error) {
@@ -293,7 +294,7 @@ export class Sequence {
   /**
    * Retrieves the live video metrics for a specific post.
    *
-   * @param postId - Lens Profile ID of the post in the format `0x${string}`.
+   * @param postId - Lens Profile ID of the post in the format ZeroString.
    * @returns An object containing the play count, average view duration (avd),
    *          total duration of the video, total interactions, and most replayed area of the video.
    *          Returns undefined metrics for non-existent postId.
@@ -304,7 +305,7 @@ export class Sequence {
     playCount: number;
     avd: number;
     duration: number;
-    mostReplayedArea: (Map<number, number>);
+    // mostReplayedArea: (Map<number, number>);
     totalInteractions: number;
   } => {
     return {
@@ -312,7 +313,7 @@ export class Sequence {
       avd: this.metrics[postId]?.getAVD(),
       duration: this.metrics[postId]?.getTotalDuration(),
       totalInteractions: this.metrics[postId]?.getTotalInteractions(),
-      mostReplayedArea: this.metrics[postId]?.getMostReplayedArea(),
+      // mostReplayedArea: this.metrics[postId]?.getMostReplayedArea(),
     };
   };
 
@@ -382,6 +383,7 @@ export class Sequence {
    * @param playerProfileId - Numeric ID of the player's profile.
    * @param videoPubId - Numeric ID of the video publication.
    * @param videoProfileId - Numeric ID of the video's profile.
+   * @param kinoraQuestDataContractAddress - Instantiated Kinora Quest Data Contract.
    * @returns A Promise resolving to an object with error status, optional error message,
    *          and metrics including most replayed area, play count, average view duration, and total duration.
    */
@@ -390,6 +392,7 @@ export class Sequence {
     playerProfileId: number,
     videoPubId: number,
     videoProfileId: number,
+    kinoraQuestDataContractAddress: ZeroString,
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -400,7 +403,7 @@ export class Sequence {
   }> => {
     try {
       const kinoraQuestData = new ethers.Contract(
-        KINORA_QUEST_DATA_CONTRACT,
+        kinoraQuestDataContractAddress,
         KinoraQuestDataAbi,
         wallet,
       );
@@ -481,8 +484,8 @@ export class Sequence {
   /**
    * Asynchronously fetches secondary data related to a player's interactions on specific posts, such as quotes and comments.
    *
-   * @param playerProfileId - Lens Profile ID of the player in the format `0x${string}`.
-   * @param postId - Lens Profile ID of the post in the format `0x${string}`.
+   * @param playerProfileId - Lens Profile ID of the player in the format ZeroString.
+   * @param postId - Lens Profile ID of the post in the format ZeroString.
    * @returns A Promise resolving to an object containing error status, optional error message,
    *          and counts of various secondary interactions (quote, mirror, react, comment, collect) on quotes and comments.
    */
