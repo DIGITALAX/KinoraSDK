@@ -7,7 +7,7 @@ import "./KinoraErrors.sol";
 import "./KinoraEscrow.sol";
 import "./KinoraMetrics.sol";
 import "./KinoraAccessControl.sol";
-import "hardhat/console.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract KinoraQuestData {
   KinoraAccessControl public kinoraAccess;
@@ -34,6 +34,7 @@ contract KinoraQuestData {
     uint256 videoPubId,
     uint256 videoProfileId
   );
+  event QuestDeleted(uint256 questId);
   event QuestStatusUpdated(uint256 questId, KinoraLibrary.Status status);
   event MilestoneCompleted(
     uint256 questId,
@@ -67,18 +68,31 @@ contract KinoraQuestData {
     _;
   }
   modifier onlyMaintainer() {
-    if (!kinoraAccess.isAdmin(msg.sender)) {
+    if (!kinoraAccess.isEnvoker(msg.sender)) {
+      revert KinoraErrors.InvalidAddress();
+    }
+    _;
+  }
+  modifier onlyMaintainerOrOpenAction() {
+    if (!kinoraAccess.isEnvoker(msg.sender) && msg.sender != kinoraOpenAction) {
       revert KinoraErrors.InvalidAddress();
     }
     _;
   }
 
-  constructor(address _accessAddress) {
+  function initialize(
+    address _kinoraAccessAddress,
+    address _kinoraOpenActionAddress
+  ) external {
+    if (address(kinoraAccess) != address(0)) {
+      revert KinoraErrors.AlreadyInitialized();
+    }
     name = "KinoraQuestData";
     symbol = "KQD";
     _questCount = 0;
     _playerCount = 0;
-    kinoraAccess = KinoraAccessControl(_accessAddress);
+    kinoraAccess = KinoraAccessControl(_kinoraAccessAddress);
+    kinoraOpenAction = _kinoraOpenActionAddress;
   }
 
   function configureNewQuest(
@@ -162,7 +176,7 @@ contract KinoraQuestData {
 
   function setKinoraMetricsContract(
     address _newMetricsContract
-  ) external onlyMaintainer {
+  ) external onlyMaintainerOrOpenAction {
     kinoraMetrics = KinoraMetrics(_newMetricsContract);
   }
 
@@ -180,7 +194,7 @@ contract KinoraQuestData {
 
   function setKinoraEscrowContract(
     address _newEscrowContract
-  ) external onlyMaintainer {
+  ) external onlyMaintainerOrOpenAction {
     kinoraEscrow = KinoraEscrow(_newEscrowContract);
   }
 
@@ -281,6 +295,12 @@ contract KinoraQuestData {
     }
 
     _newMilestone.videoBytes = _videoBytes;
+  }
+
+  function deleteQuest(uint256 _questId) external onlyKinoraEscrow {
+    delete _allQuests[_questId];
+
+    emit QuestDeleted(_questId);
   }
 
   function getTotalQuestCount() public view returns (uint256) {
@@ -875,6 +895,18 @@ contract KinoraQuestData {
       .videos[_videoProfileId][_videoPubId].minAVD;
   }
 
+  function getMilestoneVideoFactoryIds(
+    uint256 _questId,
+    uint256 _milestone,
+    uint256 _videoProfileId,
+    uint256 _videoPubId
+  ) public view returns (uint256[] memory) {
+    return
+      _allQuests[_questId]
+      .milestones[_milestone - 1]
+      .videos[_videoProfileId][_videoPubId].factoryIds;
+  }
+
   function getMilestoneGatedOneOf(
     uint256 _questId,
     uint256 _milestone
@@ -984,5 +1016,11 @@ contract KinoraQuestData {
     uint256 _pubId
   ) public view returns (uint256) {
     return _questIdFromLensData[_profileId][_pubId];
+  }
+
+  function getLensDataFromQuestId(
+    uint256 _questId
+  ) public view returns (uint256, uint256) {
+    return (_allQuests[_questId].profileId, _allQuests[_questId].pubId);
   }
 }

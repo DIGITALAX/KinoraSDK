@@ -3,8 +3,6 @@ import {
   IPFS_REGEX,
   KINORA_OPEN_ACTION_CONTRACT,
   LENS_HUB_PROXY_CONTRACT,
-  KINORA_ESCROW_CONTRACT,
-  KINORA_METRICS_CONTRACT,
   ZERO_ADDRESS,
   ERROR_CODES,
   LENS_MODULE_CONTRACT,
@@ -16,7 +14,9 @@ import validateMetadata from "./graphql/queries/validateMetadata";
 import LensHubProxyAbi from "./abis/LensHubProxy.json";
 import KinoraEscrowAbi from "./abis/KinoraEscrow.json";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
-import { BigNumber, ethers } from "ethers";
+import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
+import KinoraOpenActionAbi from "./abis/KinoraOpenAction.json";
+import { ethers } from "ethers";
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import { PublicationMetadataMainFocusType } from "./@types/generated";
 import {
@@ -27,6 +27,8 @@ import {
   RewardType,
 } from "./@types/kinora-sdk";
 import { hashToIPFS } from "./utils/ipfs";
+import hidePost from "./graphql/mutations/hidePost";
+import toHex from "./utils/toHex";
 
 export class Envoker {
   /**
@@ -71,10 +73,14 @@ export class Envoker {
    * @param args - An object encompassing the necessary parameters for constructor invocation.
    * @param args.authedApolloClient - An authenticated Apollo client for interacting with the GraphQL API with Lens Protocol.
    * @param args.wallet - (Optional) A ethers wallet instance for authorizing transactions.
+   * @param args.kinoraEscrowContract - (Optional) Your Kinora Escrow Contract instance if you are not instantiating a new set of quest contracts.
+   * @param args.kinoraMetricsContract - (Optional) Your Kinora Metrics Contract instance if you are not instantiating a new set of quest contracts.
    */
   constructor(args: {
     authedApolloClient: ApolloClient<NormalizedCacheObject>;
     wallet?: ethers.Wallet;
+    kinoraEscrowContract?: `0x${string}`;
+    kinoraMetricsContract?: `0x${string}`;
   }) {
     this.questEnvokerAuthedApolloClient = args.authedApolloClient;
     if (args.wallet) {
@@ -84,16 +90,20 @@ export class Envoker {
         LensHubProxyAbi,
         this.wallet,
       );
-      this.kinoraEscrowContract = new ethers.Contract(
-        KINORA_ESCROW_CONTRACT,
-        KinoraEscrowAbi,
-        this.wallet,
-      );
-      this.kinoraMetricsContract = new ethers.Contract(
-        KINORA_METRICS_CONTRACT,
-        KinoraMetricsAbi,
-        this.wallet,
-      );
+      if (args.kinoraEscrowContract) {
+        this.kinoraEscrowContract = new ethers.Contract(
+          args.kinoraEscrowContract,
+          KinoraEscrowAbi,
+          this.wallet,
+        );
+      }
+
+      if (args.kinoraMetricsContract)
+        this.kinoraMetricsContract = new ethers.Contract(
+          args.kinoraMetricsContract,
+          KinoraMetricsAbi,
+          this.wallet,
+        );
     }
   }
 
@@ -101,6 +111,7 @@ export class Envoker {
    * @method
    * @description Instantiates a new quest with specified inputs. It checks for necessary setups, generates random keys if needed, and interacts with contracts to set up the quest.
    * @param {Object} args - The details required for quest creation.
+   * @param {number} args.factoryId - 0 for instantiating a new factory instance.
    * @param {string} args.questDetails - Title, cover, description and (optional) tags of the quest.
    * @param {number} args.maxPlayerCount - Maximum number of players for the quest.
    * @param {Milestone[]} args.milestones - Array of milestone objects for the quest.
@@ -111,6 +122,7 @@ export class Envoker {
    * @returns {Promise<Object>} - Promise resolving to an object containing various contract addresses and other details relevant to the new quest.
    */
   instantiateNewQuest = async (args: {
+    factoryId: number;
     questDetails: {
       cover: `ipfs://${string}`;
       title: string;
@@ -124,6 +136,13 @@ export class Envoker {
     approveRewardTokens?: boolean;
   }): Promise<{
     postId?: ZeroString;
+    factoryId?: number;
+    questId?: number;
+    factoryAccessControls?: ZeroString;
+    factoryEscrow?: ZeroString;
+    factoryQuestData?: ZeroString;
+    factoryMetrics?: ZeroString;
+    factoryNFTCreator?: ZeroString;
     transactionHash?: ZeroString;
     error: boolean;
     errorMessage?: string;
@@ -183,6 +202,15 @@ export class Envoker {
       )
     ) {
       throw new Error("Invalid Quest Join Gated Logic.");
+    }
+
+    if (
+      args?.milestones?.map((item) => item?.details?.videoInfo?.length || 0) !==
+      args?.milestones?.map(
+        (item) => item?.eligibility?.internalCriteria?.length,
+      )
+    ) {
+      throw new Error("Invalid Video Info Length.");
     }
 
     if (
@@ -256,6 +284,19 @@ export class Envoker {
           ?.sort((a, b) => a.milestone - b.milestone)
           ?.filter((v, i, a) => !i || v.milestone != a[i - 1].milestone)
           ?.map(async (milestone: Milestone) => {
+            const videoPromises = milestone?.details?.videoInfo?.map(
+              async (video) => {
+                const cover = await hashToIPFS(video?.cover);
+
+                return {
+                  ...video,
+                  cover: cover?.cid,
+                };
+              },
+            );
+
+            const videoCovers = await Promise.all(videoPromises);
+
             return {
               gated: {
                 erc721TokenURIs: milestone.gated.erc721TokenURIs,
@@ -293,6 +334,7 @@ export class Envoker {
               ),
               videos: milestone.eligibility.internalCriteria?.map((item) => {
                 return {
+                  factoryIds: item?.factoryIds,
                   playerId: item?.playbackId,
                   videoBytes: item?.postId,
                   profileId: parseInt(item?.postId?.split("-")[0], 16),
@@ -381,6 +423,7 @@ export class Envoker {
                     title: milestone?.details?.title,
                     description: milestone?.details?.description,
                     cover: milestone?.details?.cover,
+                    videoCovers,
                   }),
                 )
               ).cid,
@@ -446,7 +489,7 @@ export class Envoker {
               );
 
               const tx = await erc20Contract.approve(
-                KINORA_ESCROW_CONTRACT,
+                KINORA_OPEN_ACTION_CONTRACT,
                 Number(reward.amount) * args.maxPlayerCount,
               );
               await tx.wait();
@@ -460,7 +503,7 @@ export class Envoker {
         encodedData = ethers.utils.defaultAbiCoder.encode(
           [
             "tuple(" +
-              "tuple(tuple(string[][] erc721TokenURIs, uint256[][] erc721TokenIds, address[] erc721Addresses, address[] erc20Addresses, uint256[] erc20Thresholds, bool oneOf) gated, tuple(uint8 rewardType, string uri, address tokenAddress, uint256 amount)[] rewards, tuple(string playerId, string videoBytes, uint256 profileId, uint256 pubId, uint256 minPlayCount, uint256 minAVD, uint256 minDuration,  uint256 minSecondaryQuoteOnQuote, uint256 minSecondaryMirrorOnQuote, uint256 minSecondaryReactOnQuote, uint256 minSecondaryCommentOnQuote, uint256 minSecondaryCollectOnQuote, uint256 minSecondaryQuoteOnComment, uint256 minSecondaryMirrorOnComment, uint256 minSecondaryReactOnComment, uint256 minSecondaryCommentOnComment, uint256 minSecondaryCollectOnComment, bool quote, bool mirror, bool comment, bool bookmark, bool react)[] videos, string uri, uint256 milestone)[] milestones, " +
+              "tuple(tuple(string[][] erc721TokenURIs, uint256[][] erc721TokenIds, address[] erc721Addresses, address[] erc20Addresses, uint256[] erc20Thresholds, bool oneOf) gated, tuple(uint8 rewardType, string uri, address tokenAddress, uint256 amount)[] rewards, tuple(uint256[] factoryIds, string playerId, string videoBytes, uint256 profileId, uint256 pubId, uint256 minPlayCount, uint256 minAVD, uint256 minDuration,  uint256 minSecondaryQuoteOnQuote, uint256 minSecondaryMirrorOnQuote, uint256 minSecondaryReactOnQuote, uint256 minSecondaryCommentOnQuote, uint256 minSecondaryCollectOnQuote, uint256 minSecondaryQuoteOnComment, uint256 minSecondaryMirrorOnComment, uint256 minSecondaryReactOnComment, uint256 minSecondaryCommentOnComment, uint256 minSecondaryCollectOnComment, bool quote, bool mirror, bool comment, bool bookmark, bool react)[] videos, string uri, uint256 milestone)[] milestones, " +
               "tuple(" +
               "string[][] erc721TokenURIs, " +
               "uint256[][] erc721TokenIds, " +
@@ -470,9 +513,9 @@ export class Envoker {
               "bool oneOf" +
               ") gateLogic, " +
               " string uri, " +
-              " address envokerAddress, " +
               "uint256 maxPlayerCount" +
               ")",
+            "uint256",
           ],
           [
             {
@@ -486,10 +529,9 @@ export class Envoker {
                 oneOf: args.joinQuestTokenGatedLogic.oneOf,
               },
               uri: (await hashToIPFS(JSON.stringify(args.questDetails))).cid,
-              envokerAddress: await (this.wallet?.getAddress() ||
-                args.wallet?.getAddress()),
               maxPlayerCount: args.maxPlayerCount,
             },
+            args.factoryId,
           ],
         );
       } catch (err: any) {
@@ -538,8 +580,35 @@ export class Envoker {
 
       const txHash = await tx.wait();
 
+      const kinoraOpenAccess = new ethers.Contract(
+        KINORA_OPEN_ACTION_CONTRACT,
+        KinoraOpenActionAbi,
+        args.wallet,
+      );
+
+      const factoryId = await kinoraOpenAccess.getContractFactoryId(
+        parseInt(data?.createOnchainPostTypedData.id?.split("-")[0], 16),
+        parseInt(data?.createOnchainPostTypedData.id?.split("-")[1], 16),
+      );
+
+      const questId = await kinoraOpenAccess.getQuestId(
+        factoryId,
+        parseInt(data?.createOnchainPostTypedData.id?.split("-")[0], 16),
+        parseInt(data?.createOnchainPostTypedData.id?.split("-")[1], 16),
+      );
+
+      const factoryAccessControls =
+        await kinoraOpenAccess.getContractFactoryMap(factoryId);
+
       return {
         postId: data?.createOnchainPostTypedData.id,
+        questId,
+        factoryId,
+        factoryAccessControls,
+        factoryEscrow: await factoryAccessControls.getKinoraEscrow(),
+        factoryQuestData: await factoryAccessControls.getKinoraQuestData(),
+        factoryMetrics: await factoryAccessControls.getKinoraMetrics(),
+        factoryNFTCreator: await factoryAccessControls.getKinoraNFTCreator(),
         transactionHash: txHash,
         error: false,
       };
@@ -568,12 +637,14 @@ export class Envoker {
    * @method
    * @description Terminates a quest and triggers the withdrawal process for any remaining funds. Ensures necessary setups and data are present before proceeding.
    * @param {ZeroString} questId - The Quest Id.
+   * @param {`0x${string}`} kinoraEscrowContract - Existing Kinora Escrow Contract.
    * @param {ethers.Wallet} wallet - (Optional) Ethereum wallet boject for signing the transaction.
    * @throws Will throw an error if necessary setups or data are missing.
    * @returns {Promise<Object>} - Promise resolving to an object containing transaction hashes for termination and withdrawal processes.
    */
   terminateQuestAndWithdraw = async (
     questId: number,
+    kinoraEscrowContract?: `0x${string}`,
     wallet?: ethers.Wallet,
   ): Promise<{
     txHash?: string;
@@ -581,13 +652,18 @@ export class Envoker {
     errorMessage?: string;
   }> => {
     try {
-      if (!this.kinoraEscrowContract && !wallet && !this.wallet) {
-        throw new Error(`Pass a valid Ethers wallet object.`);
+      if (
+        (!this.kinoraEscrowContract && !kinoraEscrowContract) ||
+        (!this.wallet && !wallet)
+      ) {
+        throw new Error(
+          `Pass a valid Ethers wallet object and Kinora Escrow Contract address.`,
+        );
       }
 
-      if (!this.wallet) {
+      if (!this.kinoraEscrowContract) {
         this.kinoraEscrowContract = new ethers.Contract(
-          KINORA_ESCROW_CONTRACT,
+          kinoraEscrowContract!,
           KinoraEscrowAbi,
           wallet,
         );
@@ -613,13 +689,84 @@ export class Envoker {
   };
 
   /**
+   * @method
+   * @description Deletes a quest and triggers the withdrawal process for any remaining funds. Ensures necessary setups and data are present before proceeding.
+   * @param {ZeroString} questId - The Quest Id.
+   * @param {`0x${string}`} kinoraEscrowContract - Existing Kinora Escrow Contract.
+   * @param {ethers.Wallet} wallet - (Optional) Ethereum wallet boject for signing the transaction.
+   * @throws Will throw an error if necessary setups or data are missing.
+   * @returns {Promise<Object>} - Promise resolving to an object containing transaction hashes for deletion and withdrawal processes.
+   */
+  deleteQuest = async (
+    questId: number,
+    kinoraEscrowContract?: `0x${string}`,
+    wallet?: ethers.Wallet,
+  ): Promise<{
+    txHash?: string;
+    error: boolean;
+    errorMessage?: string;
+  }> => {
+    try {
+      if (
+        (!this.kinoraEscrowContract && !kinoraEscrowContract) ||
+        (!this.wallet && !wallet)
+      ) {
+        throw new Error(
+          `Pass a valid Ethers wallet object and Kinora Escrow Contract address.`,
+        );
+      }
+
+      if (!this.kinoraEscrowContract || !this.wallet) {
+        this.kinoraEscrowContract = new ethers.Contract(
+          kinoraEscrowContract!,
+          KinoraEscrowAbi,
+          wallet,
+        );
+      }
+
+      const kinoraQuestDataAddress =
+        await this.kinoraEscrowContract?.getKinoraQuestDataAddress();
+
+      const kinoraQuestData = new ethers.Contract(
+        kinoraQuestDataAddress,
+        KinoraQuestDataAbi,
+        wallet,
+      );
+
+      const values = await kinoraQuestData.getLensDataFromQuestId(questId);
+
+      await hidePost(
+        {
+          for: `${toHex(values[0])}-${toHex(values[1])}`,
+        },
+        this.questEnvokerAuthedApolloClient,
+      );
+
+      const tx = await this.kinoraEscrowContract?.deleteQuest(questId);
+
+      const txHash = await tx.wait();
+
+      return {
+        txHash,
+        error: false,
+      };
+    } catch (err: any) {
+      return {
+        error: true,
+        errorMessage: `Error terminating Quest: ${err.message}`,
+      };
+    }
+  };
+
+  /**
    * Quest Envoker to verify Player can claim milestone.
    *
    * @param questId - The Quest Id.
    * @param milestone - The Milestone to verify.
    * @param playerProfileId - The Player's Lens profile Id.
    * @param eligible - The eligibility boolean.
-   * @param wallet - (Optional)
+   * @param kinoraMetricsContract - (Optional) Previous Kinora Metrics instantiation.
+   * @param wallet - (Optional) Ethers wallet object.
    * @returns {Promise<Object>} - Promise resolving to an object containing transaction hashes for termination and withdrawal processes.
    *
    */
@@ -628,6 +775,7 @@ export class Envoker {
     milestone: number,
     playerProfileId: string,
     eligible: boolean,
+    kinoraMetricsContract?: `0x${string}`,
     wallet?: ethers.Wallet,
   ): Promise<{
     txHash?: string;
@@ -635,13 +783,18 @@ export class Envoker {
     errorMessage?: string;
   }> => {
     try {
-      if (!this.kinoraMetricsContract && !wallet && !this.wallet) {
-        throw new Error(`Pass a valid Ethers wallet object.`);
+      if (
+        (!this.kinoraMetricsContract && !kinoraMetricsContract) ||
+        (!wallet && !this.wallet)
+      ) {
+        throw new Error(
+          `Pass a valid Ethers wallet object and Kinora Escrow Contract address.`,
+        );
       }
 
       if (!this.wallet) {
         this.kinoraMetricsContract = new ethers.Contract(
-          KINORA_METRICS_CONTRACT,
+          kinoraMetricsContract!,
           KinoraMetricsAbi,
           wallet,
         );

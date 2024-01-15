@@ -34,6 +34,7 @@ export const getMilestoneVideos = async (
               minAVD
               comment
               bookmark
+              factoryIds
             }
         }
       }

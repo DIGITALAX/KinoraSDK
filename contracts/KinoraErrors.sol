@@ -7,8 +7,11 @@ contract KinoraErrors {
   error InvalidLength();
   error InvalidAddress();
   error InvalidContract();
+  error AlreadyInitialized();
+  error OnlyCoreEnvoker();
   error UserNotMaintainer();
   error QuestClosed();
+  error QuestDoesntExist();
   error InsufficientBalance();
   error PlayerNotEligible();
   error MaxPlayerCountReached();

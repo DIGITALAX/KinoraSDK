@@ -34,6 +34,7 @@ contract KinoraLibrary {
   }
 
   struct Video {
+    uint256[] factoryIds;
     string playerId;
     string videoBytes;
     uint256 profileId;
@@ -141,7 +142,27 @@ contract KinoraLibrary {
     MilestoneParameter[] milestones;
     GatingLogic gateLogic;
     string uri;
-    address envokerAddress;
     uint256 maxPlayerCount;
+  }
+
+  struct AggregateParams {
+    uint256 avd;
+    uint256 playCount;
+    uint256 secondaryQuoteOnQuote;
+    uint256 secondaryMirrorOnQuote;
+    uint256 secondaryReactOnQuote;
+    uint256 secondaryCommentOnQuote;
+    uint256 secondaryCollectOnQuote;
+    uint256 secondaryQuoteOnComment;
+    uint256 secondaryMirrorOnComment;
+    uint256 secondaryReactOnComment;
+    uint256 secondaryCommentOnComment;
+    uint256 secondaryCollectOnComment;
+    uint256 duration;
+    bool hasQuoted;
+    bool hasMirrored;
+    bool hasCommented;
+    bool hasBookmarked;
+    bool hasReacted;
   }
 }
