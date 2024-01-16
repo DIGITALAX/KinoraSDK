@@ -4,7 +4,7 @@ import { ZeroString } from "./../@types/kinora-sdk";
  * @constant KINORA_OPEN_ACTION_CONTRACT Lens Kinora Open Action Address Matic Network.
  */
 export const KINORA_OPEN_ACTION_CONTRACT: ZeroString =
-  "0x43a18a3596d3C80467236b588976C9F11D166894";
+  "0x196f267A4aCA1243CCCB85AD7098D1fDA1D683CD";
 /**
  * @constant LENS_MODULE_CONTRACT Lens Module Contract.
  */
