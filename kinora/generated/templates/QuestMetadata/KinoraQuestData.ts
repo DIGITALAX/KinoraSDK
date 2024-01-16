@@ -136,6 +136,24 @@ export class QuestCompleted__Params {
   }
 }
 
+export class QuestDeleted extends ethereum.Event {
+  get params(): QuestDeleted__Params {
+    return new QuestDeleted__Params(this);
+  }
+}
+
+export class QuestDeleted__Params {
+  _event: QuestDeleted;
+
+  constructor(event: QuestDeleted) {
+    this._event = event;
+  }
+
+  get questId(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+}
+
 export class QuestInstantiated extends ethereum.Event {
   get params(): QuestInstantiated__Params {
     return new QuestInstantiated__Params(this);
@@ -180,6 +198,31 @@ export class QuestStatusUpdated__Params {
   }
 }
 
+export class KinoraQuestData__getLensDataFromQuestIdResult {
+  value0: BigInt;
+  value1: BigInt;
+
+  constructor(value0: BigInt, value1: BigInt) {
+    this.value0 = value0;
+    this.value1 = value1;
+  }
+
+  toMap(): TypedMap<string, ethereum.Value> {
+    let map = new TypedMap<string, ethereum.Value>();
+    map.set("value0", ethereum.Value.fromUnsignedBigInt(this.value0));
+    map.set("value1", ethereum.Value.fromUnsignedBigInt(this.value1));
+    return map;
+  }
+
+  getValue0(): BigInt {
+    return this.value0;
+  }
+
+  getValue1(): BigInt {
+    return this.value1;
+  }
+}
+
 export class KinoraQuestData extends ethereum.SmartContract {
   static bind(address: Address): KinoraQuestData {
     return new KinoraQuestData("KinoraQuestData", address);
@@ -208,6 +251,41 @@ export class KinoraQuestData extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getLensDataFromQuestId(
+    _questId: BigInt
+  ): KinoraQuestData__getLensDataFromQuestIdResult {
+    let result = super.call(
+      "getLensDataFromQuestId",
+      "getLensDataFromQuestId(uint256):(uint256,uint256)",
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
+    );
+
+    return new KinoraQuestData__getLensDataFromQuestIdResult(
+      result[0].toBigInt(),
+      result[1].toBigInt()
+    );
+  }
+
+  try_getLensDataFromQuestId(
+    _questId: BigInt
+  ): ethereum.CallResult<KinoraQuestData__getLensDataFromQuestIdResult> {
+    let result = super.tryCall(
+      "getLensDataFromQuestId",
+      "getLensDataFromQuestId(uint256):(uint256,uint256)",
+      [ethereum.Value.fromUnsignedBigInt(_questId)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(
+      new KinoraQuestData__getLensDataFromQuestIdResult(
+        value[0].toBigInt(),
+        value[1].toBigInt()
+      )
+    );
   }
 
   getMilestoneCount(_questId: BigInt): BigInt {
@@ -744,6 +822,49 @@ export class KinoraQuestData extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
+  getMilestoneVideoFactoryIds(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): Array<BigInt> {
+    let result = super.call(
+      "getMilestoneVideoFactoryIds",
+      "getMilestoneVideoFactoryIds(uint256,uint256,uint256,uint256):(uint256[])",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+
+    return result[0].toBigIntArray();
+  }
+
+  try_getMilestoneVideoFactoryIds(
+    _questId: BigInt,
+    _milestone: BigInt,
+    _videoProfileId: BigInt,
+    _videoPubId: BigInt
+  ): ethereum.CallResult<Array<BigInt>> {
+    let result = super.tryCall(
+      "getMilestoneVideoFactoryIds",
+      "getMilestoneVideoFactoryIds(uint256,uint256,uint256,uint256):(uint256[])",
+      [
+        ethereum.Value.fromUnsignedBigInt(_questId),
+        ethereum.Value.fromUnsignedBigInt(_milestone),
+        ethereum.Value.fromUnsignedBigInt(_videoProfileId),
+        ethereum.Value.fromUnsignedBigInt(_videoPubId)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigIntArray());
   }
 
   getMilestoneVideoLength(_questId: BigInt, _milestone: BigInt): BigInt {
@@ -3086,36 +3207,6 @@ export class KinoraQuestData extends ethereum.SmartContract {
   }
 }
 
-export class ConstructorCall extends ethereum.Call {
-  get inputs(): ConstructorCall__Inputs {
-    return new ConstructorCall__Inputs(this);
-  }
-
-  get outputs(): ConstructorCall__Outputs {
-    return new ConstructorCall__Outputs(this);
-  }
-}
-
-export class ConstructorCall__Inputs {
-  _call: ConstructorCall;
-
-  constructor(call: ConstructorCall) {
-    this._call = call;
-  }
-
-  get _accessAddress(): Address {
-    return this._call.inputValues[0].value.toAddress();
-  }
-}
-
-export class ConstructorCall__Outputs {
-  _call: ConstructorCall;
-
-  constructor(call: ConstructorCall) {
-    this._call = call;
-  }
-}
-
 export class CompleteMilestoneCall extends ethereum.Call {
   get inputs(): CompleteMilestoneCall__Inputs {
     return new CompleteMilestoneCall__Inputs(this);
@@ -3313,92 +3404,160 @@ export class ConfigureNewQuestCall_paramsMilestonesRewardsStruct extends ethereu
 }
 
 export class ConfigureNewQuestCall_paramsMilestonesVideosStruct extends ethereum.Tuple {
-  get playerId(): string {
-    return this[0].toString();
+  get factoryIds(): Array<BigInt> {
+    return this[0].toBigIntArray();
   }
 
-  get videoBytes(): string {
+  get playerId(): string {
     return this[1].toString();
   }
 
-  get profileId(): BigInt {
-    return this[2].toBigInt();
+  get videoBytes(): string {
+    return this[2].toString();
   }
 
-  get pubId(): BigInt {
+  get profileId(): BigInt {
     return this[3].toBigInt();
   }
 
-  get minPlayCount(): BigInt {
+  get pubId(): BigInt {
     return this[4].toBigInt();
   }
 
-  get minAVD(): BigInt {
+  get minPlayCount(): BigInt {
     return this[5].toBigInt();
   }
 
-  get minDuration(): BigInt {
+  get minAVD(): BigInt {
     return this[6].toBigInt();
   }
 
-  get minSecondaryQuoteOnQuote(): BigInt {
+  get minDuration(): BigInt {
     return this[7].toBigInt();
   }
 
-  get minSecondaryMirrorOnQuote(): BigInt {
+  get minSecondaryQuoteOnQuote(): BigInt {
     return this[8].toBigInt();
   }
 
-  get minSecondaryReactOnQuote(): BigInt {
+  get minSecondaryMirrorOnQuote(): BigInt {
     return this[9].toBigInt();
   }
 
-  get minSecondaryCommentOnQuote(): BigInt {
+  get minSecondaryReactOnQuote(): BigInt {
     return this[10].toBigInt();
   }
 
-  get minSecondaryCollectOnQuote(): BigInt {
+  get minSecondaryCommentOnQuote(): BigInt {
     return this[11].toBigInt();
   }
 
-  get minSecondaryQuoteOnComment(): BigInt {
+  get minSecondaryCollectOnQuote(): BigInt {
     return this[12].toBigInt();
   }
 
-  get minSecondaryMirrorOnComment(): BigInt {
+  get minSecondaryQuoteOnComment(): BigInt {
     return this[13].toBigInt();
   }
 
-  get minSecondaryReactOnComment(): BigInt {
+  get minSecondaryMirrorOnComment(): BigInt {
     return this[14].toBigInt();
   }
 
-  get minSecondaryCommentOnComment(): BigInt {
+  get minSecondaryReactOnComment(): BigInt {
     return this[15].toBigInt();
   }
 
-  get minSecondaryCollectOnComment(): BigInt {
+  get minSecondaryCommentOnComment(): BigInt {
     return this[16].toBigInt();
   }
 
-  get quote(): boolean {
-    return this[17].toBoolean();
+  get minSecondaryCollectOnComment(): BigInt {
+    return this[17].toBigInt();
   }
 
-  get mirror(): boolean {
+  get quote(): boolean {
     return this[18].toBoolean();
   }
 
-  get comment(): boolean {
+  get mirror(): boolean {
     return this[19].toBoolean();
   }
 
-  get bookmark(): boolean {
+  get comment(): boolean {
     return this[20].toBoolean();
   }
 
-  get react(): boolean {
+  get bookmark(): boolean {
     return this[21].toBoolean();
+  }
+
+  get react(): boolean {
+    return this[22].toBoolean();
+  }
+}
+
+export class DeleteQuestCall extends ethereum.Call {
+  get inputs(): DeleteQuestCall__Inputs {
+    return new DeleteQuestCall__Inputs(this);
+  }
+
+  get outputs(): DeleteQuestCall__Outputs {
+    return new DeleteQuestCall__Outputs(this);
+  }
+}
+
+export class DeleteQuestCall__Inputs {
+  _call: DeleteQuestCall;
+
+  constructor(call: DeleteQuestCall) {
+    this._call = call;
+  }
+
+  get _questId(): BigInt {
+    return this._call.inputValues[0].value.toBigInt();
+  }
+}
+
+export class DeleteQuestCall__Outputs {
+  _call: DeleteQuestCall;
+
+  constructor(call: DeleteQuestCall) {
+    this._call = call;
+  }
+}
+
+export class InitializeCall extends ethereum.Call {
+  get inputs(): InitializeCall__Inputs {
+    return new InitializeCall__Inputs(this);
+  }
+
+  get outputs(): InitializeCall__Outputs {
+    return new InitializeCall__Outputs(this);
+  }
+}
+
+export class InitializeCall__Inputs {
+  _call: InitializeCall;
+
+  constructor(call: InitializeCall) {
+    this._call = call;
+  }
+
+  get _kinoraAccessAddress(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get _kinoraOpenActionAddress(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+}
+
+export class InitializeCall__Outputs {
+  _call: InitializeCall;
+
+  constructor(call: InitializeCall) {
+    this._call = call;
   }
 }
 

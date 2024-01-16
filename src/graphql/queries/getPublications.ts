@@ -2,7 +2,7 @@ import {
     PublicationsDocument,
     PublicationsQuery,
     PublicationsRequest,
-  } from "../../@types/generated";
+  } from "./../../@types/generated";
   import {
     ApolloClient,
     ApolloError,

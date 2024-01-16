@@ -7,7 +7,7 @@ import {
   HidePublicationDocument,
   HidePublicationMutation,
   HidePublicationRequest,
-} from "generated";
+} from "./../../@types/generated";
 
 const hidePost = async (
   request: HidePublicationRequest,

@@ -4,7 +4,7 @@ import { ZeroString } from "./../@types/kinora-sdk";
  * @constant KINORA_OPEN_ACTION_CONTRACT Lens Kinora Open Action Address Matic Network.
  */
 export const KINORA_OPEN_ACTION_CONTRACT: ZeroString =
-  "0x6369b7a2A256ec2834d117b280Cec2e94Ebf3439";
+  "0x43a18a3596d3C80467236b588976C9F11D166894";
 /**
  * @constant LENS_MODULE_CONTRACT Lens Module Contract.
  */
@@ -20,6 +20,12 @@ export const ZERO_ADDRESS: ZeroString =
  */
 export const LENS_HUB_PROXY_CONTRACT: ZeroString =
   "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d";
+/**
+ * /**
+ * @constant LENS_HUB_PROXY_CONTRACT_MUMBAI Lens Hubs Proxy Address Mumbai Network.
+ */
+export const LENS_HUB_PROXY_CONTRACT_MUMBAI: ZeroString =
+"0x4fbffF20302F3326B20052ab9C217C44F6480900";
 /**
  * @constant LENS_BASE_URL Base URL for the Lens V2 API.
  */

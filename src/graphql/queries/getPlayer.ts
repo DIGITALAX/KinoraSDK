@@ -1,20 +1,21 @@
 import { FetchResult, gql } from "@apollo/client";
-import { graphKinoraClient } from "../client";
+import { graphKinoraClient } from "./../client";
 
 export const getCompletedMilestones = async (
   playerProfileId: number,
   questId: number,
+  contractAddress: string
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
     query: gql(`
-      query($playerProfileId: Int, $questId: Int) {
-          milestoneCompleteds(where: {questId: $questId, playerProfileId: $playerProfileId}, orderBy: blockTimestamp) {
+      query($playerProfileId: Int, $questId: Int, $contractAddress: String) {
+          milestoneCompleteds(where: {questId: $questId, playerProfileId: $playerProfileId, contractAddress: $contractAddress}, orderBy: blockTimestamp) {
               milestone
           }
       }
     `),
-    variables: { playerProfileId, questId },
+    variables: { playerProfileId, questId, contractAddress },
     fetchPolicy: "no-cache",
     errorPolicy: "all",
   });
@@ -38,17 +39,18 @@ export const getCompletedMilestones = async (
 
 export const getCompletedQuests = async (
   playerProfileId: number,
+  contractAddress: string
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
     query: gql(`
-        query($playerProfileId: Int) {
-          questCompleteds(where: {playerProfileId: $playerProfileId}, orderBy: blockTimestamp) {
+        query($playerProfileId: Int, $contractAddress: String) {
+          questCompleteds(where: {playerProfileId: $playerProfileId, contractAddress: $contractAddress}, orderBy: blockTimestamp) {
               questId
           }
         }
       `),
-    variables: { playerProfileId },
+    variables: { playerProfileId, contractAddress },
     fetchPolicy: "no-cache",
     errorPolicy: "all",
   });
@@ -72,17 +74,18 @@ export const getCompletedQuests = async (
 
 export const getJoinedQuests = async (
   playerProfileId: number,
+  contractAddress: string
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
     query: gql(`
-          query($playerProfileId: Int) {
-            players(where: {playerProfileId: $playerProfileId}) {
+          query($playerProfileId: Int, $contractAddress: String) {
+            players(where: {playerProfileId: $playerProfileId, contractAddress: $contractAddress}) {
                 questsJoined
             }
           }
         `),
-    variables: { playerProfileId },
+    variables: { playerProfileId, contractAddress },
     fetchPolicy: "no-cache",
     errorPolicy: "all",
   });
@@ -106,12 +109,13 @@ export const getJoinedQuests = async (
 
 export const getVideoMetricActivity = async (
   playerProfileId: number,
+  contractAddress: string
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
     query: gql(`
-            query($playerProfileId: Int) {
-              players(where: {playerProfileId: $playerProfileId}) {
+            query($playerProfileId: Int, $contractAddress: String) {
+              players(where: {playerProfileId: $playerProfileId, contractAddress: $contractAddress}) {
                 videoActivities {
                     avd
                     duration
@@ -139,7 +143,7 @@ export const getVideoMetricActivity = async (
               }
             }
           `),
-    variables: { playerProfileId },
+    variables: { playerProfileId, contractAddress },
     fetchPolicy: "no-cache",
     errorPolicy: "all",
   });
@@ -163,12 +167,13 @@ export const getVideoMetricActivity = async (
 
 export const getDetailsOfPlayer = async (
   playerProfileId: number,
+  contractAddress: string
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
     query: gql(`
-        query($playerProfileId: Int) {
-            players(where: {playerProfileId: $playerProfileId}) {
+        query($playerProfileId: Int, $contractAddress: String) {
+            players(where: {playerProfileId: $playerProfileId, $contractAddress: contractAddress}) {
                 videos {
                     avd
                     duration
@@ -208,7 +213,7 @@ export const getDetailsOfPlayer = async (
             }
         }
     `),
-    variables: { playerProfileId },
+    variables: { playerProfileId, contractAddress },
     fetchPolicy: "no-cache",
     errorPolicy: "all",
   });
@@ -232,19 +237,20 @@ export const getDetailsOfPlayer = async (
 
 export const getPlayersByQuest = async (
   questId: number,
+  contractAddress: string
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
     query: gql(`
-          query($questId: Int) {
-            questInstantiateds(where: {questId: $questId}) {
+          query($questId: Int, $contractAddress: String) {
+            questInstantiateds(where: {questId: $questId, contractAddress: $contractAddress}) {
                 players {
                   profileId
                 }
               }
           }
       `),
-    variables: { questId },
+    variables: { questId, contractAddress },
     fetchPolicy: "no-cache",
     errorPolicy: "all",
   });
@@ -298,16 +304,17 @@ export const getQuests = async (): Promise<FetchResult | void> => {
 
 export const getQuestEnvoker = async (
   profileId: number,
+  contractAddress: string
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
     query: gql(`
-    query($profileId: Int) {
-        questInstantiateds(where: {profileId: $profileId}) {
+    query($profileId: Int, $contractAddress: String) {
+        questInstantiateds(where: {profileId: $profileId, contractAddress: $contractAddress}) {
           questId
         } 
       }`),
-    variables: { profileId },
+    variables: { profileId, contractAddress },
     fetchPolicy: "no-cache",
     errorPolicy: "all",
   });
@@ -383,17 +390,19 @@ export const getVideoMetrics = async (): Promise<FetchResult | void> => {
 
 export const getPlaybackIdQuests = async (
   playerId: string,
+  contractAddress: string
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
-    query: gql(`query($playerId: String) {
-        videos(where: {playerId: $playerId}) {
+    query: gql(`query($playerId: String, $contractAddress: String) {
+        videos(where: {playerId: $playerId, contractAddress: $contractAddress}) {
             questId
           }
          }
             `),
     variables: {
       playerId,
+      contractAddress,
     },
     fetchPolicy: "no-cache",
     errorPolicy: "all",
@@ -419,17 +428,19 @@ export const getPlaybackIdQuests = async (
 export const getVideoIdQuests = async (
   profileId: number,
   pubId: number,
+  contractAddress: string
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
-    query: gql(`query($profileId: Int, $pubId: Int) {
-          videos(where: {profileId: $profileId, pubId: $pubId}) {
+    query: gql(`query($profileId: Int, $pubId: Int, $contractAddress: String) {
+          videos(where: {profileId: $profileId, pubId: $pubId, contractAddress: $contractAddress}) {
               questId
             }
            }`),
     variables: {
       profileId,
       pubId,
+      contractAddress,
     },
     fetchPolicy: "no-cache",
     errorPolicy: "all",
@@ -454,12 +465,13 @@ export const getVideoIdQuests = async (
 
 export const getActivityByPlayerId = async (
   playerId: string,
+  contractAddress: string
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
     query: gql(`
-            query($playerId: String) {
-                videoActivities(where: {playerId: $playerId}) {
+            query($playerId: String, $contractAddress: String) {
+                videoActivities(where: {playerId: $playerId, contractAddress: $contractAddress}) {
                     avd
                     duration
                     hasBookmarked
@@ -511,12 +523,13 @@ export const getActivityByPlayerId = async (
 export const getActivityByPostId = async (
   profileId: number,
   pubId: number,
+  contractAddress: string
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
     query: gql(`
-              query($profileId: Int, $pubId: Int) {
-                  videoActivities(where: {profileId: $profileId, pubId: $pubId}) {
+              query($profileId: Int, $pubId: Int, $contractAddress: String) {
+                  videoActivities(where: {profileId: $profileId, pubId: $pubId, contractAddress: $contractAddress}) {
                       avd
                       duration
                       hasBookmarked
@@ -543,7 +556,7 @@ export const getActivityByPostId = async (
                     }
               }
           `),
-    variables: { profileId, pubId },
+    variables: { profileId, pubId, contractAddress },
     fetchPolicy: "no-cache",
     errorPolicy: "all",
   });

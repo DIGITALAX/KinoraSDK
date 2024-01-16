@@ -3,24 +3,38 @@ schema:
   file: schema.graphql
 dataSources:
   - kind: ethereum
-    name: KinoraQuestData
+    name: KinoraOpenAction
     network: matic
     source:
-      address: "0x4a3298205F64cFdc794DF374Acb439843218fA45"
-      abi: KinoraQuestData
-      startBlock: 52177668
+      address: "0x196f267A4aCA1243CCCB85AD7098D1fDA1D683CD"
+      abi: KinoraOpenAction
+      startBlock: 52374675
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        - MilestoneCompleted
-        - PlayerEligibleToClaimMilestone
-        - PlayerJoinedQuest
-        - PlayerMetricsUpdated
-        - QuestCompleted
-        - QuestInstantiated
-        - QuestStatusUpdated
+        - NewFactoryDeployment
+      abis:
+        - name: KinoraOpenAction
+          file: KinoraOpenAction/abis/KinoraOpenAction.json
+      eventHandlers:
+        - event: NewFactoryDeployment(address,address,address,address,address)
+          handler: handleNewFactoryDeployment
+      file: KinoraOpenAction/KinoraOpenAction.wasm
+templates:
+  - name: KinoraQuestData
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: KinoraQuestData
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: templates/KinoraQuestData/KinoraQuestData.wasm
+      entities:
+        - KinoraQuestData
       abis:
         - name: KinoraQuestData
           file: KinoraQuestData/abis/KinoraQuestData.json
@@ -33,14 +47,14 @@ dataSources:
           handler: handlePlayerJoinedQuest
         - event: PlayerMetricsUpdated(uint256,uint256,uint256)
           handler: handlePlayerMetricsUpdated
-        - event: QuestCompleted(uint256,uint256)
-          handler: handleQuestCompleted
         - event: QuestInstantiated(uint256,uint256)
           handler: handleQuestInstantiated
         - event: QuestStatusUpdated(uint256,uint8)
           handler: handleQuestStatusUpdated
-      file: KinoraQuestData/KinoraQuestData.wasm
-templates:
+        - event: QuestCompleted(uint256,uint256)
+          handler: handleQuestCompleted
+        - event: QuestDeleted(uint256)
+          handler: handleQuestDeleted
   - name: QuestMetadata
     kind: file/ipfs
     mapping:

@@ -1,15 +1,15 @@
 import { FetchResult, gql } from "@apollo/client";
-import { graphKinoraClient } from "../client";
+import { graphKinoraClient } from "./../client";
 
 export const getMilestoneVideos = async (
   questId: number,
-  milestoneId: number
+  contractAddress: string
 ): Promise<FetchResult | void> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const queryPromise = graphKinoraClient.query({
     query: gql(`
-      query($questId: Int, $milestoneId: Int) {
-        milestones(where: {questId: $questId, milestoneId: $milestoneId}, first: 1) {
+      query($questId: Int, $contractAddress: String) {
+        milestones(where: {questId: $questId, contractAddress: $contractAddress}, first: 1) {
             videos {
               videoBytes
               react
@@ -41,7 +41,7 @@ export const getMilestoneVideos = async (
     `),
     variables: {
       questId,
-      milestoneId,
+      contractAddress,
     },
     fetchPolicy: "no-cache",
     errorPolicy: "all",

@@ -1,14 +1,8 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_accessAddress",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
+    "inputs": [],
+    "name": "AlreadyInitialized",
+    "type": "error"
   },
   {
     "inputs": [],
@@ -142,6 +136,19 @@
       }
     ],
     "name": "QuestCompleted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      }
+    ],
+    "name": "QuestDeleted",
     "type": "event"
   },
   {
@@ -315,6 +322,11 @@
               {
                 "components": [
                   {
+                    "internalType": "uint256[]",
+                    "name": "factoryIds",
+                    "type": "uint256[]"
+                  },
+                  {
                     "internalType": "string",
                     "name": "playerId",
                     "type": "string"
@@ -478,6 +490,19 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "_questId",
+        "type": "uint256"
+      }
+    ],
+    "name": "deleteQuest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "_playerAddress",
         "type": "address"
@@ -485,6 +510,30 @@
     ],
     "name": "getAddressToProfileId",
     "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getLensDataFromQuestId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "",
@@ -884,6 +933,40 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_milestone",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_videoProfileId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_videoPubId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getMilestoneVideoFactoryIds",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",
@@ -2599,6 +2682,24 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_kinoraAccessAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraOpenActionAddress",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

@@ -1,3 +1,15 @@
+type NewFactoryDeployment @entity(immutable: true) {
+  id: Bytes!
+  kac: Bytes! # address
+  ke: Bytes! # address
+  kqd: Bytes! # address
+  km: Bytes! # address
+  knc: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
 type MilestoneCompleted @entity(immutable: false) {
   id: Bytes!
   questId: BigInt! # uint256
@@ -6,6 +18,7 @@ type MilestoneCompleted @entity(immutable: false) {
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+  contractAddress: Bytes
 }
 
 type QuestCompleted @entity(immutable: false) {
@@ -15,6 +28,7 @@ type QuestCompleted @entity(immutable: false) {
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+  contractAddress: Bytes
 }
 
 type PlayerEligibleToClaimMilestone @entity(immutable: false) {
@@ -26,6 +40,7 @@ type PlayerEligibleToClaimMilestone @entity(immutable: false) {
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+  contractAddress: Bytes
 }
 
 type PlayerJoinedQuest @entity(immutable: false) {
@@ -35,6 +50,7 @@ type PlayerJoinedQuest @entity(immutable: false) {
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+  contractAddress: Bytes
 }
 
 type PlayerMetricsUpdated @entity(immutable: false) {
@@ -45,10 +61,11 @@ type PlayerMetricsUpdated @entity(immutable: false) {
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+  contractAddress: Bytes
 }
 
 type QuestInstantiated @entity(immutable: false) {
-  id: Bytes!
+  id: String!
   questId: BigInt! # uint256
   milestoneCount: BigInt! # uint256
   blockNumber: BigInt!
@@ -63,6 +80,7 @@ type QuestInstantiated @entity(immutable: false) {
   pubId: BigInt
   profileId: BigInt
   maxPlayerCount: BigInt
+  contractAddress: Bytes
 }
 
 type QuestStatusUpdated @entity(immutable: false) {
@@ -84,6 +102,7 @@ type QuestMetadata @entity(immutable: false) {
   audio: String
   images: [String!]
   mediaType: String
+  videoCovers: [String!]
 }
 
 type Milestone @entity(immutable: false) {
@@ -97,6 +116,7 @@ type Milestone @entity(immutable: false) {
   videoLength: BigInt
   rewardsLength: BigInt
   questId: BigInt
+  contractAddress: Bytes
 }
 
 type Video @entity(immutable: false) {
@@ -124,6 +144,8 @@ type Video @entity(immutable: false) {
   comment: Boolean
   bookmark: Boolean
   react: Boolean
+  contractAddress: Bytes
+  factoryIds: [BigInt!]
 }
 
 type Reward @entity(immutable: false) {
@@ -133,6 +155,7 @@ type Reward @entity(immutable: false) {
   tokenAddress: Bytes
   amount: BigInt
   rewardMetadata: QuestMetadata
+  contractAddress: Bytes
 }
 
 type Gate @entity(immutable: false) {
@@ -140,12 +163,14 @@ type Gate @entity(immutable: false) {
   erc20Logic: [ERC20Logic!]
   erc721Logic: [ERC721Logic!]
   oneOf: Boolean
+  contractAddress: Bytes
 }
 
 type ERC20Logic @entity(immutable: false) {
   id: ID!
   address: Bytes
   amount: BigInt
+  contractAddress: Bytes
 }
 
 type ERC721Logic @entity(immutable: false) {
@@ -153,6 +178,7 @@ type ERC721Logic @entity(immutable: false) {
   address: Bytes
   uris: [String!]
   tokenIds: [BigInt!]
+  contractAddress: Bytes
 }
 
 type Player @entity(immutable: false) {
@@ -163,12 +189,14 @@ type Player @entity(immutable: false) {
   milestonesCompleted: [CompletionActivity!]
   videos: [VideoActivity!]
   eligibile: [Eligible!]
+  contractAddress: Bytes
 }
 
 type CompletionActivity @entity(immutable: false) {
   id: ID!
   questId: BigInt
   milestonesCompleted: BigInt
+  contractAddress: Bytes
 }
 
 type VideoActivity @entity(immutable: false) {
@@ -196,6 +224,7 @@ type VideoActivity @entity(immutable: false) {
   hasCommented: Boolean
   hasBookmarked: Boolean
   hasReacted: Boolean
+  contractAddress: Bytes
 }
 
 type Eligible @entity(immutable: false) {
@@ -203,4 +232,14 @@ type Eligible @entity(immutable: false) {
   questId: BigInt
   milestone: BigInt
   status: Boolean
+  contractAddress: Bytes
+}
+
+type QuestDeleted @entity(immutable: false) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  contractAddress: Bytes
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
 }
