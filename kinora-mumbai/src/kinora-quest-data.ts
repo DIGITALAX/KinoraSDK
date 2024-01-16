@@ -4,6 +4,7 @@ import {
   ByteArray,
   Bytes,
   log,
+  store,
 } from "@graphprotocol/graph-ts";
 import {
   KinoraQuestData,
@@ -14,6 +15,7 @@ import {
   PlayerMetricsUpdated as PlayerMetricsUpdatedEvent,
   QuestInstantiated as QuestInstantiatedEvent,
   QuestStatusUpdated as QuestStatusUpdatedEvent,
+  QuestDeleted as QuestDeletedEvent,
 } from "../generated/KinoraQuestData/KinoraQuestData";
 import { QuestMetadata as QuestMetadataTemplate } from "../generated/templates";
 import {
@@ -21,6 +23,7 @@ import {
   PlayerEligibleToClaimMilestone,
   PlayerJoinedQuest,
   QuestCompleted,
+  QuestDeleted,
   PlayerMetricsUpdated,
   QuestInstantiated,
   Milestone,
@@ -46,16 +49,17 @@ export function handleMilestoneCompleted(event: MilestoneCompletedEvent): void {
   entity.questId = event.params.questId;
   entity.playerProfileId = event.params.playerProfileId;
   entity.milestone = event.params.milestone;
+  entity.contractAddress = event.address;
 
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
 
-  let currentPlayer = Player.load(event.params.playerProfileId.toString());
-
-  let questData = KinoraQuestData.bind(
-    Address.fromString("0x7484461387456E530A72601A3294972c9a9b6049"),
+  let currentPlayer = Player.load(
+    event.params.playerProfileId.toString() + event.address.toHexString(),
   );
+
+  let questData = KinoraQuestData.bind(event.address);
   const uri = questData.getQuestURI(entity.questId);
 
   if (currentPlayer) {
@@ -63,7 +67,8 @@ export function handleMilestoneCompleted(event: MilestoneCompletedEvent): void {
       event.params.milestone.toString() +
         event.params.playerProfileId.toString() +
         event.params.questId.toString() +
-        uri,
+        uri +
+        event.address.toHexString(),
     );
 
     currentEligible.status = false;
@@ -74,7 +79,8 @@ export function handleMilestoneCompleted(event: MilestoneCompletedEvent): void {
       event.params.milestone.toString() +
         event.params.playerProfileId.toString() +
         event.params.questId.toString() +
-        uri,
+        uri +
+        event.address.toHexString(),
     );
 
     currentCompleted.questId = entity.questId;
@@ -91,7 +97,8 @@ export function handleMilestoneCompleted(event: MilestoneCompletedEvent): void {
       event.params.milestone.toString() +
         event.params.playerProfileId.toString() +
         event.params.questId.toString() +
-        uri,
+        uri +
+        event.address.toHexString(),
     );
 
     currentPlayer.milestonesCompleted = completed;
@@ -108,12 +115,14 @@ export function handleQuestCompleted(event: QuestCompletedEvent): void {
   );
   entity.questId = event.params.questId;
   entity.playerProfileId = event.params.playerProfileId;
-
+  entity.contractAddress = event.address;
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
 
-  let currentPlayer = Player.load(event.params.playerProfileId.toString());
+  let currentPlayer = Player.load(
+    event.params.playerProfileId.toString() + event.address.toHexString(),
+  );
 
   if (currentPlayer) {
     let completedQuests: Array<BigInt> | null = currentPlayer.questsCompleted;
@@ -140,16 +149,16 @@ export function handlePlayerEligibleToClaimMilestone(
   entity.questId = event.params.questId;
   entity.milestone = event.params.milestone;
   entity.eligibility = event.params.eligibility;
-
+  entity.contractAddress = event.address;
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
 
-  let currentPlayer = Player.load(event.params.playerProfileId.toString());
-
-  let questData = KinoraQuestData.bind(
-    Address.fromString("0x7484461387456E530A72601A3294972c9a9b6049"),
+  let currentPlayer = Player.load(
+    event.params.playerProfileId.toString() + event.address.toHexString(),
   );
+
+  let questData = KinoraQuestData.bind(event.address);
   const uri = questData.getQuestURI(entity.questId);
 
   if (currentPlayer) {
@@ -157,7 +166,8 @@ export function handlePlayerEligibleToClaimMilestone(
       event.params.milestone.toString() +
         event.params.playerProfileId.toString() +
         event.params.questId.toString() +
-        uri,
+        uri +
+        event.address.toHexString(),
     );
 
     currentEligible.milestone = entity.milestone;
@@ -175,7 +185,8 @@ export function handlePlayerEligibleToClaimMilestone(
       event.params.milestone.toString() +
         event.params.playerProfileId.toString() +
         event.params.questId.toString() +
-        uri,
+        uri +
+        event.address.toHexString(),
     );
 
     currentPlayer.eligibile = eligibile;
@@ -193,6 +204,7 @@ export function handlePlayerJoinedQuest(event: PlayerJoinedQuestEvent): void {
   entity.id = Bytes.fromByteArray(
     ByteArray.fromBigInt(event.params.playerProfileId),
   );
+  entity.contractAddress = event.address;
   entity.questId = event.params.questId;
   entity.playerProfileId = event.params.playerProfileId;
 
@@ -200,11 +212,16 @@ export function handlePlayerJoinedQuest(event: PlayerJoinedQuestEvent): void {
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
 
-  let currentPlayer = Player.load(event.params.playerProfileId.toString());
+  let currentPlayer = Player.load(
+    event.params.playerProfileId.toString() + event.address.toHexString(),
+  );
 
   if (!currentPlayer) {
-    currentPlayer = new Player(event.params.playerProfileId.toString());
+    currentPlayer = new Player(
+      event.params.playerProfileId.toString() + event.address.toHexString(),
+    );
     currentPlayer.profileId = event.params.playerProfileId;
+    currentPlayer.contractAddress = event.address;
   }
 
   if (currentPlayer) {
@@ -220,7 +237,7 @@ export function handlePlayerJoinedQuest(event: PlayerJoinedQuestEvent): void {
   }
 
   let quest = QuestInstantiated.load(
-    Bytes.fromByteArray(ByteArray.fromBigInt(event.params.questId)),
+    event.params.questId.toString() + event.address.toHexString(),
   );
 
   if (quest) {
@@ -230,7 +247,9 @@ export function handlePlayerJoinedQuest(event: PlayerJoinedQuestEvent): void {
       players = [];
     }
 
-    players.push(event.params.playerProfileId.toString());
+    players.push(
+      event.params.playerProfileId.toString() + event.address.toHexString(),
+    );
     quest.players = players;
     quest.save();
   }
@@ -247,6 +266,7 @@ export function handlePlayerMetricsUpdated(
   entity.id = Bytes.fromByteArray(
     ByteArray.fromBigInt(event.params.playerProfileId),
   );
+  entity.contractAddress = event.address;
   entity.playerProfileId = event.params.playerProfileId;
   entity.videoPubId = event.params.videoPubId;
   entity.videoProfileId = event.params.videoProfileId;
@@ -255,21 +275,22 @@ export function handlePlayerMetricsUpdated(
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
 
-  let currentPlayer = Player.load(event.params.playerProfileId.toString());
-
-  let questData = KinoraQuestData.bind(
-    Address.fromString("0x7484461387456E530A72601A3294972c9a9b6049"),
+  let currentPlayer = Player.load(
+    event.params.playerProfileId.toString() + event.address.toHexString(),
   );
+
+  let questData = KinoraQuestData.bind(event.address);
 
   if (currentPlayer) {
     let currentVideo = new VideoActivity(
       entity.playerProfileId.toString() +
         entity.videoPubId.toString() +
-        entity.videoProfileId.toString(),
+        entity.videoProfileId.toString() +
+        event.address.toHexString(),
     );
 
     currentVideo.playerProfileId = entity.playerProfileId;
-
+    currentVideo.contractAddress = event.address;
     currentVideo.profileId = entity.videoProfileId;
     currentVideo.pubId = entity.videoPubId;
     // currentVideo.videosBytes = questData.getPlayerVideoBytes();
@@ -388,7 +409,8 @@ export function handlePlayerMetricsUpdated(
     videos.push(
       entity.playerProfileId.toString() +
         entity.videoPubId.toString() +
-        entity.videoProfileId.toString(),
+        entity.videoProfileId.toString() +
+        event.address.toHexString(),
     );
 
     currentPlayer.videos = videos;
@@ -401,19 +423,17 @@ export function handlePlayerMetricsUpdated(
 
 export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
   let entity = new QuestInstantiated(
-    event.transaction.hash.concatI32(event.logIndex.toI32()),
+    event.params.questId.toString() + event.address.toHexString(),
   );
-  entity.id = Bytes.fromByteArray(ByteArray.fromBigInt(event.params.questId));
   entity.questId = event.params.questId;
   entity.milestoneCount = event.params.milestoneCount;
 
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
+  entity.contractAddress = event.address;
 
-  let questData = KinoraQuestData.bind(
-    Address.fromString("0x7484461387456E530A72601A3294972c9a9b6049"),
-  );
+  let questData = KinoraQuestData.bind(event.address);
 
   entity.maxPlayerCount = questData.getQuestMaxPlayerCount(entity.questId);
 
@@ -452,11 +472,13 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
           entity.questId.toString() +
           h.toString() +
           addressesErc20[h].toHexString() +
-          entity.uri,
+          entity.uri +
+          event.address.toHexString(),
       );
 
       erc20.amount = thresholdsErc20[h];
       erc20.address = addressesErc20[h];
+      erc20.address = event.address;
       erc20.save();
 
       erc20Logic.push(
@@ -464,7 +486,8 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
           entity.questId.toString() +
           h.toString() +
           addressesErc20[h].toHexString() +
-          entity.uri,
+          entity.uri +
+          event.address.toHexString(),
       );
     }
   }
@@ -489,7 +512,8 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
         entity.questId.toString() +
         h.toString() +
         addressesErc721[h].toHexString() +
-        entity.uri,
+        entity.uri +
+        event.address.toHexString(),
     );
 
     erc721.address = addressesErc721[h];
@@ -501,14 +525,15 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
     if (h < tokenURIs.length && tokenURIs[h]) {
       erc721.uris = tokenURIs[h];
     }
-
+    erc721.contractAddress = event.address;
     erc721.save();
     erc721Logic.push(
       entity.uri.split("/").pop() +
         entity.questId.toString() +
         h.toString() +
         addressesErc721[h].toHexString() +
-        entity.uri,
+        entity.uri +
+        event.address.toHexString(),
     );
   }
 
@@ -516,7 +541,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
   outerGate.erc721Logic = erc721Logic;
 
   outerGate.oneOf = questData.getQuestGatedOneOf(entity.questId);
-
+  outerGate.contractAddress = event.address;
   outerGate.save();
 
   entity.gate = entity.uri.split("/").pop();
@@ -534,11 +559,13 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       milestoneURI = milestoneURI.split("/").pop();
     }
     let milestoneId =
-      (i + 1 + entity.questId.toI32()).toString() + milestoneURI;
+      (i + 1 + entity.questId.toI32()).toString() +
+      milestoneURI +
+      event.address.toHexString();
 
     let milestone = new Milestone(milestoneId);
     milestone.milestoneId = <BigInt>milestoneCounter;
-
+    milestone.contractAddress = event.address;
     milestone.questId = entity.questId;
 
     if (milestoneURI !== null) {
@@ -547,7 +574,9 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       QuestMetadataTemplate.create(milestoneURI);
     }
 
-    let gated = new Gate(milestoneURI + milestoneId);
+    let gated = new Gate(
+      milestoneURI + milestoneId + event.address.toHexString(),
+    );
 
     const addressesErc20 = questData.getMilestoneGatedERC20Addresses(
       entity.questId,
@@ -566,9 +595,10 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
         milestoneId +
           h.toString() +
           addressesErc20[h].toHexString() +
-          milestoneURI,
+          milestoneURI +
+          event.address.toHexString(),
       );
-
+      erc20.contractAddress = event.address;
       erc20.amount = thresholdsErc20[h];
       erc20.address = addressesErc20[h];
       erc20.save();
@@ -577,7 +607,8 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
         milestoneId +
           h.toString() +
           addressesErc20[h].toHexString() +
-          milestoneURI,
+          milestoneURI +
+          event.address.toHexString(),
       );
     }
 
@@ -607,7 +638,8 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
         milestoneId +
           h.toString() +
           addressesErc721[h].toHexString() +
-          milestoneURI,
+          milestoneURI +
+          event.address.toHexString(),
       );
 
       erc721.address = addressesErc721[h];
@@ -619,12 +651,14 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       if (h < tokenURIs.length && tokenURIs[h]) {
         erc721.uris = tokenURIs[h];
       }
+      erc721.contractAddress = event.address;
       erc721.save();
       erc721Logic.push(
         milestoneId +
           h.toString() +
           addressesErc721[h].toHexString() +
-          milestoneURI,
+          milestoneURI +
+          event.address.toHexString(),
       );
     }
 
@@ -635,7 +669,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       entity.questId,
       <BigInt>milestoneCounter,
     );
-
+    gated.contractAddress = event.address;
     gated.save();
 
     milestone.gated = milestoneURI + milestoneId.toString();
@@ -654,11 +688,11 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       let currentVideo = new Video(
         allVideos[j].toString() +
           entity.questId.toString() +
-          (<BigInt>milestoneCounter).toString(),
+          (<BigInt>milestoneCounter).toString() +
+          event.address.toHexString(),
       );
-
       currentVideo.questId = entity.questId;
-
+      currentVideo.contractAddress = event.address;
       currentVideo.pubId = BigInt.fromString(
         parseInt(allVideos[j].split("-")[1], 16)
           .toString()
@@ -787,11 +821,18 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
           <BigInt>currentVideo.profileId,
           <BigInt>currentVideo.pubId,
         );
+        currentVideo.factoryIds = questData.getMilestoneVideoFactoryIds(
+          entity.questId,
+          <BigInt>milestoneCounter,
+          <BigInt>currentVideo.profileId,
+          <BigInt>currentVideo.pubId,
+        );
 
         videos.push(
           allVideos[j].toString() +
             entity.questId.toString() +
-            (<BigInt>milestoneCounter).toString(),
+            (<BigInt>milestoneCounter).toString() +
+            event.address.toHexString(),
         );
       }
 
@@ -808,7 +849,9 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
     milestone.rewardsLength = rewardLength;
 
     for (let j = 0; j < rewardLength.toI32(); j++) {
-      let currentReward = new Reward(milestoneURI + j.toString());
+      let currentReward = new Reward(
+        milestoneURI + j.toString() + event.address.toHexString(),
+      );
 
       currentReward.amount = questData.getMilestoneRewardTokenAmount(
         entity.questId,
@@ -839,8 +882,9 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
         QuestMetadataTemplate.create(hash);
       }
 
+      currentReward.contractAddress = event.address;
       currentReward.save();
-      rewards.push(milestoneURI + j.toString());
+      rewards.push(milestoneURI + j.toString() + event.address.toHexString());
     }
 
     milestone.rewards = rewards;
@@ -863,7 +907,7 @@ export function handleQuestStatusUpdated(event: QuestStatusUpdatedEvent): void {
   entity.status = event.params.status;
 
   let quest = QuestInstantiated.load(
-    Bytes.fromByteArray(ByteArray.fromBigInt(event.params.questId)),
+    event.params.questId.toString() + event.address.toHexString(),
   );
 
   if (quest) {
@@ -875,6 +919,32 @@ export function handleQuestStatusUpdated(event: QuestStatusUpdatedEvent): void {
 
     quest.save();
   }
+
+  entity.blockNumber = event.block.number;
+  entity.blockTimestamp = event.block.timestamp;
+  entity.transactionHash = event.transaction.hash;
+
+  entity.save();
+}
+
+export function handleQuestDeleted(event: QuestDeletedEvent): void {
+  let entity = new QuestDeleted(
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
+  );
+  entity.questId = event.params.questId;
+
+  let quest = QuestInstantiated.load(
+    event.params.questId.toString() + event.address.toHexString(),
+  );
+
+  if (quest) {
+    store.remove(
+      "QuestInstantiated",
+      event.params.questId.toString() + event.address.toHexString(),
+    );
+  }
+
+  entity.contractAddress = event.address;
 
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;

@@ -2,10 +2,10 @@ import { omit } from "lodash";
 import {
   IPFS_REGEX,
   KINORA_OPEN_ACTION_CONTRACT,
-  LENS_HUB_PROXY_CONTRACT,
   ZERO_ADDRESS,
   ERROR_CODES,
   LENS_MODULE_CONTRACT,
+  LENS_HUB_PROXY_CONTRACT,
 } from "./constants/index";
 import { v4 as uuidv4 } from "uuid";
 import LensModuleAbi from "./abis/LensModule.json";
@@ -16,9 +16,14 @@ import KinoraEscrowAbi from "./abis/KinoraEscrow.json";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
 import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
 import KinoraOpenActionAbi from "./abis/KinoraOpenAction.json";
+import KinoraAccessControlsAbi from "./abis/KinoraAccesControl.json";
 import { ethers } from "ethers";
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
-import { PublicationMetadataMainFocusType } from "./@types/generated";
+import {
+  LimitType,
+  PublicationMetadataMainFocusType,
+  PublicationType,
+} from "./@types/generated";
 import {
   ZeroString,
   LensQuestMetadata,
@@ -29,6 +34,7 @@ import {
 import { hashToIPFS } from "./utils/ipfs";
 import hidePost from "./graphql/mutations/hidePost";
 import toHex from "./utils/toHex";
+import getPublications from "./graphql/queries/getPublications";
 
 export class Envoker {
   /**
@@ -205,10 +211,11 @@ export class Envoker {
     }
 
     if (
-      args?.milestones?.map((item) => item?.details?.videoInfo?.length || 0) !==
+      args?.milestones?.map((item) => item?.details?.videoInfo?.length || 0)
+        ?.length !==
       args?.milestones?.map(
         (item) => item?.eligibility?.internalCriteria?.length,
-      )
+      )?.length
     ) {
       throw new Error("Invalid Video Info Length.");
     }
@@ -284,19 +291,6 @@ export class Envoker {
           ?.sort((a, b) => a.milestone - b.milestone)
           ?.filter((v, i, a) => !i || v.milestone != a[i - 1].milestone)
           ?.map(async (milestone: Milestone) => {
-            const videoPromises = milestone?.details?.videoInfo?.map(
-              async (video) => {
-                const cover = await hashToIPFS(video?.cover);
-
-                return {
-                  ...video,
-                  cover: cover?.cid,
-                };
-              },
-            );
-
-            const videoCovers = await Promise.all(videoPromises);
-
             return {
               gated: {
                 erc721TokenURIs: milestone.gated.erc721TokenURIs,
@@ -423,7 +417,7 @@ export class Envoker {
                     title: milestone?.details?.title,
                     description: milestone?.details?.description,
                     cover: milestone?.details?.cover,
-                    videoCovers,
+                    videoCovers: milestone?.details?.videoInfo,
                   }),
                 )
               ).cid,
@@ -586,29 +580,55 @@ export class Envoker {
         args.wallet,
       );
 
-      const factoryId = await kinoraOpenAccess.getContractFactoryId(
-        parseInt(data?.createOnchainPostTypedData.id?.split("-")[0], 16),
-        parseInt(data?.createOnchainPostTypedData.id?.split("-")[1], 16),
+      const { data: lensData } = await getPublications(
+        {
+          limit: LimitType.Ten,
+          where: {
+            from: typedData?.value.profileId,
+            publicationTypes: [PublicationType.Post],
+            withOpenActions: [
+              {
+                address: KINORA_OPEN_ACTION_CONTRACT,
+              },
+            ],
+          },
+        },
+        this.questEnvokerAuthedApolloClient,
       );
 
-      const questId = await kinoraOpenAccess.getQuestId(
-        factoryId,
-        parseInt(data?.createOnchainPostTypedData.id?.split("-")[0], 16),
-        parseInt(data?.createOnchainPostTypedData.id?.split("-")[1], 16),
+      const factoryId = Number(
+        await kinoraOpenAccess.getContractFactoryId(
+          parseInt(lensData?.publications?.items?.[0].id?.split("-")[0], 16),
+          parseInt(lensData?.publications?.items?.[0].id?.split("-")[1], 16),
+        ),
+      );
+
+      const questId = Number(
+        await kinoraOpenAccess.getQuestId(
+          factoryId,
+          parseInt(lensData?.publications?.items?.[0].id?.split("-")[0], 16),
+          parseInt(lensData?.publications?.items?.[0].id?.split("-")[1], 16),
+        ),
       );
 
       const factoryAccessControls =
         await kinoraOpenAccess.getContractFactoryMap(factoryId);
 
+      const kinoraAccessControls = new ethers.Contract(
+        factoryAccessControls,
+        KinoraAccessControlsAbi,
+        args.wallet,
+      );
+
       return {
-        postId: data?.createOnchainPostTypedData.id,
+        postId: lensData?.publications?.items?.[0].id,
         questId,
         factoryId,
         factoryAccessControls,
-        factoryEscrow: await factoryAccessControls.getKinoraEscrow(),
-        factoryQuestData: await factoryAccessControls.getKinoraQuestData(),
-        factoryMetrics: await factoryAccessControls.getKinoraMetrics(),
-        factoryNFTCreator: await factoryAccessControls.getKinoraNFTCreator(),
+        factoryEscrow: await kinoraAccessControls.getKinoraEscrow(),
+        factoryQuestData: await kinoraAccessControls.getKinoraQuestData(),
+        factoryMetrics: await kinoraAccessControls.getKinoraMetrics(),
+        factoryNFTCreator: await kinoraAccessControls.getKinoraNFTCreator(),
         transactionHash: txHash,
         error: false,
       };

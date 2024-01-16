@@ -43,17 +43,19 @@ const newEnvoker = new Envoker({
   signer: new ethers.Wallet(process.env.ENVOKER_PRIVATE_KEY, polygonProvider),
 });
 
-const { postId, transactionHash } = await newEnvoker.instantiateNewQuest({
-  questDetails: {
-    title: "Chromadin Chronicle",
-    description:
-      "Engage in a Chromadin video binge session for Season 1 and Season 2 of The Dial Pirate Radio . Interactions, mirrors and comments on episodes accrue bonus points.",
-    cover: "ipfs://QmQk9TqFivUqc6ktosoZVVih9o1uiY3r5Z7F3GCC1FpaJS",
-  },
-  maxPlayerCount: 100,
-  milestones,
-  joinQuestTokenGatedLogic: tokenGatedLogic,
-});
+const { postId, factoryId, questId, transactionHash, factoryQuestData } =
+  await newEnvoker.instantiateNewQuest({
+    factoryId: 0,
+    questDetails: {
+      title: "Chromadin Chronicle",
+      description:
+        "Engage in a Chromadin video binge session for Season 1 and Season 2 of The Dial Pirate Radio . Interactions, mirrors and comments on episodes accrue bonus points.",
+      cover: "ipfs://QmQk9TqFivUqc6ktosoZVVih9o1uiY3r5Z7F3GCC1FpaJS",
+    },
+    maxPlayerCount: 100,
+    milestones,
+    joinQuestTokenGatedLogic: tokenGatedLogic,
+  });
 ```
 
 ## Dispatch

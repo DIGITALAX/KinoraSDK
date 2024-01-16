@@ -1,18 +1,20 @@
 [
   {
-    "kinoraAccessControl": "0x5E4b3a0Cb5213fAed8F52E22d79bbaCd8C60b9C9",
-    "kinoraEscrow": "0x044E0155CF3d2e4c1F64f20870663c2A2C7ff689",
-    "kinoraMetrics": "0x967Bd674F5cc3E5D96c76C1Ddc25D6Be87bbd062",
-    "kinoraQuestData": "0x7484461387456E530A72601A3294972c9a9b6049",
-    "kinoraOpenAction": "0xD4b3b444899df0692eDEA44f606145c52b99647E",
-    "kinoraNFTCreator": "0xC2f4b95412a1A16e073F21bae1ECf30B2f78c06E"
+    "kinoraAccessControl": "0x20C0800fcBcdD09D2a84a3e8815Edf5E17B0e172",
+    "kinoraEscrow": "0xe40f9BB1e9ad1D9Bd2aC841f167E47BABfD4C031",
+    "kinoraMetrics": "0x3B6616C525B475f42733f88C98d6A0BEDbCfe24E",
+    "kinoraQuestData": "0xA25858ACf9A17BD22052CBC5fF9023151c8d7D33",
+    "kinoraOpenAction": "0x43a18a3596d3C80467236b588976C9F11D166894",
+    "kinoraNFTCreator": "0x74Aaf7138C2fCFE225e2A343ACe67e3AaE2c5B1e",
+    "kinoraMilestoneLogic": "0xf44B9EB115f5343f783aC4ffcF484CE570b4c1C1"
   },
   {
-    "kinoraAccessControl": "0xE59DB9d446aE270B68Ff12756A9A6111536C5555",
-    "kinoraEscrow": "0x0a6a1CfCE6d5DD6f277BaC5FB17C1C9bd2Dd6E9D",
-    "kinoraMetrics": "0x3310E657715F0c091Cf795609EE8c285820b6e80",
-    "kinoraQuestData": "0x4a3298205F64cFdc794DF374Acb439843218fA45",
-    "kinoraOpenAction": "0x6369b7a2A256ec2834d117b280Cec2e94Ebf3439",
-    "kinoraNFTCreator": "0xd3fc6D84451eE32243409Cfe1d364edeFf6c4be9"
+    "kinoraAccessControl": "0xf31a86F0c8A12ee70518573b624B5214b967319e",
+    "kinoraEscrow": "0xD3438CaB2f870a936E39bf1e40F1E84608517f1d",
+    "kinoraMetrics": "0xe28316Ad5770781537677bA537Ac8119707bE0D7",
+    "kinoraQuestData": "0xA9176a6F27d77668f388F2725193875984dA544F",
+    "kinoraOpenAction": "0x196f267A4aCA1243CCCB85AD7098D1fDA1D683CD",
+    "kinoraNFTCreator": "0xec5F2f43299932561aC4bAE25db7691EBC1efD83",
+    "kinoraMilestoneLogic": "0xA257CAAa0aC1aEe2aEE7ED824De5d2052FD284dA"
   }
 ]

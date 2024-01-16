@@ -1,0 +1,389 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_metadataDetails",
+        "type": "string"
+      },
+      { "internalType": "address", "name": "_kinoraEscrow", "type": "address" },
+      {
+        "internalType": "address",
+        "name": "_kinoraQuestData",
+        "type": "address"
+      },
+      { "internalType": "address", "name": "_kinoraAccess", "type": "address" },
+      {
+        "internalType": "address",
+        "name": "_kinoraMetrics",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraNFTCreator",
+        "type": "address"
+      },
+      { "internalType": "address", "name": "_hub", "type": "address" },
+      {
+        "internalType": "address",
+        "name": "_moduleGlobals",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraMilestoneCheckLogic",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  { "inputs": [], "name": "InvalidAddress", "type": "error" },
+  { "inputs": [], "name": "InvalidContract", "type": "error" },
+  { "inputs": [], "name": "InvalidRewardAmount", "type": "error" },
+  { "inputs": [], "name": "MaxPlayerCountReached", "type": "error" },
+  { "inputs": [], "name": "NotHub", "type": "error" },
+  { "inputs": [], "name": "PlayerNotEligible", "type": "error" },
+  { "inputs": [], "name": "QuestClosed", "type": "error" },
+  { "inputs": [], "name": "QuestDoesntExist", "type": "error" },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "kac",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "ke",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "kqd",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "km",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "knc",
+        "type": "address"
+      }
+    ],
+    "name": "NewFactoryDeployment",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "milestoneId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "playerAddress",
+        "type": "address"
+      }
+    ],
+    "name": "PlayerCompletedMilestone",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "profileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "envokerAddress",
+        "type": "address"
+      }
+    ],
+    "name": "PlayerCompletedQuest",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "playerProfileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PlayerJoinedQuest",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pubId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "profileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "envokerAddress",
+        "type": "address"
+      }
+    ],
+    "name": "QuestInitialized",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "HUB",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MODULE_GLOBALS",
+    "outputs": [
+      {
+        "internalType": "contract IModuleRegistry",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "string", "name": "str", "type": "string" }],
+    "name": "_splitString",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" },
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_profileId", "type": "uint256" },
+      { "internalType": "uint256", "name": "_pubId", "type": "uint256" }
+    ],
+    "name": "getContractFactoryId",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_factoryId", "type": "uint256" }
+    ],
+    "name": "getContractFactoryMap",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getKinoraMilestoneCheckLogicAddress",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getModuleMetadataURI",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_factoryId", "type": "uint256" },
+      { "internalType": "uint256", "name": "_profileId", "type": "uint256" },
+      { "internalType": "uint256", "name": "_pubId", "type": "uint256" }
+    ],
+    "name": "getQuestId",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTotalContractFactoryCount",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_profileId", "type": "uint256" },
+      { "internalType": "uint256", "name": "_pubId", "type": "uint256" },
+      { "internalType": "address", "name": "_address", "type": "address" },
+      { "internalType": "bytes", "name": "_data", "type": "bytes" }
+    ],
+    "name": "initializePublicationAction",
+    "outputs": [{ "internalType": "bytes", "name": "", "type": "bytes" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraAccessControlI",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraEscrowI",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraMetricsI",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraNFTCreatorI",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraQuestDataI",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "publicationActedProfileId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "publicationActedId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "actorProfileId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "actorProfileOwner",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "transactionExecutor",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "referrerProfileIds",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "referrerPubIds",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "enum Types.PublicationType[]",
+            "name": "referrerPubTypes",
+            "type": "uint8[]"
+          },
+          {
+            "internalType": "bytes",
+            "name": "actionModuleData",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct Types.ProcessActionParams",
+        "name": "_params",
+        "type": "tuple"
+      }
+    ],
+    "name": "processPublicationAction",
+    "outputs": [{ "internalType": "bytes", "name": "", "type": "bytes" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "bytes4", "name": "interfaceId", "type": "bytes4" }
+    ],
+    "name": "supportsInterface",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

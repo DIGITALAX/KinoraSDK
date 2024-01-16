@@ -7,7 +7,7 @@ import {
   PublicationDocument,
   PublicationQuery,
   PublicationRequest,
-} from "../../@types/generated";
+} from "./../../@types/generated";
 
 const getPublication = async (
   request: PublicationRequest,

@@ -8,8 +8,114 @@ import {
   store,
   Bytes,
   BigInt,
-  BigDecimal,
+  BigDecimal
 } from "@graphprotocol/graph-ts";
+
+export class NewFactoryDeployment extends Entity {
+  constructor(id: Bytes) {
+    super();
+    this.set("id", Value.fromBytes(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save NewFactoryDeployment entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.BYTES,
+        `Entities of type NewFactoryDeployment must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("NewFactoryDeployment", id.toBytes().toHexString(), this);
+    }
+  }
+
+  static load(id: Bytes): NewFactoryDeployment | null {
+    return changetype<NewFactoryDeployment | null>(
+      store.get("NewFactoryDeployment", id.toHexString())
+    );
+  }
+
+  get id(): Bytes {
+    let value = this.get("id");
+    return value!.toBytes();
+  }
+
+  set id(value: Bytes) {
+    this.set("id", Value.fromBytes(value));
+  }
+
+  get kac(): Bytes {
+    let value = this.get("kac");
+    return value!.toBytes();
+  }
+
+  set kac(value: Bytes) {
+    this.set("kac", Value.fromBytes(value));
+  }
+
+  get ke(): Bytes {
+    let value = this.get("ke");
+    return value!.toBytes();
+  }
+
+  set ke(value: Bytes) {
+    this.set("ke", Value.fromBytes(value));
+  }
+
+  get kqd(): Bytes {
+    let value = this.get("kqd");
+    return value!.toBytes();
+  }
+
+  set kqd(value: Bytes) {
+    this.set("kqd", Value.fromBytes(value));
+  }
+
+  get km(): Bytes {
+    let value = this.get("km");
+    return value!.toBytes();
+  }
+
+  set km(value: Bytes) {
+    this.set("km", Value.fromBytes(value));
+  }
+
+  get knc(): Bytes {
+    let value = this.get("knc");
+    return value!.toBytes();
+  }
+
+  set knc(value: Bytes) {
+    this.set("knc", Value.fromBytes(value));
+  }
+
+  get blockNumber(): BigInt {
+    let value = this.get("blockNumber");
+    return value!.toBigInt();
+  }
+
+  set blockNumber(value: BigInt) {
+    this.set("blockNumber", Value.fromBigInt(value));
+  }
+
+  get blockTimestamp(): BigInt {
+    let value = this.get("blockTimestamp");
+    return value!.toBigInt();
+  }
+
+  set blockTimestamp(value: BigInt) {
+    this.set("blockTimestamp", Value.fromBigInt(value));
+  }
+
+  get transactionHash(): Bytes {
+    let value = this.get("transactionHash");
+    return value!.toBytes();
+  }
+
+  set transactionHash(value: Bytes) {
+    this.set("transactionHash", Value.fromBytes(value));
+  }
+}
 
 export class MilestoneCompleted extends Entity {
   constructor(id: Bytes) {
@@ -23,7 +129,7 @@ export class MilestoneCompleted extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type MilestoneCompleted must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type MilestoneCompleted must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("MilestoneCompleted", id.toBytes().toHexString(), this);
     }
@@ -31,7 +137,7 @@ export class MilestoneCompleted extends Entity {
 
   static load(id: Bytes): MilestoneCompleted | null {
     return changetype<MilestoneCompleted | null>(
-      store.get("MilestoneCompleted", id.toHexString()),
+      store.get("MilestoneCompleted", id.toHexString())
     );
   }
 
@@ -97,6 +203,23 @@ export class MilestoneCompleted extends Entity {
   set transactionHash(value: Bytes) {
     this.set("transactionHash", Value.fromBytes(value));
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class QuestCompleted extends Entity {
@@ -111,7 +234,7 @@ export class QuestCompleted extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type QuestCompleted must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type QuestCompleted must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("QuestCompleted", id.toBytes().toHexString(), this);
     }
@@ -119,7 +242,7 @@ export class QuestCompleted extends Entity {
 
   static load(id: Bytes): QuestCompleted | null {
     return changetype<QuestCompleted | null>(
-      store.get("QuestCompleted", id.toHexString()),
+      store.get("QuestCompleted", id.toHexString())
     );
   }
 
@@ -176,6 +299,23 @@ export class QuestCompleted extends Entity {
   set transactionHash(value: Bytes) {
     this.set("transactionHash", Value.fromBytes(value));
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class PlayerEligibleToClaimMilestone extends Entity {
@@ -188,24 +328,24 @@ export class PlayerEligibleToClaimMilestone extends Entity {
     let id = this.get("id");
     assert(
       id != null,
-      "Cannot save PlayerEligibleToClaimMilestone entity without an ID",
+      "Cannot save PlayerEligibleToClaimMilestone entity without an ID"
     );
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type PlayerEligibleToClaimMilestone must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type PlayerEligibleToClaimMilestone must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set(
         "PlayerEligibleToClaimMilestone",
         id.toBytes().toHexString(),
-        this,
+        this
       );
     }
   }
 
   static load(id: Bytes): PlayerEligibleToClaimMilestone | null {
     return changetype<PlayerEligibleToClaimMilestone | null>(
-      store.get("PlayerEligibleToClaimMilestone", id.toHexString()),
+      store.get("PlayerEligibleToClaimMilestone", id.toHexString())
     );
   }
 
@@ -280,6 +420,23 @@ export class PlayerEligibleToClaimMilestone extends Entity {
   set transactionHash(value: Bytes) {
     this.set("transactionHash", Value.fromBytes(value));
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class PlayerJoinedQuest extends Entity {
@@ -294,7 +451,7 @@ export class PlayerJoinedQuest extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type PlayerJoinedQuest must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type PlayerJoinedQuest must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("PlayerJoinedQuest", id.toBytes().toHexString(), this);
     }
@@ -302,7 +459,7 @@ export class PlayerJoinedQuest extends Entity {
 
   static load(id: Bytes): PlayerJoinedQuest | null {
     return changetype<PlayerJoinedQuest | null>(
-      store.get("PlayerJoinedQuest", id.toHexString()),
+      store.get("PlayerJoinedQuest", id.toHexString())
     );
   }
 
@@ -359,6 +516,23 @@ export class PlayerJoinedQuest extends Entity {
   set transactionHash(value: Bytes) {
     this.set("transactionHash", Value.fromBytes(value));
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class PlayerMetricsUpdated extends Entity {
@@ -373,7 +547,7 @@ export class PlayerMetricsUpdated extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type PlayerMetricsUpdated must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type PlayerMetricsUpdated must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("PlayerMetricsUpdated", id.toBytes().toHexString(), this);
     }
@@ -381,7 +555,7 @@ export class PlayerMetricsUpdated extends Entity {
 
   static load(id: Bytes): PlayerMetricsUpdated | null {
     return changetype<PlayerMetricsUpdated | null>(
-      store.get("PlayerMetricsUpdated", id.toHexString()),
+      store.get("PlayerMetricsUpdated", id.toHexString())
     );
   }
 
@@ -447,12 +621,29 @@ export class PlayerMetricsUpdated extends Entity {
   set transactionHash(value: Bytes) {
     this.set("transactionHash", Value.fromBytes(value));
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class QuestInstantiated extends Entity {
-  constructor(id: Bytes) {
+  constructor(id: string) {
     super();
-    this.set("id", Value.fromBytes(id));
+    this.set("id", Value.fromString(id));
   }
 
   save(): void {
@@ -460,26 +651,26 @@ export class QuestInstantiated extends Entity {
     assert(id != null, "Cannot save QuestInstantiated entity without an ID");
     if (id) {
       assert(
-        id.kind == ValueKind.BYTES,
-        `Entities of type QuestInstantiated must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        id.kind == ValueKind.STRING,
+        `Entities of type QuestInstantiated must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
-      store.set("QuestInstantiated", id.toBytes().toHexString(), this);
+      store.set("QuestInstantiated", id.toString(), this);
     }
   }
 
-  static load(id: Bytes): QuestInstantiated | null {
+  static load(id: string): QuestInstantiated | null {
     return changetype<QuestInstantiated | null>(
-      store.get("QuestInstantiated", id.toHexString()),
+      store.get("QuestInstantiated", id)
     );
   }
 
-  get id(): Bytes {
+  get id(): string {
     let value = this.get("id");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set id(value: Bytes) {
-    this.set("id", Value.fromBytes(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
   get questId(): BigInt {
@@ -663,6 +854,23 @@ export class QuestInstantiated extends Entity {
       this.set("maxPlayerCount", Value.fromBigInt(<BigInt>value));
     }
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class QuestStatusUpdated extends Entity {
@@ -677,7 +885,7 @@ export class QuestStatusUpdated extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.BYTES,
-        `Entities of type QuestStatusUpdated must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type QuestStatusUpdated must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("QuestStatusUpdated", id.toBytes().toHexString(), this);
     }
@@ -685,7 +893,7 @@ export class QuestStatusUpdated extends Entity {
 
   static load(id: Bytes): QuestStatusUpdated | null {
     return changetype<QuestStatusUpdated | null>(
-      store.get("QuestStatusUpdated", id.toHexString()),
+      store.get("QuestStatusUpdated", id.toHexString())
     );
   }
 
@@ -756,7 +964,7 @@ export class QuestMetadata extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type QuestMetadata must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type QuestMetadata must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("QuestMetadata", id.toString(), this);
     }
@@ -910,6 +1118,23 @@ export class QuestMetadata extends Entity {
       this.set("mediaType", Value.fromString(<string>value));
     }
   }
+
+  get videoCovers(): Array<string> | null {
+    let value = this.get("videoCovers");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toStringArray();
+    }
+  }
+
+  set videoCovers(value: Array<string> | null) {
+    if (!value) {
+      this.unset("videoCovers");
+    } else {
+      this.set("videoCovers", Value.fromStringArray(<Array<string>>value));
+    }
+  }
 }
 
 export class Milestone extends Entity {
@@ -924,7 +1149,7 @@ export class Milestone extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Milestone must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Milestone must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Milestone", id.toString(), this);
     }
@@ -1028,23 +1253,6 @@ export class Milestone extends Entity {
     }
   }
 
-  get questId(): BigInt | null {
-    let value = this.get("questId");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set questId(value: BigInt | null) {
-    if (!value) {
-      this.unset("questId");
-    } else {
-      this.set("questId", Value.fromBigInt(<BigInt>value));
-    }
-  }
-
   get milestoneId(): BigInt | null {
     let value = this.get("milestoneId");
     if (!value || value.kind == ValueKind.NULL) {
@@ -1095,6 +1303,40 @@ export class Milestone extends Entity {
       this.set("rewardsLength", Value.fromBigInt(<BigInt>value));
     }
   }
+
+  get questId(): BigInt | null {
+    let value = this.get("questId");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set questId(value: BigInt | null) {
+    if (!value) {
+      this.unset("questId");
+    } else {
+      this.set("questId", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class Video extends Entity {
@@ -1109,7 +1351,7 @@ export class Video extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Video must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Video must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Video", id.toString(), this);
     }
@@ -1478,6 +1720,40 @@ export class Video extends Entity {
   set react(value: boolean) {
     this.set("react", Value.fromBoolean(value));
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
+
+  get factoryIds(): Array<BigInt> | null {
+    let value = this.get("factoryIds");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigIntArray();
+    }
+  }
+
+  set factoryIds(value: Array<BigInt> | null) {
+    if (!value) {
+      this.unset("factoryIds");
+    } else {
+      this.set("factoryIds", Value.fromBigIntArray(<Array<BigInt>>value));
+    }
+  }
 }
 
 export class Reward extends Entity {
@@ -1492,7 +1768,7 @@ export class Reward extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Reward must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Reward must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Reward", id.toString(), this);
     }
@@ -1595,6 +1871,23 @@ export class Reward extends Entity {
       this.set("rewardMetadata", Value.fromString(<string>value));
     }
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class Gate extends Entity {
@@ -1609,7 +1902,7 @@ export class Gate extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Gate must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Gate must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Gate", id.toString(), this);
     }
@@ -1670,6 +1963,23 @@ export class Gate extends Entity {
   set oneOf(value: boolean) {
     this.set("oneOf", Value.fromBoolean(value));
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class ERC20Logic extends Entity {
@@ -1684,7 +1994,7 @@ export class ERC20Logic extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type ERC20Logic must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type ERC20Logic must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("ERC20Logic", id.toString(), this);
     }
@@ -1736,6 +2046,23 @@ export class ERC20Logic extends Entity {
       this.set("amount", Value.fromBigInt(<BigInt>value));
     }
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class ERC721Logic extends Entity {
@@ -1750,7 +2077,7 @@ export class ERC721Logic extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type ERC721Logic must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type ERC721Logic must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("ERC721Logic", id.toString(), this);
     }
@@ -1819,6 +2146,23 @@ export class ERC721Logic extends Entity {
       this.set("tokenIds", Value.fromBigIntArray(<Array<BigInt>>value));
     }
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class Player extends Entity {
@@ -1833,7 +2177,7 @@ export class Player extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Player must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Player must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Player", id.toString(), this);
     }
@@ -1918,7 +2262,7 @@ export class Player extends Entity {
     } else {
       this.set(
         "milestonesCompleted",
-        Value.fromStringArray(<Array<string>>value),
+        Value.fromStringArray(<Array<string>>value)
       );
     }
   }
@@ -1956,6 +2300,23 @@ export class Player extends Entity {
       this.set("eligibile", Value.fromStringArray(<Array<string>>value));
     }
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class CompletionActivity extends Entity {
@@ -1970,7 +2331,7 @@ export class CompletionActivity extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type CompletionActivity must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type CompletionActivity must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("CompletionActivity", id.toString(), this);
     }
@@ -1978,7 +2339,7 @@ export class CompletionActivity extends Entity {
 
   static load(id: string): CompletionActivity | null {
     return changetype<CompletionActivity | null>(
-      store.get("CompletionActivity", id),
+      store.get("CompletionActivity", id)
     );
   }
 
@@ -2024,6 +2385,23 @@ export class CompletionActivity extends Entity {
       this.set("milestonesCompleted", Value.fromBigInt(<BigInt>value));
     }
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class VideoActivity extends Entity {
@@ -2038,7 +2416,7 @@ export class VideoActivity extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type VideoActivity must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type VideoActivity must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("VideoActivity", id.toString(), this);
     }
@@ -2071,23 +2449,6 @@ export class VideoActivity extends Entity {
       this.unset("pubId");
     } else {
       this.set("pubId", Value.fromBigInt(<BigInt>value));
-    }
-  }
-
-  get playerId(): string | null {
-    let value = this.get("playerId");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toString();
-    }
-  }
-
-  set playerId(value: string | null) {
-    if (!value) {
-      this.unset("playerId");
-    } else {
-      this.set("playerId", Value.fromString(<string>value));
     }
   }
 
@@ -2139,6 +2500,23 @@ export class VideoActivity extends Entity {
       this.unset("playCount");
     } else {
       this.set("playCount", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get playerId(): string | null {
+    let value = this.get("playerId");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set playerId(value: string | null) {
+    if (!value) {
+      this.unset("playerId");
+    } else {
+      this.set("playerId", Value.fromString(<string>value));
     }
   }
 
@@ -2407,6 +2785,23 @@ export class VideoActivity extends Entity {
   set hasReacted(value: boolean) {
     this.set("hasReacted", Value.fromBoolean(value));
   }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
 }
 
 export class Eligible extends Entity {
@@ -2421,7 +2816,7 @@ export class Eligible extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Eligible must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Eligible must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Eligible", id.toString(), this);
     }
@@ -2481,5 +2876,109 @@ export class Eligible extends Entity {
 
   set status(value: boolean) {
     this.set("status", Value.fromBoolean(value));
+  }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
+}
+
+export class QuestDeleted extends Entity {
+  constructor(id: Bytes) {
+    super();
+    this.set("id", Value.fromBytes(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save QuestDeleted entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.BYTES,
+        `Entities of type QuestDeleted must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("QuestDeleted", id.toBytes().toHexString(), this);
+    }
+  }
+
+  static load(id: Bytes): QuestDeleted | null {
+    return changetype<QuestDeleted | null>(
+      store.get("QuestDeleted", id.toHexString())
+    );
+  }
+
+  get id(): Bytes {
+    let value = this.get("id");
+    return value!.toBytes();
+  }
+
+  set id(value: Bytes) {
+    this.set("id", Value.fromBytes(value));
+  }
+
+  get questId(): BigInt {
+    let value = this.get("questId");
+    return value!.toBigInt();
+  }
+
+  set questId(value: BigInt) {
+    this.set("questId", Value.fromBigInt(value));
+  }
+
+  get contractAddress(): Bytes | null {
+    let value = this.get("contractAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set contractAddress(value: Bytes | null) {
+    if (!value) {
+      this.unset("contractAddress");
+    } else {
+      this.set("contractAddress", Value.fromBytes(<Bytes>value));
+    }
+  }
+
+  get blockNumber(): BigInt {
+    let value = this.get("blockNumber");
+    return value!.toBigInt();
+  }
+
+  set blockNumber(value: BigInt) {
+    this.set("blockNumber", Value.fromBigInt(value));
+  }
+
+  get blockTimestamp(): BigInt {
+    let value = this.get("blockTimestamp");
+    return value!.toBigInt();
+  }
+
+  set blockTimestamp(value: BigInt) {
+    this.set("blockTimestamp", Value.fromBigInt(value));
+  }
+
+  get transactionHash(): Bytes {
+    let value = this.get("transactionHash");
+    return value!.toBytes();
+  }
+
+  set transactionHash(value: Bytes) {
+    this.set("transactionHash", Value.fromBytes(value));
   }
 }

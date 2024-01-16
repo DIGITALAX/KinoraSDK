@@ -66,6 +66,17 @@ export function handleQuestMetadata(content: Bytes): void {
     ) {
       metadata.mediaType = mediaType.toString();
     }
+    let videoCovers = value.get("videoCovers");
+    if (videoCovers && videoCovers.kind === JSONValueKind.ARRAY) {
+      metadata.videoCovers = videoCovers
+        .toArray()
+        .filter(
+          item =>
+            item.kind === JSONValueKind.STRING &&
+            !item.toString().includes("base64"),
+        )
+        .map<string>(item => item.toString());
+    }
     // let tags = value.get("tags");
     // if (tags && tags.kind === JSONValueKind.STRING) {
     //   metadata.tags = tags.toString();

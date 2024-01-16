@@ -1,8 +1,8 @@
 {
   "mumbai": {
-    "KinoraQuestData": {
-      "address": "0x7484461387456E530A72601A3294972c9a9b6049",
-      "startBlock": 44096047
+    "KinoraOpenAction": {
+      "address": "0x43a18a3596d3C80467236b588976C9F11D166894",
+      "startBlock": 44785688
     }
   }
 }

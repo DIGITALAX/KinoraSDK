@@ -34,23 +34,13 @@ export class Dispatch {
   private lensHubProxyContract: ethers.Contract | undefined;
 
   /**
-   * @private
-   * @type {ZeroString}
-   * @description The Instantiated Kinora Quest Data Contract.
-   */
-  private kinoraQuestDataContractAddress: ZeroString;
-
-  /**
    * @constructor
    * @param {ApolloClient<NormalizedCacheObject>} [args.playerAuthedApolloClient] - Authenticated Apollo client for the player
-   * @param {ZeroString} [args.kinoraQuestDataContractAddress] - Instantiated Kinora Quest Data Contract.
    */
   constructor(args: {
     playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>;
-    kinoraQuestDataContractAddress: ZeroString;
   }) {
     this.playerAuthedApolloClient = args.playerAuthedApolloClient;
-    this.kinoraQuestDataContractAddress = args.kinoraQuestDataContractAddress;
   }
 
   /**
@@ -230,12 +220,15 @@ export class Dispatch {
       let completed: PlayerVideoActivity[] = [],
         toComplete: PlayerVideoActivity[] = [];
 
-      const milestoneData = await getMilestoneVideos(questId, milestone);
+      const milestoneData = await getMilestoneVideos(
+        questId,
+        kinoraQuestDataAddress,
+      );
 
       if (
-        !milestoneData?.data?.milestones?.[0]?.videos ||
-        (milestoneData?.data?.milestones?.[0]?.videos &&
-          milestoneData?.data?.milestones?.[0]?.videos?.length < 1)
+        !milestoneData?.data?.milestones?.[milestone - 1]?.videos ||
+        (milestoneData?.data?.milestones?.[milestone - 1]?.videos &&
+          milestoneData?.data?.milestones?.[milestone - 1]?.videos?.length < 1)
       ) {
         throw new Error(
           `Error fetching data. Ensure the correct milestone, quest Id and player profile Id are provided.`,
@@ -246,49 +239,46 @@ export class Dispatch {
         KINORA_OPEN_ACTION_CONTRACT,
         KinoraOpenActionAbi,
         new ethers.providers.JsonRpcProvider(
-          "https://rpc-mumbai.maticvigil.com/",
+          "https://rpc-mainnet.maticvigil.com/",
         ),
       );
 
-      const milestonePromises =
-        milestoneData?.data?.milestones?.[0]?.videos?.map(
-          async (
-            video: MilestoneEligibilityCriteria & {
-              pubId: string;
-              profileId: string;
-              factoryIds: string[];
-            },
-          ) => {
-            const playerData = await getPlayerVideoData(
+      const milestonePromises = milestoneData?.data?.milestones?.[
+        milestone - 1
+      ]?.videos?.map(
+        async (
+          video: MilestoneEligibilityCriteria & {
+            pubId: string;
+            profileId: string;
+            factoryIds: string[];
+          },
+        ) => {
+          const playerData = await getPlayerVideoData(
+            Number(video?.pubId),
+            Number(video?.profileId),
+            parseInt(playerProfileId, 16),
+            kinoraQuestDataAddress,
+          );
+          const allVideoData: PlayerVideoActivity =
+            playerData?.data?.videoActivities?.[0];
+
+          if (video?.factoryIds?.length > 1) {
+            this.checkGlobalMetrics(
+              video?.factoryIds?.map((item) => Number(item)),
+              kinoraQuestDataAddress,
+              kinoraOpenAccessContract,
               Number(video?.pubId),
               Number(video?.profileId),
               parseInt(playerProfileId, 16),
+              video,
+              completed,
+              toComplete,
             );
-            const allVideoData: PlayerVideoActivity =
-              playerData?.data?.videoActivities?.[0];
-
-            if (video?.factoryIds?.length > 1) {
-              this.checkGlobalMetrics(
-                video?.factoryIds?.map((item) => Number(item)),
-                kinoraQuestDataAddress,
-                kinoraOpenAccessContract,
-                Number(video?.pubId),
-                Number(video?.profileId),
-                parseInt(playerProfileId, 16),
-                video,
-                completed,
-                toComplete,
-              );
-            } else {
-              this.checkLocalMetrics(
-                allVideoData,
-                video,
-                completed,
-                toComplete,
-              );
-            }
-          },
-        );
+          } else {
+            this.checkLocalMetrics(allVideoData, video, completed, toComplete);
+          }
+        },
+      );
 
       await Promise.all(milestonePromises);
 
@@ -358,7 +348,7 @@ export class Dispatch {
           kinoraQuestDataAddress,
           KinoraQuestDataAbi,
           new ethers.providers.JsonRpcProvider(
-            "https://rpc-mumbai.maticvigil.com/",
+            "https://rpc-mainnet.maticvigil.com/",
           ),
         );
       } else {
@@ -366,7 +356,7 @@ export class Dispatch {
           await kinoraOpenAccessContract.getContractFactoryMap(factoryIds[i]),
           KinoraAccesControlAbi,
           new ethers.providers.JsonRpcProvider(
-            "https://rpc-mumbai.maticvigil.com/",
+            "https://rpc-mainnet.maticvigil.com/",
           ),
         );
 
@@ -375,7 +365,7 @@ export class Dispatch {
           kqd,
           KinoraQuestDataAbi,
           new ethers.providers.JsonRpcProvider(
-            "https://rpc-mumbai.maticvigil.com/",
+            "https://rpc-mainnet.maticvigil.com/",
           ),
         );
       }
@@ -513,246 +503,248 @@ export class Dispatch {
     let currentCompleteVideo = {},
       currentToCompleteVideo = {};
 
-    if (Number(allVideoData.avd || 0) < Number(video.minAvd || 0)) {
+    if (Number(allVideoData?.avd || 0) < Number(video?.minAvd || 0)) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        avd: allVideoData.avd,
+        avd: allVideoData?.avd,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        avd: allVideoData.avd,
-      };
-    }
-
-    if (Number(allVideoData.playCount || 0) < Number(video.minPlayCount || 0)) {
-      currentToCompleteVideo = {
-        ...currentToCompleteVideo,
-        playCount: allVideoData.playCount,
-      };
-    } else {
-      currentCompleteVideo = {
-        ...currentCompleteVideo,
-        playCount: allVideoData.playCount,
-      };
-    }
-
-    if (Number(allVideoData.duration || 0) < Number(video.minDuration || 0)) {
-      currentToCompleteVideo = {
-        ...currentToCompleteVideo,
-        duration: allVideoData.duration,
-      };
-    } else {
-      currentCompleteVideo = {
-        ...currentCompleteVideo,
-        duration: allVideoData.duration,
+        avd: allVideoData?.avd,
       };
     }
 
     if (
-      Number(allVideoData.secondaryQuoteOnQuote || 0) <
-      Number(video.minSecondaryQuoteOnQuote || 0)
+      Number(allVideoData?.playCount || 0) < Number(video?.minPlayCount || 0)
     ) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        secondaryQuoteOnQuote: allVideoData.secondaryQuoteOnQuote,
+        playCount: allVideoData?.playCount,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        secondaryQuoteOnQuote: allVideoData.secondaryQuoteOnQuote,
+        playCount: allVideoData?.playCount,
       };
     }
-    if (
-      Number(allVideoData.secondaryMirrorOnQuote || 0) <
-      Number(video.minSecondaryMirrorOnQuote || 0)
-    ) {
+
+    if (Number(allVideoData?.duration || 0) < Number(video?.minDuration || 0)) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        secondaryMirrorOnQuote: allVideoData.secondaryMirrorOnQuote,
+        duration: allVideoData?.duration,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        secondaryMirrorOnQuote: allVideoData.secondaryMirrorOnQuote,
+        duration: allVideoData?.duration,
       };
     }
 
     if (
-      Number(allVideoData.secondaryReactOnQuote || 0) <
-      Number(video.minSecondaryReactOnQuote || 0)
+      Number(allVideoData?.secondaryQuoteOnQuote || 0) <
+      Number(video?.minSecondaryQuoteOnQuote || 0)
     ) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        secondaryReactOnQuote: allVideoData.secondaryReactOnQuote,
+        secondaryQuoteOnQuote: allVideoData?.secondaryQuoteOnQuote,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        secondaryReactOnQuote: allVideoData.secondaryReactOnQuote,
+        secondaryQuoteOnQuote: allVideoData?.secondaryQuoteOnQuote,
+      };
+    }
+    if (
+      Number(allVideoData?.secondaryMirrorOnQuote || 0) <
+      Number(video?.minSecondaryMirrorOnQuote || 0)
+    ) {
+      currentToCompleteVideo = {
+        ...currentToCompleteVideo,
+        secondaryMirrorOnQuote: allVideoData?.secondaryMirrorOnQuote,
+      };
+    } else {
+      currentCompleteVideo = {
+        ...currentCompleteVideo,
+        secondaryMirrorOnQuote: allVideoData?.secondaryMirrorOnQuote,
       };
     }
 
     if (
-      Number(allVideoData.secondaryCommentOnQuote || 0) <
-      Number(video.minSecondaryCommentOnQuote || 0)
+      Number(allVideoData?.secondaryReactOnQuote || 0) <
+      Number(video?.minSecondaryReactOnQuote || 0)
     ) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        secondaryCommentOnQuote: allVideoData.secondaryCommentOnQuote,
+        secondaryReactOnQuote: allVideoData?.secondaryReactOnQuote,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        secondaryCommentOnQuote: allVideoData.secondaryCommentOnQuote,
-      };
-    }
-    if (
-      Number(allVideoData.secondaryCollectOnQuote || 0) <
-      Number(video.minSecondaryCollectOnQuote || 0)
-    ) {
-      currentToCompleteVideo = {
-        ...currentToCompleteVideo,
-        secondaryCollectOnQuote: allVideoData.secondaryCollectOnQuote,
-      };
-    } else {
-      currentCompleteVideo = {
-        ...currentCompleteVideo,
-        secondaryCollectOnQuote: allVideoData.secondaryCollectOnQuote,
+        secondaryReactOnQuote: allVideoData?.secondaryReactOnQuote,
       };
     }
 
     if (
-      Number(allVideoData.secondaryQuoteOnComment || 0) <
-      Number(video.minSecondaryQuoteOnComment || 0)
+      Number(allVideoData?.secondaryCommentOnQuote || 0) <
+      Number(video?.minSecondaryCommentOnQuote || 0)
     ) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        secondaryQuoteOnComment: allVideoData.secondaryQuoteOnComment,
+        secondaryCommentOnQuote: allVideoData?.secondaryCommentOnQuote,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        secondaryQuoteOnComment: allVideoData.secondaryQuoteOnComment,
+        secondaryCommentOnQuote: allVideoData?.secondaryCommentOnQuote,
       };
     }
     if (
-      Number(allVideoData.secondaryMirrorOnComment || 0) <
-      Number(video.minSecondaryMirrorOnComment || 0)
+      Number(allVideoData?.secondaryCollectOnQuote || 0) <
+      Number(video?.minSecondaryCollectOnQuote || 0)
     ) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        secondaryMirrorOnComment: allVideoData.secondaryMirrorOnComment,
+        secondaryCollectOnQuote: allVideoData?.secondaryCollectOnQuote,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        secondaryMirrorOnComment: allVideoData.secondaryMirrorOnComment,
-      };
-    }
-
-    if (
-      Number(allVideoData.secondaryReactOnComment || 0) <
-      Number(video.minSecondaryReactOnComment || 0)
-    ) {
-      currentToCompleteVideo = {
-        ...currentToCompleteVideo,
-        secondaryReactOnComment: allVideoData.secondaryReactOnComment,
-      };
-    } else {
-      currentCompleteVideo = {
-        ...currentCompleteVideo,
-        secondaryReactOnComment: allVideoData.secondaryReactOnComment,
+        secondaryCollectOnQuote: allVideoData?.secondaryCollectOnQuote,
       };
     }
 
     if (
-      Number(allVideoData.secondaryCommentOnComment || 0) <
-      Number(video.minSecondaryCommentOnComment || 0)
+      Number(allVideoData?.secondaryQuoteOnComment || 0) <
+      Number(video?.minSecondaryQuoteOnComment || 0)
     ) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        secondaryCommentOnComment: allVideoData.secondaryCommentOnComment,
+        secondaryQuoteOnComment: allVideoData?.secondaryQuoteOnComment,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        secondaryCommentOnComment: allVideoData.secondaryCommentOnComment,
+        secondaryQuoteOnComment: allVideoData?.secondaryQuoteOnComment,
+      };
+    }
+    if (
+      Number(allVideoData?.secondaryMirrorOnComment || 0) <
+      Number(video?.minSecondaryMirrorOnComment || 0)
+    ) {
+      currentToCompleteVideo = {
+        ...currentToCompleteVideo,
+        secondaryMirrorOnComment: allVideoData?.secondaryMirrorOnComment,
+      };
+    } else {
+      currentCompleteVideo = {
+        ...currentCompleteVideo,
+        secondaryMirrorOnComment: allVideoData?.secondaryMirrorOnComment,
       };
     }
 
     if (
-      Number(allVideoData.secondaryCollectOnComment || 0) <
-      Number(video.minSecondaryCollectOnComment || 0)
+      Number(allVideoData?.secondaryReactOnComment || 0) <
+      Number(video?.minSecondaryReactOnComment || 0)
     ) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        secondaryCollectOnComment: allVideoData.secondaryCollectOnComment,
+        secondaryReactOnComment: allVideoData?.secondaryReactOnComment,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        secondaryCollectOnComment: allVideoData.secondaryCollectOnComment,
+        secondaryReactOnComment: allVideoData?.secondaryReactOnComment,
       };
     }
 
-    if (video.bookmark && !allVideoData.hasBookmarked) {
+    if (
+      Number(allVideoData?.secondaryCommentOnComment || 0) <
+      Number(video?.minSecondaryCommentOnComment || 0)
+    ) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        hasBookmarked: allVideoData.hasBookmarked,
+        secondaryCommentOnComment: allVideoData?.secondaryCommentOnComment,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        hasBookmarked: allVideoData.hasBookmarked,
+        secondaryCommentOnComment: allVideoData?.secondaryCommentOnComment,
       };
     }
 
-    if (video.comment && !allVideoData.hasCommented) {
+    if (
+      Number(allVideoData?.secondaryCollectOnComment || 0) <
+      Number(video?.minSecondaryCollectOnComment || 0)
+    ) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        hasCommented: allVideoData.hasCommented,
+        secondaryCollectOnComment: allVideoData?.secondaryCollectOnComment,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        hasCommented: allVideoData.hasCommented,
+        secondaryCollectOnComment: allVideoData?.secondaryCollectOnComment,
       };
     }
 
-    if (video.quote && !allVideoData.hasQuoted) {
+    if (video?.bookmark && !allVideoData?.hasBookmarked) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        hasQuoted: allVideoData.hasQuoted,
+        hasBookmarked: allVideoData?.hasBookmarked,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        hasQuoted: allVideoData.hasQuoted,
+        hasBookmarked: allVideoData?.hasBookmarked,
       };
     }
 
-    if (video.react && !allVideoData.hasReacted) {
+    if (video?.comment && !allVideoData?.hasCommented) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        hasReacted: allVideoData.hasReacted,
+        hasCommented: allVideoData?.hasCommented,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        hasReacted: allVideoData.hasReacted,
+        hasCommented: allVideoData?.hasCommented,
       };
     }
 
-    if (video.mirror && !allVideoData.hasMirrored) {
+    if (video?.quote && !allVideoData?.hasQuoted) {
       currentToCompleteVideo = {
         ...currentToCompleteVideo,
-        hasMirrored: allVideoData.hasMirrored,
+        hasQuoted: allVideoData?.hasQuoted,
       };
     } else {
       currentCompleteVideo = {
         ...currentCompleteVideo,
-        hasMirrored: allVideoData.hasMirrored,
+        hasQuoted: allVideoData?.hasQuoted,
+      };
+    }
+
+    if (video?.react && !allVideoData?.hasReacted) {
+      currentToCompleteVideo = {
+        ...currentToCompleteVideo,
+        hasReacted: allVideoData?.hasReacted,
+      };
+    } else {
+      currentCompleteVideo = {
+        ...currentCompleteVideo,
+        hasReacted: allVideoData?.hasReacted,
+      };
+    }
+
+    if (video?.mirror && !allVideoData?.hasMirrored) {
+      currentToCompleteVideo = {
+        ...currentToCompleteVideo,
+        hasMirrored: allVideoData?.hasMirrored,
+      };
+    } else {
+      currentCompleteVideo = {
+        ...currentCompleteVideo,
+        hasMirrored: allVideoData?.hasMirrored,
       };
     }
 

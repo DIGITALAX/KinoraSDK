@@ -193,11 +193,15 @@ class Kinora {
    * Asynchronously fetches a list of quests completed by a player.
    *
    * @param playerProfileId - Lens Profile ID of the player as a `0x${string}`.
+   * @param contractAddress - Kinora Quest Data contract address of the factory instance.
    * @returns A Promise resolving to an object containing boolean status for error,
    *          optional error message, and an array of completed quests with their details.
    * @throws Any errors encountered during the process are caught and returned with their message.
    */
-  public async getPlayerCompletedQuests(playerProfileId: ZeroString): Promise<{
+  public async getPlayerCompletedQuests(
+    playerProfileId: ZeroString,
+    contractAddress: ZeroString,
+  ): Promise<{
     error: boolean;
     errorMessage?: string;
     quests?: {
@@ -207,7 +211,10 @@ class Kinora {
     }[];
   }> {
     try {
-      const data = await getCompletedQuests(parseInt(playerProfileId, 16));
+      const data = await getCompletedQuests(
+        parseInt(playerProfileId, 16),
+        contractAddress,
+      );
 
       return {
         error: false,
@@ -227,16 +234,23 @@ class Kinora {
    * Asynchronously retrieves the quests a player has joined.
    *
    * @param playerProfileId - Lens Profile ID of the player as a `0x${string}`.
+   * @param contractAddress - Kinora Quest Data contract address of the factory instance.
    * @returns A Promise resolving to an object containing a boolean error status, optional error message,
    *          and an array of quest IDs the player has joined.
    */
-  public async getPlayerJoinedQuests(playerProfileId: ZeroString): Promise<{
+  public async getPlayerJoinedQuests(
+    playerProfileId: ZeroString,
+    contractAddress: ZeroString,
+  ): Promise<{
     error: boolean;
     errorMessage?: string;
     quests?: string[];
   }> {
     try {
-      const data = await getJoinedQuests(parseInt(playerProfileId, 16));
+      const data = await getJoinedQuests(
+        parseInt(playerProfileId, 16),
+        contractAddress,
+      );
 
       return {
         error: false,
@@ -255,12 +269,14 @@ class Kinora {
    *
    * @param playerProfileId - Lens Profile ID of the player as a `0x${string}`.
    * @param questId - Numeric ID of the quest.
+   * @param contractAddress - Kinora Quest Data contract address of the factory instance.
    * @returns A Promise resolving to an object detailing any errors, optional error message,
    *          and an array of milestone numbers completed in the quest.
    */
   public async getPlayerQuestMilestonesCompleted(
     playerProfileId: ZeroString,
     questId: number,
+    contractAddress: ZeroString,
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -270,6 +286,7 @@ class Kinora {
       const data = await getCompletedMilestones(
         parseInt(playerProfileId, 16),
         questId,
+        contractAddress,
       );
 
       return {
@@ -291,11 +308,13 @@ class Kinora {
    * Asynchronously gathers metric activity data for a player's video.
    *
    * @param playerProfileId - Lens Profile ID of the player as a `0x${string}`.
+   * @param contractAddress - Kinora Quest Data contract address of the factory instance.
    * @returns A Promise resolving to an object containing error status, optional error message,
    *          and an array of video metric activities (including interactions and engagement metrics).
    */
   public async getPlayerVideoMetricActivity(
     playerProfileId: ZeroString,
+    contractAddress: ZeroString,
   ): Promise<{
     error: boolean;
     errorMessage?: string;
@@ -306,7 +325,10 @@ class Kinora {
     })[];
   }> {
     try {
-      const data = await getVideoMetricActivity(parseInt(playerProfileId, 16));
+      const data = await getVideoMetricActivity(
+        parseInt(playerProfileId, 16),
+        contractAddress,
+      );
 
       return {
         error: false,
@@ -361,9 +383,13 @@ class Kinora {
    * Asynchronously retrieves detailed information about a player, including video activities, quests joined, and milestones completed.
    *
    * @param playerProfileId - Lens Profile ID of the player as a `0x${string}`.
+   * @param contractAddress - Kinora Quest Data contract address of the factory instance.
    * @returns A Promise resolving to an object with error status, optional error message, and detailed player information.
    */
-  public async getPlayerDetails(playerProfileId: ZeroString): Promise<{
+  public async getPlayerDetails(
+    playerProfileId: ZeroString,
+    contractAddress: ZeroString,
+  ): Promise<{
     error: boolean;
     errorMessage?: string;
     details?: {
@@ -387,7 +413,10 @@ class Kinora {
     };
   }> {
     try {
-      const data = await getDetailsOfPlayer(parseInt(playerProfileId, 16));
+      const data = await getDetailsOfPlayer(
+        parseInt(playerProfileId, 16),
+        contractAddress,
+      );
 
       const playerData = data?.data?.players?.[0];
 
@@ -467,15 +496,19 @@ class Kinora {
    * Asynchronously fetches all players participating in a specific quest.
    *
    * @param questId - Numeric ID of the quest.
+   * @param contractAddress - Kinora Quest Data contract address of the factory instance.
    * @returns A Promise resolving to an object with error status, optional error message, and an array of player IDs.
    */
-  public async getAllQuestPlayers(questId: number): Promise<{
+  public async getAllQuestPlayers(
+    questId: number,
+    contractAddress: ZeroString,
+  ): Promise<{
     error: boolean;
     errorMessage?: string;
     players?: ZeroString[];
   }> {
     try {
-      const data = await getPlayersByQuest(questId);
+      const data = await getPlayersByQuest(questId, contractAddress);
 
       return {
         error: false,
@@ -493,15 +526,22 @@ class Kinora {
    * Asynchronously retrieves quests initiated by a specific player (envoker).
    *
    * @param envokerProfileId - Lens Profile ID of the envoker as a `0x${string}`.
+   * @param contractAddress - Kinora Quest Data contract address of the factory instance.
    * @returns A Promise resolving to an object containing error status, optional error message, and an array of quest IDs initiated by the envoker.
    */
-  public async getQuestsByEnvoker(envokerProfileId: ZeroString): Promise<{
+  public async getQuestsByEnvoker(
+    envokerProfileId: ZeroString,
+    contractAddress: ZeroString,
+  ): Promise<{
     error: boolean;
     errorMessage?: string;
     quests?: string[];
   }> {
     try {
-      const data = await getQuestEnvoker(parseInt(envokerProfileId, 16));
+      const data = await getQuestEnvoker(
+        parseInt(envokerProfileId, 16),
+        contractAddress,
+      );
       return {
         error: false,
         quests: data?.data?.questInstantiateds?.map(
@@ -656,15 +696,19 @@ class Kinora {
    * Asynchronously retrieves quests associated with a specific playback ID.
    *
    * @param playbackId - String ID of the playback.
+   * @param contractAddress - Kinora Quest Data contract address of the factory instance.
    * @returns A Promise resolving to an object with error status, optional error message, and an array of quest IDs linked to the playback ID.
    */
-  public async getQuestsByPlaybackId(playbackId: string): Promise<{
+  public async getQuestsByPlaybackId(
+    playbackId: string,
+    contractAddress: ZeroString,
+  ): Promise<{
     error: boolean;
     errorMessage?: string;
     quests?: string[];
   }> {
     try {
-      const data = await getPlaybackIdQuests(playbackId);
+      const data = await getPlaybackIdQuests(playbackId, contractAddress);
 
       return {
         error: false,
@@ -684,9 +728,13 @@ class Kinora {
    * Asynchronously fetches quests associated with a specific video post.
    *
    * @param postId - Lens publication ID of the post as a `0x${string}`.
+   * @param contractAddress - Kinora Quest Data contract address of the factory instance.
    * @returns A Promise resolving to an object with error status, optional error message, and an array of quest IDs related to the video post.
    */
-  public async getQuestsByVideoPost(postId: ZeroString): Promise<{
+  public async getQuestsByVideoPost(
+    postId: ZeroString,
+    contractAddress: ZeroString,
+  ): Promise<{
     error: boolean;
     errorMessage?: string;
     quests?: string[];
@@ -695,6 +743,7 @@ class Kinora {
       const data = await getVideoIdQuests(
         parseInt(postId?.split("-")?.[0], 16),
         parseInt(postId?.split("-")?.[1], 16),
+        contractAddress,
       );
 
       return {
@@ -715,9 +764,13 @@ class Kinora {
    * Asynchronously retrieves video activity based on a specific playback ID.
    *
    * @param playbackId - String ID representing the playback.
+   * @param contractAddress - Kinora Quest Data contract address of the factory instance.
    * @returns A Promise resolving to an object with error status, optional error message, and an array of player activities related to the playback ID.
    */
-  public async getVideoActivityByPlaybackId(playbackId: string): Promise<{
+  public async getVideoActivityByPlaybackId(
+    playbackId: string,
+    contractAddress: ZeroString,
+  ): Promise<{
     error: boolean;
     errorMessage?: string;
     activity?: (PlayerVideoActivity & {
@@ -727,7 +780,7 @@ class Kinora {
     })[];
   }> {
     try {
-      const data = await getActivityByPlayerId(playbackId);
+      const data = await getActivityByPlayerId(playbackId, contractAddress);
 
       return {
         error: false,
@@ -782,9 +835,13 @@ class Kinora {
    * Asynchronously gathers player activity data for a specific video post.
    *
    * @param postId - Lens publication ID of the video post as a `0x${string}`.
+   * @param contractAddress - Kinora Quest Data contract address of the factory instance.
    * @returns A Promise resolving to an object with error status, optional error message, and an array of player activities related to the video post.
    */
-  public async getVideoActivityByVideoPost(postId: ZeroString): Promise<{
+  public async getVideoActivityByVideoPost(
+    postId: ZeroString,
+    contractAddress: ZeroString,
+  ): Promise<{
     error: boolean;
     errorMessage?: string;
     activity?: (PlayerVideoActivity & {
@@ -797,6 +854,7 @@ class Kinora {
       const data = await getActivityByPostId(
         parseInt(postId?.split("-")?.[0], 16),
         parseInt(postId?.split("-")?.[1], 16),
+        contractAddress,
       );
 
       return {
