@@ -478,7 +478,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
 
       erc20.amount = thresholdsErc20[h];
       erc20.address = addressesErc20[h];
-      erc20.address = event.address;
+      erc20.contractAddress = event.address;
       erc20.save();
 
       erc20Logic.push(
