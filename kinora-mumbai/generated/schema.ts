@@ -1855,6 +1855,107 @@ export class Reward extends Entity {
     }
   }
 
+  get milestone(): BigInt | null {
+    let value = this.get("milestone");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set milestone(value: BigInt | null) {
+    if (!value) {
+      this.unset("milestone");
+    } else {
+      this.set("milestone", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get questURI(): string | null {
+    let value = this.get("questURI");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set questURI(value: string | null) {
+    if (!value) {
+      this.unset("questURI");
+    } else {
+      this.set("questURI", Value.fromString(<string>value));
+    }
+  }
+
+  get questId(): BigInt | null {
+    let value = this.get("questId");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set questId(value: BigInt | null) {
+    if (!value) {
+      this.unset("questId");
+    } else {
+      this.set("questId", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get pubId(): BigInt | null {
+    let value = this.get("pubId");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set pubId(value: BigInt | null) {
+    if (!value) {
+      this.unset("pubId");
+    } else {
+      this.set("pubId", Value.fromBigInt(<BigInt>value));
+    }
+  }
+  get profileId(): BigInt | null {
+    let value = this.get("profileId");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set profileId(value: BigInt | null) {
+    if (!value) {
+      this.unset("profileId");
+    } else {
+      this.set("profileId", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get questMetadata(): string | null {
+    let value = this.get("questMetadata");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set questMetadata(value: string | null) {
+    if (!value) {
+      this.unset("questMetadata");
+    } else {
+      this.set("questMetadata", Value.fromString(<string>value));
+    }
+  }
+
   get rewardMetadata(): string | null {
     let value = this.get("rewardMetadata");
     if (!value || value.kind == ValueKind.NULL) {

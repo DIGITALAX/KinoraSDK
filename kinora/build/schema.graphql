@@ -103,6 +103,7 @@ type QuestMetadata @entity(immutable: false) {
   images: [String!]
   mediaType: String
   videoCovers: [String!]
+  prompt: String
 }
 
 type Milestone @entity(immutable: false) {
@@ -156,6 +157,12 @@ type Reward @entity(immutable: false) {
   amount: BigInt
   rewardMetadata: QuestMetadata
   contractAddress: Bytes
+  questId: BigInt
+  milestone: BigInt
+  profileId: BigInt
+  pubId: BigInt
+  questMetadata: QuestMetadata
+  questURI: String
 }
 
 type Gate @entity(immutable: false) {

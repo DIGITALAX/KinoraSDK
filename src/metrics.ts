@@ -1,4 +1,4 @@
-import { EngagementInfo } from "./@types/kinora-sdk";
+import { TimeRange } from "./@types/kinora-sdk";
 
 /**
  * @class Metrics
@@ -12,7 +12,8 @@ export class Metrics {
   private videoStarted: boolean = false; // Flag to check if video started playing.
   private isActive: boolean = false; // Flag to check if video is actively being played.
   private isSeeking: boolean = false; // Flag to check if video is in seeking state.
-  private engagementData: Map<number, EngagementInfo> = new Map();
+  private timeRanges: TimeRange[] = []; // Time ranges most viewed
+  private segmentDuration: number = 1; // Time segment by 1 second
 
   // Event handler for play event, updating activity status and last update time.
   public onPlay = (videoElement: HTMLVideoElement) => {
@@ -40,18 +41,11 @@ export class Metrics {
   // Event handler for time update event, capturing engagement data.
   public onTimeUpdate = (videoElement: HTMLVideoElement) => {
     const currentTime = videoElement.currentTime;
-    const engagementInfo = this.engagementData.get(currentTime) || {
-      viewCount: 0,
-      totalWatchTime: 0,
-    };
-    engagementInfo.viewCount++;
-    engagementInfo.totalWatchTime +=
-      videoElement.currentTime - this.lastUpdateTime;
-    this.engagementData.set(currentTime, engagementInfo);
     if (this.isActive && this.lastUpdateTime > 0 && !this.isSeeking) {
       const timeWatched = currentTime - this.lastUpdateTime;
       if (timeWatched > 0) {
         this.totalDuration += Math.max(0, timeWatched);
+        this.updateTimeRanges(this.lastUpdateTime, currentTime);
       }
     }
     this.lastUpdateTime = currentTime;
@@ -105,33 +99,17 @@ export class Metrics {
     this.totalInteractions++;
   };
 
-  // Returns the engagement data map.
-  public getMostReplayedArea = (): { peaks: number[]; valleys: number[] } => {
-    // Lógica para procesar engagementData y encontrar picos y valles.
-    let peakViewCount = 0;
-    let valleyViewCount = Infinity;
-    const peaks: number[] = [];
-    const valleys: number[] = [];
-
-    this.engagementData.forEach((info, time) => {
-      if (info.viewCount > peakViewCount) {
-        peakViewCount = info.viewCount;
-        peaks.length = 0; // Reset peaks array
-        peaks.push(time);
-      } else if (info.viewCount === peakViewCount) {
-        peaks.push(time);
-      }
-
-      if (info.viewCount < valleyViewCount) {
-        valleyViewCount = info.viewCount;
-        valleys.length = 0; // Reset valleys array
-        valleys.push(time);
-      } else if (info.viewCount === valleyViewCount) {
-        valleys.push(time);
-      }
-    });
-
-    return { peaks, valleys };
+  // Returns the most replayed list with views.
+  public getMostReplayedArea = (): string[] => {
+    return this.timeRanges
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 10)
+      .map(
+        (range) =>
+          `${this.formatTime(range.start)} - ${this.formatTime(
+            range.end,
+          )} | Views ${range.views}`,
+      );
   };
 
   // Calculates and returns the average view duration (AVD).
@@ -166,6 +144,35 @@ export class Metrics {
     this.totalDuration = 0;
     this.lastUpdateTime = 0;
     this.isSeeking = false;
-    this.engagementData = new Map();
+    this.timeRanges = [];
+    this.segmentDuration = 1;
+  };
+
+  // Calculates the time ranges.
+  private updateTimeRanges = (startTime: number, endTime: number) => {
+    const startSegment = Math.floor(startTime / this.segmentDuration);
+    const endSegment = Math.floor(endTime / this.segmentDuration);
+
+    for (let segment = startSegment; segment <= endSegment; segment++) {
+      const foundRange = this.timeRanges.find(
+        (range) => range.start === segment * this.segmentDuration,
+      );
+
+      if (foundRange) {
+        foundRange.views++;
+      } else {
+        this.timeRanges.push({
+          start: segment * this.segmentDuration,
+          end: (segment + 1) * this.segmentDuration,
+          views: 1,
+        });
+      }
+    }
+  };
+
+  private formatTime = (seconds: number): string => {
+    const date = new Date(0);
+    date.setSeconds(seconds);
+    return date.toISOString().substring(11, 23);
   };
 }
