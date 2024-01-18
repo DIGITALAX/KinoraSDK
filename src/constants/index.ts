@@ -30,7 +30,10 @@ export const LENS_HUB_PROXY_CONTRACT_MUMBAI: ZeroString =
  * @constant LENS_BASE_URL Base URL for the Lens V2 API.
  */
 export const LENS_BASE_URL: string = "https://api-v2.lens.dev";
-
+/**
+ * @constant INFURA_GATEWAY Base URL for the Infura Gateway.
+ */
+export const INFURA_GATEWAY: string = "https://thedial.infura-ipfs.io";
 /**
  * @constant IPFS_REGEX IPFS Regex Check.
  */

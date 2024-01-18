@@ -105,7 +105,7 @@ class Kinora {
    *
    * @param pubId - Lens Profile ID of the publication in the format `0x${string}`.
    * @returns An object containing various metrics: play count, average view duration (avd),
-   *          video duration, most replayed area (as a Map of time segments to count),
+   *          video duration, most replayed area (as a string list of top replayed segments),
    *          and total interactions count.
    * @throws Error if the Kinora Provider is not set in the root of the application.
    */
@@ -113,7 +113,7 @@ class Kinora {
     playCount: number;
     avd: number;
     duration: number;
-    // mostReplayedArea: Map<number, number>;
+    mostReplayedArea: string[];
     totalInteractions: number;
   } {
     if (!this.sequence)

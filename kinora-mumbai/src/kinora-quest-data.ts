@@ -443,6 +443,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
   entity.uri = questData.getQuestURI(entity.questId);
   entity.status = true;
 
+  let rewardHash = "";
   if (entity.uri !== null) {
     let hash = entity.uri;
 
@@ -453,6 +454,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       entity.questMetadata = hash;
       QuestMetadataTemplate.create(hash);
     }
+    rewardHash = hash;
   }
 
   let outerGate = new Gate(entity.uri.split("/").pop());
@@ -672,7 +674,7 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
     gated.contractAddress = event.address;
     gated.save();
 
-    milestone.gated = milestoneURI + milestoneId.toString();
+    milestone.gated = milestoneURI + milestoneId + event.address.toHexString();
     milestone.videoLength = questData.getMilestoneVideoLength(
       entity.questId,
       <BigInt>milestoneCounter,
@@ -852,7 +854,10 @@ export function handleQuestInstantiated(event: QuestInstantiatedEvent): void {
       let currentReward = new Reward(
         milestoneURI + j.toString() + event.address.toHexString(),
       );
-
+      currentReward.questId = entity.questId;
+      currentReward.questMetadata = rewardHash;
+      currentReward.questURI = entity.uri;
+      currentReward.milestone = milestone.milestoneId;
       currentReward.amount = questData.getMilestoneRewardTokenAmount(
         entity.questId,
         BigInt.fromI32(j),

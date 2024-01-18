@@ -71,11 +71,15 @@ export function handleQuestMetadata(content: Bytes): void {
       metadata.videoCovers = videoCovers
         .toArray()
         .filter(
-          (item) =>
+          item =>
             item.kind === JSONValueKind.STRING &&
-            !item.toString().includes("base64")
+            !item.toString().includes("base64"),
         )
-        .map<string>((item) => item.toString());
+        .map<string>(item => item.toString());
+    }
+    let prompt = value.get("prompt");
+    if (prompt && prompt.kind === JSONValueKind.STRING) {
+      metadata.prompt = prompt.toString();
     }
     // let tags = value.get("tags");
     // if (tags && tags.kind === JSONValueKind.STRING) {

@@ -186,9 +186,10 @@ export interface PlayerVideoActivity {
 }
 
 /**
- * Engagement interface for Metrics class.
+ * TimeRange interface for Metrics class.
  */
-export interface EngagementInfo {
-  viewCount: number;
-  totalWatchTime: number;
+export interface TimeRange {
+  start: number;
+  end: number;
+  views: number;
 }

@@ -1,4 +1,4 @@
-import { ZeroString, PlayerData } from "./@types/kinora-sdk";
+import { ZeroString, PlayerData, TimeRange } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import { ethers } from "ethers";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
@@ -7,6 +7,7 @@ import { Post, Comment, Quote } from "./@types/generated";
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import getPublication from "./graphql/queries/getPublication";
 import getPublications from "./graphql/queries/getPublications";
+import { fetchIPFS, hashToIPFS } from "./utils/ipfs";
 
 export class Sequence {
   /**
@@ -263,11 +264,10 @@ export class Sequence {
           ) *
           10 ** 18
         ).toString(),
-        mostReplayedArea: "",
-        // this.reconcileMostReplayedArea(
-        //   mostReplayedArea!,
-        //   this.metrics[postId]?.getMostReplayedArea()
-        // ),
+        mostReplayedArea: await this.reconcileMostReplayedArea(
+          mostReplayedArea! as `ipfs://${string}`,
+          this.metrics[postId]?.getMostReplayedArea(),
+        ),
         hasQuoted: (data?.publication as Post)?.operations?.hasQuoted,
         hasMirrored: (data?.publication as Post)?.operations.hasMirrored,
         hasCommented: commentData?.length > 0 ? true : false,
@@ -296,7 +296,7 @@ export class Sequence {
    *
    * @param postId - Lens Profile ID of the post in the format ZeroString.
    * @returns An object containing the play count, average view duration (avd),
-   *          total duration of the video, total interactions, and most replayed area of the video.
+   *          total duration of the video, total interactions, and most replayed areas of the video.
    *          Returns undefined metrics for non-existent postId.
    */
   getLivePlayerVideoMetrics = (
@@ -305,7 +305,7 @@ export class Sequence {
     playCount: number;
     avd: number;
     duration: number;
-    // mostReplayedArea: (Map<number, number>);
+    mostReplayedArea: string[];
     totalInteractions: number;
   } => {
     return {
@@ -313,7 +313,7 @@ export class Sequence {
       avd: this.metrics[postId]?.getAVD(),
       duration: this.metrics[postId]?.getTotalDuration(),
       totalInteractions: this.metrics[postId]?.getTotalInteractions(),
-      // mostReplayedArea: this.metrics[postId]?.getMostReplayedArea(),
+      mostReplayedArea: this.metrics[postId]?.getMostReplayedArea(),
     };
   };
 
@@ -448,37 +448,43 @@ export class Sequence {
   /**
    * Reconciles and calculates the most replayed area between previous and current video data.
    *
-   * @param previousArea - String representing the previous most replayed area.
-   * @param currentArea - String representing the current most replayed area.
-   * @returns A number representing the reconciled most replayed area, considering both previous and current data.
+   * @param previousArea - String representing the previous most replayed areas.
+   * @param currentArea - String representing the current most replayed areas.
+   * @returns An ipfshash of the reconciled areas.
    */
-  private reconcileMostReplayedArea = (
-    previousArea: string,
-    currentArea: string,
-  ): number => {
-    if (currentArea === "No replays") {
-      if (previousArea?.toString() == "0") {
-        return 0;
-      }
-      return Number(this.formatToNumber(previousArea).start);
+  private reconcileMostReplayedArea = async (
+    previousArea: `ipfs://${string}`,
+    currentArea: string[],
+  ): Promise<`ipfs://${string}` | void> => {
+    if (currentArea?.length < 1) {
+      return previousArea;
     }
 
-    if (previousArea == "No replays") {
-      return Number(this.formatToNumber(currentArea).start);
-    }
-
-    return this.formatToNumber(currentArea).start >
-      this.formatToNumber(previousArea).start
-      ? Number(
-          this.formatToNumber(currentArea).start.toString() +
-            "0000" +
-            this.formatToNumber(currentArea).end.toString(),
-        )
-      : Number(
-          this.formatToNumber(previousArea).start.toString() +
-            "0000" +
-            this.formatToNumber(previousArea).end.toString(),
+    try {
+      const previousAreaData = await fetchIPFS(previousArea);
+      if (previousAreaData?.error) {
+        throw new Error(
+          `Error reconciling most replayed areas: ${previousAreaData?.message}`,
         );
+      }
+      const previousAreas = await JSON.parse(previousAreaData?.data!);
+      const parsedCurrentAreas = currentArea.map(this.parseAreaString);
+      const parsedPreviousAreas = previousAreas.map(this.parseAreaString);
+      const reconciledAreas = this.reconcileAreas(
+        parsedPreviousAreas,
+        parsedCurrentAreas,
+      );
+      const reconciledAreasString = reconciledAreas.map(
+        (area) =>
+          `${this.formatTime(area.start)} - ${this.formatTime(
+            area.end,
+          )} | Views: ${area.views}`,
+      );
+
+      return (await hashToIPFS(JSON.stringify(reconciledAreasString)))?.cid!;
+    } catch (err: any) {
+      throw new Error(`Error reconciling most replayed areas: ${err.message}`);
+    }
   };
 
   /**
@@ -604,21 +610,52 @@ export class Sequence {
    * @param timeString - String representing a time range in the format "HH:MM:SS:MS".
    * @returns An object with 'start' and 'end' properties as numerical values derived from the time string.
    */
-  private formatToNumber(timeString: string) {
-    const [s, e] = timeString.split("-");
-    let start: number | undefined, end: number | undefined;
-    if (s) {
-      const [shh, smm, sss, sms] = s.split(":");
-      start = parseInt(`${shh}${smm}${sss}${sms}`);
-    }
-    if (e) {
-      const [ehh, emm, ess, ems] = e.split(":");
-      end = parseInt(`${ehh}${emm}${ess}${ems}`);
-    }
-
+  private parseAreaString(areaString: string): TimeRange {
+    const [range, viewsPart] = areaString.split(" | Views: ");
+    const [startString, endString] = range.split(" - ");
     return {
-      start: start ? start : "00000000",
-      end: end ? end : "00000000",
+      start: this.parseTime(startString),
+      end: this.parseTime(endString),
+      views: parseInt(viewsPart, 10),
     };
+  }
+
+  private parseTime(timeString: string): number {
+    const [hours, minutes, seconds] = timeString.split(":").map(Number);
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+
+  private reconcileAreas(
+    previousAreas: TimeRange[],
+    currentAreas: TimeRange[],
+  ): TimeRange[] {
+    const allAreas = [...previousAreas, ...currentAreas];
+    allAreas.sort((a, b) => a.start - b.start);
+
+    const mergedAreas = allAreas.reduce((acc: TimeRange[], area) => {
+      if (!acc.length) {
+        return [area];
+      }
+
+      let last = acc[acc.length - 1];
+      if (last.end >= area.start) {
+        last.end = Math.max(last.end, area.end);
+        last.views += area.views;
+      } else {
+        acc.push(area);
+      }
+
+      return acc;
+    }, []);
+
+    return mergedAreas;
+  }
+
+  private formatTime(seconds: number): string {
+    const date = new Date(seconds * 1000);
+    const hh = date.getUTCHours().toString().padStart(2, "0");
+    const mm = date.getUTCMinutes().toString().padStart(2, "0");
+    const ss = date.getUTCSeconds().toString().padStart(2, "0");
+    return `${hh}:${mm}:${ss}`;
   }
 }
