@@ -460,26 +460,34 @@ export class Sequence {
       return previousArea;
     }
 
+    let reconciledAreasString: string[] = [];
+
     try {
-      const previousAreaData = await fetchIPFS(previousArea);
-      if (previousAreaData?.error) {
-        throw new Error(
-          `Error reconciling most replayed areas: ${previousAreaData?.message}`,
+      if (previousArea?.includes("ipfs://")) {
+        const previousAreaData = await fetchIPFS(previousArea);
+        if (previousAreaData?.error) {
+          throw new Error(
+            `Error reconciling most replayed areas: ${previousAreaData?.message}`,
+          );
+        }
+        const previousAreas = await JSON.parse(previousAreaData?.data!);
+        const parsedPreviousAreas = previousAreas.map(this.parseAreaString);
+
+        const parsedCurrentAreas = currentArea.map(this.parseAreaString);
+
+        const reconciledAreas = this.reconcileAreas(
+          parsedPreviousAreas,
+          parsedCurrentAreas,
         );
+        reconciledAreasString = reconciledAreas.map(
+          (area) =>
+            `${this.formatTime(area.start)} - ${this.formatTime(
+              area.end,
+            )} | Views: ${area.views}`,
+        );
+      } else {
+        reconciledAreasString = currentArea;
       }
-      const previousAreas = await JSON.parse(previousAreaData?.data!);
-      const parsedCurrentAreas = currentArea.map(this.parseAreaString);
-      const parsedPreviousAreas = previousAreas.map(this.parseAreaString);
-      const reconciledAreas = this.reconcileAreas(
-        parsedPreviousAreas,
-        parsedCurrentAreas,
-      );
-      const reconciledAreasString = reconciledAreas.map(
-        (area) =>
-          `${this.formatTime(area.start)} - ${this.formatTime(
-            area.end,
-          )} | Views: ${area.views}`,
-      );
 
       return (await hashToIPFS(JSON.stringify(reconciledAreasString)))?.cid!;
     } catch (err: any) {
