@@ -943,6 +943,85 @@ export function handleQuestDeleted(event: QuestDeletedEvent): void {
   );
 
   if (quest) {
+    store.remove("QuestMetadata", quest.uri);
+    const gated = Gate.load(<string>quest.gate);
+    if (gated) {
+      let logic20: Array<string> | null = gated.erc20Logic;
+      if (<Array<string>>logic20 && (<Array<string>>logic20).length > 0) {
+        for (let h = 0; h < (<Array<string>>logic20).length; h++) {
+          store.remove("ERC20Logic", (<Array<string>>logic20)[h]);
+        }
+      }
+      let logic721: Array<string> | null = gated.erc721Logic;
+      if (<Array<string>>logic721 && (<Array<string>>logic721).length > 0) {
+        for (let h = 0; h < (<Array<string>>logic721).length; h++) {
+          store.remove("ERC721Logic", (<Array<string>>logic721)[h]);
+        }
+      }
+    }
+    store.remove("Gate", <string>quest.gate);
+    let allMilestones: Array<string> | null = quest.milestones;
+    if (allMilestones) {
+      for (let i = 0; i < quest.milestoneCount.toI32(); i++) {
+        let milestoneId: string | null = (<Array<string>>allMilestones)[i];
+        if (milestoneId) {
+          let milestone = Milestone.load(<string>milestoneId);
+
+          if (milestone) {
+            const gated = Gate.load(<string>milestone.gated);
+            if (gated) {
+              let logic20: Array<string> | null = gated.erc20Logic;
+              if (
+                <Array<string>>logic20 &&
+                (<Array<string>>logic20).length > 0
+              ) {
+                for (let h = 0; h < (<Array<string>>logic20).length; h++) {
+                  store.remove("ERC20Logic", (<Array<string>>logic20)[h]);
+                }
+              }
+              let logic721: Array<string> | null = gated.erc721Logic;
+              if (
+                <Array<string>>logic721 &&
+                (<Array<string>>logic721).length > 0
+              ) {
+                for (let h = 0; h < (<Array<string>>logic721).length; h++) {
+                  store.remove("ERC721Logic", (<Array<string>>logic721)[h]);
+                }
+              }
+            }
+            store.remove("Gate", <string>milestone.gated);
+            store.remove("QuestMetadata", <string>milestone.uri);
+
+            let rewards: Array<string> | null = milestone.rewards;
+            if (rewards) {
+              if (<BigInt | null>milestone.rewardsLength) {
+                for (
+                  let j = 0;
+                  j < (<BigInt>milestone.rewardsLength).toI32();
+                  j++
+                ) {
+                  store.remove("Reward", (<Array<string>>milestone.rewards)[j]);
+                }
+              }
+            }
+
+            let videos: Array<string> | null = milestone.videos;
+            if (videos) {
+              if (<BigInt | null>milestone.videoLength) {
+                for (
+                  let j = 0;
+                  j < (<BigInt>milestone.videoLength).toI32();
+                  j++
+                ) {
+                  store.remove("Video", (<Array<string>>milestone.videos)[j]);
+                }
+              }
+            }
+          }
+          store.remove("Milestone", milestoneId);
+        }
+      }
+    }
     store.remove(
       "QuestInstantiated",
       event.params.questId.toString() + event.address.toHexString(),

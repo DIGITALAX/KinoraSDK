@@ -757,7 +757,7 @@ export class Envoker {
 
       await hidePost(
         {
-          for: `${toHex(values[0])}-${toHex(values[1])}`,
+          for: `${toHex(Number(values[0]))}-${toHex(Number(values[1]))}`,
         },
         this.questEnvokerAuthedApolloClient,
       );
