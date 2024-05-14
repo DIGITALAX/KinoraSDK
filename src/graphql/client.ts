@@ -18,7 +18,7 @@ export const lensClient = new ApolloClient({
 
 export const graphKinoraClient = new ApolloClient({
   link: new HttpLink({
-    uri: "https://api.thegraph.com/subgraphs/name/digitalax/kinora",
+    uri: `https://gateway-arbitrum.network.thegraph.com/api/fccb8b250383c0907a29feff76d21745/subgraphs/id/DKi4s9USksFKEobZaofL3QAST4SQGhuEtsBJcBY4Dn8`,
   }),
   cache: new InMemoryCache(),
 });
