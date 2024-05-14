@@ -1,0 +1,38 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: KinoraOpenAction
+    network: matic
+    source:
+      address: "0x196f267A4aCA1243CCCB85AD7098D1fDA1D683CD"
+      abi: KinoraOpenAction
+      startBlock: 52374675
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - NewFactoryDeployment
+        - PlayerCompletedMilestone
+        - PlayerCompletedQuest
+        - PlayerJoinedQuest
+        - QuestInitialized
+      abis:
+        - name: KinoraOpenAction
+          file: ./abis/KinoraOpenAction.json
+      eventHandlers:
+        - event: NewFactoryDeployment(address,address,address,address,address)
+          handler: handleNewFactoryDeployment
+        - event: PlayerCompletedMilestone(uint256,uint256,address)
+          handler: handlePlayerCompletedMilestone
+        - event: PlayerCompletedQuest(uint256,uint256,uint256,address)
+          handler: handlePlayerCompletedQuest
+        - event: PlayerJoinedQuest(uint256,uint256)
+          handler: handlePlayerJoinedQuest
+        - event: QuestInitialized(uint256,uint256,uint256,address)
+          handler: handleQuestInitialized
+      file: ./src/kinora-open-action.ts

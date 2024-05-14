@@ -1,0 +1,52 @@
+type NewFactoryDeployment @entity(immutable: true) {
+  id: Bytes!
+  kac: Bytes! # address
+  ke: Bytes! # address
+  kqd: Bytes! # address
+  km: Bytes! # address
+  knc: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type PlayerCompletedMilestone @entity(immutable: true) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  milestoneId: BigInt! # uint256
+  playerAddress: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type PlayerCompletedQuest @entity(immutable: true) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  pubId: BigInt! # uint256
+  profileId: BigInt! # uint256
+  envokerAddress: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type PlayerJoinedQuest @entity(immutable: true) {
+  id: Bytes!
+  playerProfileId: BigInt! # uint256
+  questId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type QuestInitialized @entity(immutable: true) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  pubId: BigInt! # uint256
+  profileId: BigInt! # uint256
+  envokerAddress: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
