@@ -1,0 +1,1502 @@
+[
+  {
+    "type": "function",
+    "name": "completeMilestone",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "configureNewQuest",
+    "inputs": [
+      {
+        "name": "params",
+        "type": "tuple",
+        "internalType": "struct KinoraLibrary.NewQuestParams",
+        "components": [
+          {
+            "name": "gateLogic",
+            "type": "tuple",
+            "internalType": "struct KinoraLibrary.GatingLogic",
+            "components": [
+              {
+                "name": "erc721TokenURIs",
+                "type": "string[][]",
+                "internalType": "string[][]"
+              },
+              {
+                "name": "erc721TokenIds",
+                "type": "uint256[][]",
+                "internalType": "uint256[][]"
+              },
+              {
+                "name": "erc721Addresses",
+                "type": "address[]",
+                "internalType": "address[]"
+              },
+              {
+                "name": "erc20Addresses",
+                "type": "address[]",
+                "internalType": "address[]"
+              },
+              {
+                "name": "erc20Thresholds",
+                "type": "uint256[]",
+                "internalType": "uint256[]"
+              },
+              { "name": "oneOf", "type": "bool", "internalType": "bool" }
+            ]
+          },
+          {
+            "name": "milestones",
+            "type": "tuple[]",
+            "internalType": "struct KinoraLibrary.MilestoneParameter[]",
+            "components": [
+              {
+                "name": "gated",
+                "type": "tuple",
+                "internalType": "struct KinoraLibrary.GatingLogic",
+                "components": [
+                  {
+                    "name": "erc721TokenURIs",
+                    "type": "string[][]",
+                    "internalType": "string[][]"
+                  },
+                  {
+                    "name": "erc721TokenIds",
+                    "type": "uint256[][]",
+                    "internalType": "uint256[][]"
+                  },
+                  {
+                    "name": "erc721Addresses",
+                    "type": "address[]",
+                    "internalType": "address[]"
+                  },
+                  {
+                    "name": "erc20Addresses",
+                    "type": "address[]",
+                    "internalType": "address[]"
+                  },
+                  {
+                    "name": "erc20Thresholds",
+                    "type": "uint256[]",
+                    "internalType": "uint256[]"
+                  },
+                  { "name": "oneOf", "type": "bool", "internalType": "bool" }
+                ]
+              },
+              {
+                "name": "rewards",
+                "type": "tuple[]",
+                "internalType": "struct KinoraLibrary.Reward[]",
+                "components": [
+                  {
+                    "name": "rewardType",
+                    "type": "uint8",
+                    "internalType": "enum KinoraLibrary.RewardType"
+                  },
+                  { "name": "uri", "type": "string", "internalType": "string" },
+                  {
+                    "name": "tokenAddress",
+                    "type": "address",
+                    "internalType": "address"
+                  },
+                  {
+                    "name": "amount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  }
+                ]
+              },
+              {
+                "name": "videos",
+                "type": "tuple[]",
+                "internalType": "struct KinoraLibrary.Video[]",
+                "components": [
+                  {
+                    "name": "factoryIds",
+                    "type": "uint256[]",
+                    "internalType": "uint256[]"
+                  },
+                  {
+                    "name": "playerId",
+                    "type": "string",
+                    "internalType": "string"
+                  },
+                  {
+                    "name": "postId",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minPlayCount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minAVD",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minDuration",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minSecondaryQuoteOnQuote",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minSecondaryMirrorOnQuote",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minSecondaryReactOnQuote",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minSecondaryCommentOnQuote",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minSecondaryCollectOnQuote",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minSecondaryQuoteOnComment",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minSecondaryMirrorOnComment",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minSecondaryReactOnComment",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minSecondaryCommentOnComment",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "minSecondaryCollectOnComment",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  { "name": "quote", "type": "bool", "internalType": "bool" },
+                  { "name": "mirror", "type": "bool", "internalType": "bool" },
+                  { "name": "comment", "type": "bool", "internalType": "bool" },
+                  {
+                    "name": "bookmark",
+                    "type": "bool",
+                    "internalType": "bool"
+                  },
+                  { "name": "react", "type": "bool", "internalType": "bool" }
+                ]
+              },
+              { "name": "uri", "type": "string", "internalType": "string" },
+              {
+                "name": "milestone",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          { "name": "uri", "type": "string", "internalType": "string" },
+          {
+            "name": "envokerAddress",
+            "type": "address",
+            "internalType": "address"
+          },
+          { "name": "postId", "type": "uint256", "internalType": "uint256" },
+          {
+            "name": "maxPlayerCount",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "deleteQuest",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getAddressToProfile",
+    "inputs": [
+      { "name": "playerAddress", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getLensDataFromQuestId",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneCount",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneGatedERC20Addresses",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "address[]", "internalType": "address[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneGatedERC20Thresholds",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneGatedERC721Addresses",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "address[]", "internalType": "address[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneGatedERC721TokenIds",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "uint256[][]", "internalType": "uint256[][]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneGatedERC721TokenURIs",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "string[][]", "internalType": "string[][]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneGatedOneOf",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneRewardTokenAddress",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "rewardIndex", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneRewardTokenAmount",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "rewardIndex", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneRewardType",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "rewardIndex", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "enum KinoraLibrary.RewardType"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneRewardURI",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "rewardIndex", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "string", "internalType": "string" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneRewardsLength",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneURI",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "string", "internalType": "string" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoBookmark",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoComment",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoFactoryIds",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoLength",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinAVD",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinDuration",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinPlayCount",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinSecondaryCollectOnComment",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinSecondaryCollectOnQuote",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinSecondaryCommentOnComment",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinSecondaryCommentOnQuote",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinSecondaryMirrorOnComment",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinSecondaryMirrorOnQuote",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinSecondaryQuoteOnComment",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinSecondaryQuoteOnQuote",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinSecondaryReactOnComment",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMinSecondaryReactOnQuote",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoMirror",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoQuote",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideoReact",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMilestoneVideos",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerActiveSince",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerAddress",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerEligibleToClaimMilestone",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerHasJoinedQuest",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerMilestonesCompletedPerQuest",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerQuestsCompleted",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [
+      { "name": "", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerQuestsJoined",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [
+      { "name": "", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoAVD",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoBookmark",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoComment",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoDuration",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoIds",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [
+      { "name": "", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoMirror",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoMostReplayedArea",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "string", "internalType": "string" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoPlayCount",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoQuote",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoReact",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoSecondaryCollectOnComment",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoSecondaryCollectOnQuote",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoSecondaryCommentOnComment",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoSecondaryCommentOnQuote",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoSecondaryMirrorOnComment",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoSecondaryMirrorOnQuote",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoSecondaryQuoteOnComment",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoSecondaryQuoteOnQuote",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoSecondaryReactOnComment",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPlayerVideoSecondaryReactOnQuote",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "videoPostId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestEnvoker",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestGatedERC20Addresses",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "address[]", "internalType": "address[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestGatedERC20Thresholds",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestGatedERC721Addresses",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "address[]", "internalType": "address[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestGatedERC721TokenIds",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "uint256[][]", "internalType": "uint256[][]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestGatedERC721TokenURIs",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "string[][]", "internalType": "string[][]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestGatedOneOf",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestIdFromLensData",
+    "inputs": [
+      { "name": "postId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestIdsToVideoPlaybackId",
+    "inputs": [
+      { "name": "playbackId", "type": "string", "internalType": "string" }
+    ],
+    "outputs": [
+      { "name": "", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestMaxPlayerCount",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestPlayers",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "address[]", "internalType": "address[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestPostId",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestStatus",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "enum KinoraLibrary.Status"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuestURI",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "string", "internalType": "string" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTotalPlayerCount",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTotalQuestCount",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVideoPlaybackId",
+    "inputs": [
+      { "name": "postId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "string", "internalType": "string" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVideoPostIdFromPlaybackId",
+    "inputs": [
+      { "name": "playbackId", "type": "string", "internalType": "string" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "initialize",
+    "inputs": [
+      {
+        "name": "kinoraAccessAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "kinoraOpenActionAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "joinQuest",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "playerAddress", "type": "address", "internalType": "address" },
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "kinoraAccess",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract KinoraAccessControl"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "kinoraEscrow",
+    "inputs": [],
+    "outputs": [
+      { "name": "", "type": "address", "internalType": "contract KinoraEscrow" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "kinoraMetrics",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract KinoraMetrics"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "kinoraOpenAction",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "name",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "string", "internalType": "string" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "playerEligibleToClaim",
+    "inputs": [
+      { "name": "playerProfile", "type": "address", "internalType": "address" },
+      { "name": "questId", "type": "uint256", "internalType": "uint256" },
+      { "name": "milestone", "type": "uint256", "internalType": "uint256" },
+      { "name": "eligible", "type": "bool", "internalType": "bool" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setKinoraAccessContract",
+    "inputs": [
+      {
+        "name": "newAccessContract",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setKinoraEscrowContract",
+    "inputs": [
+      {
+        "name": "newEscrowContract",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setKinoraMetricsContract",
+    "inputs": [
+      {
+        "name": "newMetricsContract",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setKinoraOpenActionContract",
+    "inputs": [
+      {
+        "name": "newOpenActionContract",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "symbol",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "string", "internalType": "string" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "updatePlayerMetrics",
+    "inputs": [
+      {
+        "name": "metrics",
+        "type": "tuple",
+        "internalType": "struct KinoraLibrary.PlayerVideoMetrics",
+        "components": [
+          {
+            "name": "mostReplayedArea",
+            "type": "string",
+            "internalType": "string"
+          },
+          { "name": "postId", "type": "uint256", "internalType": "uint256" },
+          { "name": "playCount", "type": "uint256", "internalType": "uint256" },
+          {
+            "name": "secondaryQuoteOnQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "secondaryMirrorOnQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "secondaryReactOnQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "secondaryCommentOnQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "secondaryCollectOnQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "secondaryQuoteOnComment",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "secondaryMirrorOnComment",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "secondaryReactOnComment",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "secondaryCommentOnComment",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "secondaryCollectOnComment",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          { "name": "avd", "type": "uint256", "internalType": "uint256" },
+          { "name": "duration", "type": "uint256", "internalType": "uint256" },
+          { "name": "hasQuoted", "type": "bool", "internalType": "bool" },
+          { "name": "hasMirrored", "type": "bool", "internalType": "bool" },
+          { "name": "hasCommented", "type": "bool", "internalType": "bool" },
+          { "name": "hasBookmarked", "type": "bool", "internalType": "bool" },
+          { "name": "hasReacted", "type": "bool", "internalType": "bool" }
+        ]
+      },
+      { "name": "playerProfile", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "updateQuestStatus",
+    "inputs": [
+      { "name": "questId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "MilestoneCompleted",
+    "inputs": [
+      {
+        "name": "playerProfile",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "questId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "milestone",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PlayerEligibleToClaimMilestone",
+    "inputs": [
+      {
+        "name": "playerProfile",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "questId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "milestone",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "eligibility",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PlayerJoinedQuest",
+    "inputs": [
+      {
+        "name": "playerProfile",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "questId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PlayerMetricsUpdated",
+    "inputs": [
+      {
+        "name": "playerProfile",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "videoPostId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "QuestCompleted",
+    "inputs": [
+      {
+        "name": "playerProfile",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "questId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "QuestDeleted",
+    "inputs": [
+      {
+        "name": "questId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "QuestInstantiated",
+    "inputs": [
+      {
+        "name": "questId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "milestoneCount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "QuestStatusUpdated",
+    "inputs": [
+      {
+        "name": "questId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "status",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum KinoraLibrary.Status"
+      }
+    ],
+    "anonymous": false
+  },
+  { "type": "error", "name": "AlreadyInitialized", "inputs": [] },
+  { "type": "error", "name": "InvalidAddress", "inputs": [] },
+  { "type": "error", "name": "InvalidContract", "inputs": [] },
+  { "type": "error", "name": "PlayerNotEligible", "inputs": [] }
+]

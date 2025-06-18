@@ -1,0 +1,16 @@
+dist
+artifacts
+cache
+typechain-types
+coverage
+coverage.json
+typechain
+
+*.env
+*/lib
+*/zkout
+*/generated
+*/build
+*/node_modules
+node_modules
+*/scripts

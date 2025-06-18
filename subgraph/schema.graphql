@@ -1,0 +1,247 @@
+type NewFactoryDeployment @entity(immutable: true) {
+  id: Bytes!
+  kac: Bytes! # address
+  ke: Bytes! # address
+  kqd: Bytes! # address
+  km: Bytes! # address
+  knc: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type MilestoneCompleted @entity(immutable: false) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  playerProfile: Bytes! # uint256
+  milestone: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+  contractAddress: Bytes
+}
+
+type QuestCompleted @entity(immutable: false) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  playerProfile: Bytes! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+  contractAddress: Bytes
+}
+
+type PlayerEligibleToClaimMilestone @entity(immutable: false) {
+  id: Bytes!
+  playerProfile: Bytes! # uint256
+  questId: BigInt! # uint256
+  milestone: BigInt! # uint256
+  eligibility: Boolean! # bool
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+  contractAddress: Bytes
+}
+
+type PlayerJoinedQuest @entity(immutable: false) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  playerProfile: Bytes! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+  contractAddress: Bytes
+}
+
+type PlayerMetricsUpdated @entity(immutable: false) {
+  id: Bytes!
+  playerProfile: Bytes! # uint256
+  videoPostId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+  contractAddress: Bytes
+}
+
+type QuestInstantiated @entity(immutable: false) {
+  id: String!
+  questId: BigInt! # uint256
+  milestoneCount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+  questMetadata: QuestMetadata
+  uri: String!
+  milestones: [Milestone!]
+  gate: Gate
+  players: [Player!]
+  status: Boolean!
+  postId: BigInt
+  envoker: Bytes!
+  maxPlayerCount: BigInt
+  contractAddress: Bytes
+}
+
+type QuestStatusUpdated @entity(immutable: false) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  status: Int! # uint8
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type QuestMetadata @entity(immutable: false) {
+  id: ID!
+  cover: String
+  title: String
+  description: String
+  mediaCover: String
+  video: String
+  audio: String
+  images: [String!]
+  mediaType: String
+  videoCovers: [String!]
+  prompt: String
+}
+
+type Milestone @entity(immutable: false) {
+  id: ID!
+  gated: Gate
+  rewards: [Reward!]
+  videos: [Video!]
+  milestoneMetadata: QuestMetadata
+  uri: String
+  milestoneId: BigInt
+  videoLength: BigInt
+  rewardsLength: BigInt
+  questId: BigInt
+  contractAddress: Bytes
+}
+
+type Video @entity(immutable: false) {
+  id: ID!
+  playerId: String
+  postId: BigInt
+  questId: BigInt
+  minPlayCount: BigInt
+  minSecondaryQuoteOnQuote: BigInt
+  minSecondaryMirrorOnQuote: BigInt
+  minSecondaryReactOnQuote: BigInt
+  minSecondaryCommentOnQuote: BigInt
+  minSecondaryCollectOnQuote: BigInt
+  minSecondaryQuoteOnComment: BigInt
+  minSecondaryMirrorOnComment: BigInt
+  minSecondaryReactOnComment: BigInt
+  minSecondaryCommentOnComment: BigInt
+  minSecondaryCollectOnComment: BigInt
+  minAVD: BigInt
+  minDuration: BigInt
+  quote: Boolean
+  mirror: Boolean
+  comment: Boolean
+  bookmark: Boolean
+  react: Boolean
+  contractAddress: Bytes
+  factoryIds: [BigInt!]
+}
+
+type Reward @entity(immutable: false) {
+  id: ID!
+  type: BigInt
+  uri: String
+  tokenAddress: Bytes
+  amount: BigInt
+  rewardMetadata: QuestMetadata
+  contractAddress: Bytes
+  questId: BigInt
+  milestone: BigInt
+  postId: BigInt
+  questMetadata: QuestMetadata
+  questURI: String
+}
+
+type Gate @entity(immutable: false) {
+  id: ID!
+  erc20Logic: [ERC20Logic!]
+  erc721Logic: [ERC721Logic!]
+  oneOf: Boolean
+  contractAddress: Bytes
+}
+
+type ERC20Logic @entity(immutable: false) {
+  id: ID!
+  address: Bytes
+  amount: BigInt
+  contractAddress: Bytes
+}
+
+type ERC721Logic @entity(immutable: false) {
+  id: ID!
+  address: Bytes
+  uris: [String!]
+  tokenIds: [BigInt!]
+  contractAddress: Bytes
+}
+
+type Player @entity(immutable: false) {
+  id: ID!
+  playerProfile: Bytes!
+  questsJoined: [BigInt!]
+  questsCompleted: [BigInt!]
+  milestonesCompleted: [CompletionActivity!]
+  videos: [VideoActivity!]
+  eligibile: [Eligible!]
+  contractAddress: Bytes
+}
+
+type CompletionActivity @entity(immutable: false) {
+  id: ID!
+  questId: BigInt
+  milestonesCompleted: BigInt
+  contractAddress: Bytes
+}
+
+type VideoActivity @entity(immutable: false) {
+  id: ID!
+  postId: BigInt
+  playerProfile: Bytes
+  playCount: BigInt
+  playerId: String
+  secondaryQuoteOnQuote: BigInt
+  secondaryMirrorOnQuote: BigInt
+  secondaryReactOnQuote: BigInt
+  secondaryCommentOnQuote: BigInt
+  secondaryCollectOnQuote: BigInt
+  secondaryQuoteOnComment: BigInt
+  secondaryMirrorOnComment: BigInt
+  secondaryReactOnComment: BigInt
+  secondaryCommentOnComment: BigInt
+  secondaryCollectOnComment: BigInt
+  avd: BigInt
+  duration: BigInt
+  mostReplayedArea: String
+  hasQuoted: Boolean
+  hasMirrored: Boolean
+  hasCommented: Boolean
+  hasBookmarked: Boolean
+  hasReacted: Boolean
+  contractAddress: Bytes
+}
+
+type Eligible @entity(immutable: false) {
+  id: ID!
+  questId: BigInt
+  milestone: BigInt
+  status: Boolean
+  contractAddress: Bytes
+}
+
+type QuestDeleted @entity(immutable: false) {
+  id: Bytes!
+  questId: BigInt! # uint256
+  contractAddress: Bytes
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

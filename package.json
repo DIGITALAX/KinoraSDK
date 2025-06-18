@@ -1,0 +1,72 @@
+{
+  "name": "kinora-sdk",
+  "version": "2.0.0",
+  "description": "An open source typescript SDK that combines automated on-chain Livepeer videometric logging with decentralized social quests on Lens Protocol.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "node --trace-deprecation node_modules/.bin/webpack && tsc",
+    "start": "node dist/index.js",
+    "test": "npx hardhat test"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {
+    "@ethersproject/abi": "^5.7.0",
+    "@ethersproject/providers": "^5.7.2",
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.4",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.6",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.3",
+    "@nomiclabs/hardhat-ethers": "^2.2.1",
+    "@nomiclabs/hardhat-waffle": "^2.0.6",
+    "@openzeppelin/contracts": "^4.8.0",
+    "@testing-library/react": "^14.0.0",
+    "@types/bs58": "^4.0.1",
+    "@types/chai": "^4.3.6",
+    "@types/crypto-js": "^4.1.2",
+    "@types/dotenv-webpack": "^7.0.7",
+    "@types/express": "^4.17.17",
+    "@types/lodash": "^4.14.202",
+    "@types/node": "^20",
+    "@types/uuid": "^9.0.6",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.13.8",
+    "@lens-protocol/client": "^0.0.0-canary-20250618120637",
+    "@lens-protocol/metadata": "^2.1.0",
+    "@typechain/hardhat": "^6.1.4",
+    "axios": "^1.6.3",
+    "browserify-zlib": "^0.2.0",
+    "bs58": "^5.0.0",
+    "chai": "^4.3.8",
+    "clean-webpack-plugin": "^4.0.0",
+    "crypto-browserify": "^3.12.0",
+    "crypto-js": "^4.1.1",
+    "dotenv": "^16.3.1",
+    "dotenv-webpack": "^8.0.1",
+    "ethers": "^5.7.2",
+    "graphql": "^16.8.1",
+    "hardhat": "^2.17.2",
+    "hardhat-gas-reporter": "^1.0.9",
+    "https-browserify": "^1.0.0",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
+    "terser-webpack-plugin": "^5.3.9",
+    "ts-node": "^10.9.1",
+    "tty-browserify": "^0.0.1",
+    "typechain": "^8.1.1",
+    "uuid": "^9.0.1",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
+  },
+  "peerDependencies": {
+    "@types/react": "^18.2.23",
+    "react": "^18.2.0"
+  }
+}

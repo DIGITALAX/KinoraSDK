@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "jsx": "react-jsx",
+    "target": "es6",
+    "esModuleInterop": true,
+    "removeComments": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": false,
+    "baseUrl": "./",
+    "declaration": true,
+    "outDir": "./dist",
+    "diagnostics": true,
+    "incremental": true,
+    "resolveJsonModule": true,
+    "strict": true,
+    "paths": {
+      "react": ["./node_modules/react"],
+      "react-dom": ["./node_modules/react-dom"],
+      "*": ["src/@types/*"],
+      "kinora-sdk/*": ["./node_modules/kinora-sdk/dist/*"]
+    },
+    "typeRoots": ["./src/@types", "./node_modules/@types"],
+    "types": ["node"],
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node"
+  },
+  "files": ["src/index.ts"],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "./hardhat.config.ts", "./test/**/*.ts"]
+}

@@ -1,0 +1,71 @@
+specVersion: 1.2.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: KinoraOpenAction
+    network: lens
+    source:
+      address: "0x0Dc9Fb58651A51c3253350008cFF4D8878ca3761"
+      abi: KinoraOpenAction
+      startBlock: 2534082
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - NewFactoryDeployment
+      abis:
+        - name: KinoraOpenAction
+          file: ./abis/KinoraOpenAction.json
+      eventHandlers:
+        - event: NewFactoryDeployment(address,address,address,address,address)
+          handler: handleNewFactoryDeployment
+      file: ./src/kinora-open-action.ts
+templates:
+  - name: KinoraQuestData
+    kind: ethereum/contract
+    network: lens
+    source:
+      abi: KinoraQuestData
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/kinora-quest-data.ts
+      entities:
+        - KinoraQuestData
+      abis:
+        - name: KinoraQuestData
+          file: ./abis/KinoraQuestData.json
+      eventHandlers:
+        - event: MilestoneCompleted(address,uint256,uint256)
+          handler: handleMilestoneCompleted
+        - event: PlayerEligibleToClaimMilestone(address,uint256,uint256,bool)
+          handler: handlePlayerEligibleToClaimMilestone
+        - event: PlayerJoinedQuest(address,uint256)
+          handler: handlePlayerJoinedQuest
+        - event: PlayerMetricsUpdated(address,uint256)
+          handler: handlePlayerMetricsUpdated
+        - event: QuestInstantiated(uint256,uint256)
+          handler: handleQuestInstantiated
+        - event: QuestStatusUpdated(uint256,uint8)
+          handler: handleQuestStatusUpdated
+        - event: QuestCompleted(address,uint256)
+          handler: handleQuestCompleted
+        - event: QuestDeleted(uint256)
+          handler: handleQuestDeleted
+  - name: QuestMetadata
+    kind: file/ipfs
+    mapping:
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/ds-handlers.ts
+      handler: handleQuestMetadata
+      entities:
+        - QuestMetadata
+      abis:
+        - name: KinoraQuestData
+          file: ./abis/KinoraQuestData.json

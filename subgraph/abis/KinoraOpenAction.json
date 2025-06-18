@@ -1,0 +1,326 @@
+[
+  {
+    "inputs": [
+      { "internalType": "address", "name": "actionHub", "type": "address" },
+      { "internalType": "address", "name": "kinoraEscrow", "type": "address" },
+      {
+        "internalType": "address",
+        "name": "kinoraQuestData",
+        "type": "address"
+      },
+      { "internalType": "address", "name": "kinoraAccess", "type": "address" },
+      { "internalType": "address", "name": "kinoraMetrics", "type": "address" },
+      {
+        "internalType": "address",
+        "name": "kinoraNFTCreator",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kinoraMilestoneCheckLogic",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  { "inputs": [], "name": "FailedDeployment", "type": "error" },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "balance", "type": "uint256" },
+      { "internalType": "uint256", "name": "needed", "type": "uint256" }
+    ],
+    "name": "InsufficientBalance",
+    "type": "error"
+  },
+  { "inputs": [], "name": "InvalidAddress", "type": "error" },
+  { "inputs": [], "name": "InvalidContract", "type": "error" },
+  { "inputs": [], "name": "InvalidMsgSender", "type": "error" },
+  { "inputs": [], "name": "InvalidRewardAmount", "type": "error" },
+  { "inputs": [], "name": "KeyNotFound", "type": "error" },
+  { "inputs": [], "name": "MaxPlayerCountReached", "type": "error" },
+  { "inputs": [], "name": "PlayerNotEligible", "type": "error" },
+  { "inputs": [], "name": "QuestClosed", "type": "error" },
+  { "inputs": [], "name": "QuestDoesntExist", "type": "error" },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "kac",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "ke",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "kqd",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "km",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "knc",
+        "type": "address"
+      }
+    ],
+    "name": "NewFactoryDeployment",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "playerAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "milestoneId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PlayerCompletedMilestone",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "envokerAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "postId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PlayerCompletedQuest",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "playerProfile",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PlayerJoinedQuest",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "envokerAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "postId",
+        "type": "uint256"
+      }
+    ],
+    "name": "QuestInitialized",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "originalMsgSender",
+        "type": "address"
+      },
+      { "internalType": "address", "name": "feed", "type": "address" },
+      { "internalType": "uint256", "name": "postId", "type": "uint256" },
+      {
+        "components": [
+          { "internalType": "bytes32", "name": "key", "type": "bytes32" },
+          { "internalType": "bytes", "name": "value", "type": "bytes" }
+        ],
+        "internalType": "struct KeyValue[]",
+        "name": "params",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "configure",
+    "outputs": [{ "internalType": "bytes", "name": "", "type": "bytes" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "originalMsgSender",
+        "type": "address"
+      },
+      { "internalType": "address", "name": "feed", "type": "address" },
+      { "internalType": "uint256", "name": "postId", "type": "uint256" },
+      {
+        "components": [
+          { "internalType": "bytes32", "name": "key", "type": "bytes32" },
+          { "internalType": "bytes", "name": "value", "type": "bytes" }
+        ],
+        "internalType": "struct KeyValue[]",
+        "name": "params",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "execute",
+    "outputs": [{ "internalType": "bytes", "name": "", "type": "bytes" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "postId", "type": "uint256" }
+    ],
+    "name": "getContractFactoryId",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "factoryId", "type": "uint256" }
+    ],
+    "name": "getContractFactoryMap",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getKinoraMilestoneCheckLogicAddress",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "factoryId", "type": "uint256" },
+      { "internalType": "uint256", "name": "postId", "type": "uint256" }
+    ],
+    "name": "getQuestId",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTotalContractFactoryCount",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraAccessControlI",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraEscrowI",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraMetricsI",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraNFTCreatorI",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "kinoraQuestDataI",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "originalMsgSender",
+        "type": "address"
+      },
+      { "internalType": "address", "name": "feed", "type": "address" },
+      { "internalType": "uint256", "name": "postId", "type": "uint256" },
+      { "internalType": "bool", "name": "isDisabled", "type": "bool" },
+      {
+        "components": [
+          { "internalType": "bytes32", "name": "key", "type": "bytes32" },
+          { "internalType": "bytes", "name": "value", "type": "bytes" }
+        ],
+        "internalType": "struct KeyValue[]",
+        "name": "params",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "setDisabled",
+    "outputs": [{ "internalType": "bytes", "name": "", "type": "bytes" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
