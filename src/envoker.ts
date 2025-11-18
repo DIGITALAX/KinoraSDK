@@ -17,6 +17,7 @@ import {
   GatingLogic,
   Milestone,
   RewardType,
+  IPFSConfig,
 } from "./@types/kinora-sdk";
 import { hashToIPFS } from "./utils/ipfs";
 import getPublications from "./graphql/queries/getPublications";
@@ -79,11 +80,19 @@ export class Envoker {
   private wallet: ethers.Wallet | undefined;
 
   /**
+   * @private
+   * @type {IPFSConfig}
+   * @description IPFS configuration for upload and gateway endpoints.
+   */
+  private ipfsConfig: IPFSConfig;
+
+  /**
    * Constructs an instance of the enclosing class, initializing necessary properties
    * and contracts based on the provided arguments.
    *
    * @param args - An object encompassing the necessary parameters for constructor invocation.
    * @param args.authedApolloClient - An authenticated Apollo client for interacting with the GraphQL API with Lens Protocol.
+   * @param args.ipfsConfig - IPFS configuration with upload endpoint, gateway, and optional headers.
    * @param args.envokerLensAddress - (Optional) The envoker's Lens Profile Account Address.
    * @param args.wallet - (Optional) A ethers wallet instance for authorizing transactions.
    * @param args.kinoraEscrowContract - (Optional) Your Kinora Escrow Contract instance if you are not instantiating a new set of quest contracts.
@@ -91,12 +100,14 @@ export class Envoker {
    */
   constructor(args: {
     authedApolloClient: ApolloClient<NormalizedCacheObject>;
+    ipfsConfig: IPFSConfig;
     envokerLensAddress?: ZeroString;
     wallet?: ethers.Wallet;
     kinoraEscrowContract?: ZeroString;
     kinoraMetricsContract?: ZeroString;
   }) {
     this.questEnvokerAuthedApolloClient = args.authedApolloClient;
+    this.ipfsConfig = args.ipfsConfig;
     if (args.wallet) {
       this.wallet = args.wallet;
       if (args.kinoraEscrowContract) {
@@ -287,7 +298,7 @@ export class Envoker {
       },
     };
 
-    const hashedDetails = await hashToIPFS(JSON.stringify(data));
+    const hashedDetails = await hashToIPFS(JSON.stringify(data), this.ipfsConfig);
 
     if (hashedDetails.error) {
       throw new Error(`Error hashing content: ${hashedDetails.message}`);
@@ -425,6 +436,7 @@ export class Envoker {
                     cover: milestone?.details?.cover,
                     videoCovers: milestone?.details?.videoInfo,
                   }),
+                  this.ipfsConfig
                 )
               ).cid,
               milestone: milestone.milestone,
@@ -508,7 +520,7 @@ export class Envoker {
                 erc20Thresholds: args.joinQuestTokenGatedLogic.erc20Thresholds,
                 oneOf: args.joinQuestTokenGatedLogic.oneOf,
               },
-              uri: (await hashToIPFS(JSON.stringify(args.questDetails))).cid,
+              uri: (await hashToIPFS(JSON.stringify(args.questDetails), this.ipfsConfig)).cid,
               maxPlayerCount: args.maxPlayerCount,
             },
             args.factoryId,

@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { PlayerVideoActivity, ZeroString } from "./@types/kinora-sdk";
+import { PlayerVideoActivity, ZeroString, IPFSConfig } from "./@types/kinora-sdk";
 import { Sequence } from "./sequence";
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import KinoraQuestDataAbi from "./abis/KinoraQuestData.json";
@@ -28,20 +28,24 @@ class Kinora {
    */
   private constructor(
     playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>,
+    ipfsConfig: IPFSConfig
   ) {
-    this.sequence = new Sequence(playerAuthedApolloClient);
+    this.sequence = new Sequence(playerAuthedApolloClient, ipfsConfig);
   }
 
   /**
    * Provides access to the singleton instance of Kinora, creating it if necessary.
    *
+   * @param playerAuthedApolloClient - Authenticated Apollo client for player interactions.
+   * @param ipfsConfig - IPFS configuration with upload endpoint, gateway, and optional headers.
    * @returns The singleton instance of Kinora.
    */
   static getInstance(
     playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>,
+    ipfsConfig: IPFSConfig
   ): Kinora {
     if (!Kinora.instance) {
-      Kinora.instance = new Kinora(playerAuthedApolloClient);
+      Kinora.instance = new Kinora(playerAuthedApolloClient, ipfsConfig);
     }
     return Kinora.instance;
   }

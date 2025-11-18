@@ -170,3 +170,12 @@ export interface TimeRange {
   end: number;
   views: number;
 }
+
+/**
+ * IPFS configuration for upload and gateway endpoints.
+ */
+export interface IPFSConfig {
+  uploadEndpoint: string;
+  gateway: string;
+  headers?: Record<string, string>;
+}

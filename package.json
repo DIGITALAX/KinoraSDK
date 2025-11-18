@@ -1,6 +1,6 @@
 {
   "name": "kinora-sdk",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "description": "An open source typescript SDK that combines automated on-chain Livepeer videometric logging with decentralized social quests on Lens Protocol.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

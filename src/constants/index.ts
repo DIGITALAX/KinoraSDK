@@ -15,10 +15,6 @@ export const ZERO_ADDRESS: ZeroString =
  */
 export const LENS_BASE_URL: string = "https://api.lens.xyz/graphql";
 /**
- * @constant INFURA_GATEWAY Base URL for the Infura Gateway.
- */
-export const INFURA_GATEWAY: string = "https://thedial.infura-ipfs.io";
-/**
  * @constant IPFS_REGEX IPFS Regex Check.
  */
 export const IPFS_REGEX: RegExp = /\b(Qm[1-9A-Za-z]{44}|ba[A-Za-z2-7]{57})\b/;

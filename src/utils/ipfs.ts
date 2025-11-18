@@ -1,8 +1,9 @@
 import axios from "axios";
-import { INFURA_GATEWAY } from "./../constants";
+import { IPFSConfig } from "../@types/kinora-sdk";
 
 export const hashToIPFS = async (
-  itemToHash: string
+  itemToHash: string,
+  config: IPFSConfig
 ): Promise<{
   cid?: `ipfs://${string}`;
   error?: boolean;
@@ -10,17 +11,20 @@ export const hashToIPFS = async (
 }> => {
   try {
     const response = await axios.post(
-      "https://kinora-backend.onrender.com/upload",
+      config.uploadEndpoint,
       itemToHash,
       {
         headers: {
           "Content-Type": "application/json",
+          ...config.headers,
         },
       }
     );
 
+    const hash = response.data.ipfsHash || response.data.IpfsHash || response.data.Hash;
+
     return {
-      cid: `ipfs://${response.data.ipfsHash}`,
+      cid: `ipfs://${hash}`,
     };
   } catch (err: any) {
     return {
@@ -32,7 +36,8 @@ export const hashToIPFS = async (
 
 
 export const fetchIPFS = async (
-  hash: `ipfs://${string}`
+  hash: `ipfs://${string}`,
+  config: IPFSConfig
 ): Promise<{
   data?: string;
   error?: boolean;
@@ -40,7 +45,10 @@ export const fetchIPFS = async (
 }> => {
   try {
     const response = await axios.get(
-      `${INFURA_GATEWAY}/ipfs/${hash?.split("ipfs://")?.[1]}`
+      `${config.gateway}/ipfs/${hash?.split("ipfs://")?.[1]}`,
+      {
+        headers: config.headers,
+      }
     );
 
     return {

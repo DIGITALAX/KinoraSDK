@@ -40,6 +40,13 @@ const lensProvider = new ethers.providers.JsonRpcProvider(
 
 const newEnvoker = new Envoker({
   authedApolloClient: apolloClient,
+  ipfsConfig: {
+    uploadEndpoint: "https://api.pinata.cloud/pinning/pinJSONToIPFS",
+    gateway: "https://gateway.pinata.cloud",
+    headers: {
+      Authorization: "Bearer YOUR_PINATA_JWT",
+    },
+  },
   envokerLensAddress: "0xlensprofileaddress",
   signer: new ethers.Wallet(process.env.ENVOKER_PRIVATE_KEY, lensProvider),
 });
@@ -118,7 +125,14 @@ const livepeerClient = createReactClient({
 function App() {
   return (
     <LivepeerConfig client={livepeerClient}>
-      <KinoraProvider playerAuthedApolloClient={apolloClient}>
+      <KinoraProvider
+        playerAuthedApolloClient={apolloClient}
+        ipfsConfig={{
+          uploadEndpoint: "https://api.pinata.cloud/pinning/pinJSONToIPFS",
+          gateway: "https://gateway.pinata.cloud",
+          headers: { Authorization: "Bearer YOUR_JWT" },
+        }}
+      >
         <Component {...pageProps} />
       </KinoraProvider>
     </LivepeerConfig>

@@ -1,4 +1,4 @@
-import { ZeroString, PlayerData, TimeRange } from "./@types/kinora-sdk";
+import { ZeroString, PlayerData, TimeRange, IPFSConfig } from "./@types/kinora-sdk";
 import { Metrics } from "./metrics";
 import { ethers } from "ethers";
 import KinoraMetricsAbi from "./abis/KinoraMetrics.json";
@@ -35,8 +35,19 @@ export class Sequence {
    */
   private playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>;
 
-  constructor(playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>) {
+  /**
+   * @private
+   * @type {IPFSConfig}
+   * @description IPFS configuration for upload and gateway endpoints.
+   */
+  private ipfsConfig: IPFSConfig;
+
+  constructor(
+    playerAuthedApolloClient: ApolloClient<NormalizedCacheObject>,
+    ipfsConfig: IPFSConfig
+  ) {
     this.playerAuthedApolloClient = playerAuthedApolloClient;
+    this.ipfsConfig = ipfsConfig;
   }
   /**
    * Initializes a Livepeer video player with given Id and associates event handlers to the video element.
@@ -441,7 +452,7 @@ export class Sequence {
 
     try {
       if (previousArea?.includes("ipfs://")) {
-        const previousAreaData = await fetchIPFS(previousArea);
+        const previousAreaData = await fetchIPFS(previousArea, this.ipfsConfig);
         if (previousAreaData?.error) {
           throw new Error(
             `Error reconciling most replayed areas: ${previousAreaData?.message}`,
@@ -466,7 +477,7 @@ export class Sequence {
         reconciledAreasString = currentArea;
       }
 
-      return (await hashToIPFS(JSON.stringify(reconciledAreasString)))?.cid!;
+      return (await hashToIPFS(JSON.stringify(reconciledAreasString), this.ipfsConfig))?.cid!;
     } catch (err: any) {
       throw new Error(`Error reconciling most replayed areas: ${err.message}`);
     }
