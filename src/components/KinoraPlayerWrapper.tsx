@@ -18,9 +18,9 @@ const isBrowser = typeof window !== "undefined";
 /**
  * @interface KinoraPlayerWrapperProps
  * @dev Defines the shape of props accepted by KinoraPlayerWrapper component.
- *  @param children - Function that accepts a setter for the Livepeer media element, returning React Node.
+ *  @param children - Function that accepts a setter for the HTML5 video element (pass it as the ref of a native <video>), returning React Node.
  * @param parentId - The parent Id of the Player Wrapper.
- * @param playbackId - The Playback Id of the current video element.
+ * @param playbackId - The Playback Id of the current video element, any stable video identifier (e.g. the IPFS CID of the video).
  * @param onPlay - Handler for the play event.
  * @param onPause - Handler for the pause event.
  * @param onAbort - Handler for the abort event.
@@ -102,7 +102,7 @@ type KinoraPlayerWrapperProps = {
 
 /**
  * @function KinoraPlayerWrapper
- * @dev A functional React component wrapping the Livepeer media player, managing its interactions, custom controls design and responsive sizing.
+ * @dev A functional React component wrapping any HTML5 video element (native <video>), managing its interactions, custom controls design and responsive sizing.
  *
  * @param props - The props conforming to KinoraPlayerWrapperProps interface.
  * @returns A React functional component.
@@ -124,7 +124,6 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     styles = {},
     ...props
   }) => {
-    // Reference to the Livepeer internal video element (HTMLVideoElement)
     const mediaElementRef = React.useRef<HTMLVideoElement>(null);
     // State for tracking the last seek operation
     const [lastSeekId, setLastSeekId] = useState<number>(0);
@@ -170,12 +169,11 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     ];
     // Set the SDK Context created from the Wrapper provider
     const kinoraSDKInstance = useContext(KinoraContext);
-    // Initialize a new Livepeer Player for recording metrics
 
     if (typeof window !== "undefined") {
       window.onbeforeunload = () => {
         if (mediaElementRef.current && kinoraSDKInstance && postId) {
-          kinoraSDKInstance.livepeerDestroy(postId);
+          kinoraSDKInstance.videoDestroy(postId);
         }
       };
     }
@@ -183,7 +181,7 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
     useEffect(() => {
       if (isBrowser) {
         if (mediaElementRef.current && kinoraSDKInstance && postId) {
-          kinoraSDKInstance.livepeerAdd(postId, mediaElementRef.current);
+          kinoraSDKInstance.videoAdd(postId, mediaElementRef.current);
         }
       }
     }, [postId, mediaElementRef.current, kinoraSDKInstance]);
@@ -379,18 +377,22 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
       if (isBrowser) {
         const { width, height, ...filteredStyles } = styles;
 
-        const livepeerContainer = document
-          ?.getElementById(parentId)
-          ?.querySelector(".livepeer-contents-container");
-        const aspectRatioContainer = document
-          ?.getElementById(parentId)
-          ?.querySelector(".livepeer-aspect-ratio-container");
-        const videoElement = document
-          ?.getElementById(parentId)
-          ?.querySelector(".c-lioqzt");
-        const loaderElement = document
-          ?.getElementById(parentId)
-          ?.querySelector(".c-PJLV.c-IBjNz");
+        const parentElement = document?.getElementById(parentId);
+        const videoElement: HTMLVideoElement | null =
+          mediaElementRef.current ??
+          parentElement?.querySelector("video") ??
+          null;
+        const containerElements: HTMLElement[] = [];
+        let ancestor: HTMLElement | null = videoElement?.parentElement ?? null;
+        while (
+          ancestor &&
+          parentElement &&
+          ancestor !== parentElement &&
+          parentElement.contains(ancestor)
+        ) {
+          containerElements.push(ancestor);
+          ancestor = ancestor.parentElement;
+        }
 
         const setStyles = (
           element: HTMLElement | null,
@@ -409,119 +411,95 @@ const KinoraPlayerWrapper: React.FC<KinoraPlayerWrapperProps> = memo(
           }
         };
 
+        const resetStyles = () => {
+          containerElements.forEach((element) =>
+            setStyles(element, {
+              width: "",
+              height: "",
+              ...filteredStyles,
+            }),
+          );
+          setStyles(videoElement, {
+            width: "",
+            height: "",
+            objectFit: "" as React.CSSProperties["objectFit"],
+            ...filteredStyles,
+          });
+        };
+
         if (fillWidthHeight) {
-          setStyles(livepeerContainer as HTMLElement, {
-            width: "100%",
-            height: "100%",
-            ...filteredStyles,
-          });
-          setStyles(aspectRatioContainer as HTMLElement, {
-            width: "100%",
-            height: "100%",
-            ...filteredStyles,
-          });
-          setStyles(videoElement as HTMLElement, {
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            ...filteredStyles,
-          });
-          setStyles(loaderElement as HTMLElement, {
+          containerElements.forEach((element) =>
+            setStyles(element, {
+              width: "100%",
+              height: "100%",
+              ...filteredStyles,
+            }),
+          );
+          setStyles(videoElement, {
             width: "100%",
             height: "100%",
             objectFit: "cover",
             ...filteredStyles,
           });
         } else {
-          setStyles(livepeerContainer as HTMLElement, {
-            width: "",
-            height: "",
-            ...filteredStyles,
-          });
-          setStyles(aspectRatioContainer as HTMLElement, {
-            width: "",
-            height: "",
-            ...filteredStyles,
-          });
-          setStyles(videoElement as HTMLElement, {
-            width: "",
-            height: "",
-            objectFit: undefined,
-            ...filteredStyles,
-          });
-          setStyles(loaderElement as HTMLElement, {
-            width: "",
-            height: "",
-            objectFit: undefined,
-            ...filteredStyles,
-          });
+          resetStyles();
         }
 
-        return () => {
-          setStyles(livepeerContainer as HTMLElement, {
-            width: "",
-            height: "",
-            ...filteredStyles,
-          });
-          setStyles(aspectRatioContainer as HTMLElement, {
-            width: "",
-            height: "",
-            ...filteredStyles,
-          });
-          setStyles(videoElement as HTMLElement, {
-            width: "",
-            height: "",
-            objectFit: undefined,
-            ...filteredStyles,
-          });
-          setStyles(loaderElement as HTMLElement, {
-            width: "",
-            height: "",
-            objectFit: undefined,
-            ...filteredStyles,
-          });
-        };
+        return resetStyles;
       }
     }, [fillWidthHeight]);
 
     /**
      * @effect
-     * @description - Observing DOM mutations to handle custom controls display for the Livepeer media element
+     * @description - Observing DOM mutations to handle custom controls display for the video element, hiding the native controls and any control overlays rendered by a third party player around it
      */
     useLayoutEffect(() => {
       if (isBrowser) {
-        const observer = new MutationObserver((mutations) => {
-          mutations.forEach((mutation) => {
-            if (mutation.addedNodes.length > 0) {
-              const parentDiv = document
-                ?.getElementById(parentId)
-                ?.querySelector(".livepeer-aspect-ratio-container");
+        const applyCustomControls = () => {
+          const parentElement = document?.getElementById(parentId);
+          const videoTag: HTMLVideoElement | null =
+            mediaElementRef.current ??
+            parentElement?.querySelector("video") ??
+            null;
 
-              if (parentDiv) {
-                const videoTag = parentDiv.querySelector("video");
+          if (!videoTag) return;
 
-                if (videoTag) {
-                  let sibling = videoTag.nextElementSibling;
-                  let divsAfterVideo = [];
-                  let count = 0;
+          if (customControls) {
+            videoTag.controls = false;
+          }
 
-                  while (sibling && count < 4) {
-                    if (sibling.tagName.toLowerCase() === "div") {
-                      divsAfterVideo.push(sibling);
-                      count++;
-                    }
-                    sibling = sibling.nextElementSibling;
-                  }
+          if (
+            !parentElement ||
+            videoTag.parentElement === parentElement ||
+            !parentElement.contains(videoTag)
+          )
+            return;
 
-                  divsAfterVideo.forEach((div) => {
-                    (div as HTMLElement).style.display = customControls
-                      ? "none"
-                      : "block";
-                  });
-                }
-              }
+          let sibling = videoTag.nextElementSibling;
+          let divsAfterVideo = [];
+          let count = 0;
+
+          while (sibling && count < 4) {
+            if (sibling.tagName.toLowerCase() === "div") {
+              divsAfterVideo.push(sibling);
+              count++;
             }
+            sibling = sibling.nextElementSibling;
+          }
+
+          divsAfterVideo.forEach((div) => {
+            (div as HTMLElement).style.display = customControls
+              ? "none"
+              : "block";
           });
+        };
+
+        applyCustomControls();
+
+        const observer = new MutationObserver((mutations) => {
+          if (mutations.some((mutation) => mutation.addedNodes.length > 0)) {
+            applyCustomControls();
+          }
         });
 
         observer.observe(document.body, { childList: true, subtree: true });

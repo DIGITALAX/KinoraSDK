@@ -51,24 +51,47 @@ class Kinora {
   }
 
   /**
+   * @method videoAdd
+   * @description Registers any HTML5 video element (native <video>) for the given post Id and associates metric event handlers to the video element.
+   *
+   * @param postId - Lens post Id associated with the video.
+   * @param videoElement - The HTML video element associated with the player.
+   */
+  videoAdd = (postId: string, videoElement: HTMLVideoElement): void => {
+    this.sequence.initializePlayer(postId, videoElement);
+  };
+
+  /**
+   * @method videoDestroy
+   * @description Destroys the registered video player with given post Id, cleaning up event listeners and removing video data.
+   *
+   * @param postId - A string representing the video post Id.
+   */
+  videoDestroy(postId: string): void {
+    this.sequence.destroyPlayer(postId);
+  }
+
+  /**
    * @method livepeerAdd
-   * @description Initializes a Livepeer video player with given playback Id and associates event handlers to the video element.
+   * @deprecated Use videoAdd instead. Kept as a backwards compatible alias.
+   * @description Alias of videoAdd. Registers any HTML5 video element for the given post Id.
    *
    * @param postId - Lens post Id associated with the video.
    * @param videoElement - The HTML video element associated with the player.
    */
   livepeerAdd = (postId: string, videoElement: HTMLVideoElement): void => {
-    this.sequence.initializePlayer(postId, videoElement);
+    this.videoAdd(postId, videoElement);
   };
 
   /**
-   * @method playbackId
-   * @description Destroys a Livepeer player with given post Id, cleaning up event listeners and removing video data.
+   * @method livepeerDestroy
+   * @deprecated Use videoDestroy instead. Kept as a backwards compatible alias.
+   * @description Alias of videoDestroy. Destroys the registered video player with given post Id.
    *
-   * @param postId - A number representing the video post Id.
+   * @param postId - A string representing the video post Id.
    */
   livepeerDestroy(postId: string): void {
-    this.sequence.destroyPlayer(postId);
+    this.videoDestroy(postId);
   }
 
   /**

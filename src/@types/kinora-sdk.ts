@@ -113,7 +113,7 @@ export interface MilestoneEligibilityCriteria {
 }
 
 /**
- * Represents the data structure for a instantiated Livepeer player.
+ * Represents the data structure for an instantiated video player (any HTML5 video element).
  * It encapsulates the video element associated with the player and a collection of event handlers that are invoked in response to various media events.
  *
  * @property videoElement - The HTMLVideoElement associated with the player.

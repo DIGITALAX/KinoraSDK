@@ -1,10 +1,12 @@
-![Kinora](https://chromadin.infura-ipfs.io/ipfs/QmVXUT5Ki2exwtCLgk8HXGEx4Pp51kZSGJpVv8zx2LmaaY)
+![Kinora](https://cdn.digitalax.xyz/ipfs/QmVXUT5Ki2exwtCLgk8HXGEx4Pp51kZSGJpVv8zx2LmaaY)
 
-An open source typescript SDK, with an easy interface to combine on-chain Livepeer videometric recording with decentralized social quests on Lens Protocol.
+An open source typescript SDK, with an easy interface to combine on-chain videometric recording for any HTML5 video element (native `<video>`) with decentralized social quests on Lens Protocol.
+
+> **Note:** Livepeer Studio was discontinued on Nov 30 2026. The SDK no longer assumes a Livepeer player: it attaches to any native `<video>` element, and the `playbackId` is any stable video identifier (e.g. the IPFS CID of the video). `videoAdd` / `videoDestroy` are the primary methods; `livepeerAdd` / `livepeerDestroy` remain as deprecated aliases.
 
 ### The Kinora SDK delineates three principle segments: **Envoker**, **Dispatch** and the **Kinora Player Wrapper**. Each segment can be used in isolation for greater flexibility in programming Quest deployment and player interaction.
 
-![Kinora](https://chromadin.infura-ipfs.io/ipfs/QmNmK82BkospCqyQjzHySwzEZXpzu4KwzDSWMtpppNW8tk)
+![Kinora](https://cdn.digitalax.xyz/ipfs/QmNmK82BkospCqyQjzHySwzEZXpzu4KwzDSWMtpppNW8tk)
 
 ### Check out the [documentation](https://codex.irrevocable.dev) for in depth implementation details.
 
@@ -98,44 +100,28 @@ await newDispatch.playerJoinQuest(
 
 ## Kinora Player Wrapper
 
-The Kinora Player Wrapper, a React Function Component, extends the functionality of the Livepeer Player Component to facilitate optionally encrypted videometric logging for a connected Lens Profile.
+The Kinora Player Wrapper, a React Function Component, extends the functionality of any HTML5 video element (native `<video>`) to facilitate optionally encrypted videometric logging for a connected Lens Profile.
 
 It empowers personalized on-chain video feeds, links to quest milestone criteria, and grants meticulous control over style properties, callback properties, and instance methods.
 
 These improvements enable deeper media integration, more efficient state management, customized visual layout options, and a direct interface with corresponding Lens Protocol data.
 
 ```typescript
-import { Player } from "@livepeer/react";
-import dynamic from "next/dynamic";
-import { useWalletClient } from "wagmi";
 import { KinoraProvider, KinoraPlayerWrapper } from "kinora-sdk";
 import { apolloClient } from "../../lib/lens/client";
-import {
-  createReactClient,
-  studioProvider,
-  LivepeerConfig,
-} from "@livepeer/react";
-
-const livepeerClient = createReactClient({
-  provider: studioProvider({
-    apiKey: process.env.LIVEPEER_STUDIO_KEY!,
-  }),
-});
 
 function App() {
   return (
-    <LivepeerConfig client={livepeerClient}>
-      <KinoraProvider
-        playerAuthedApolloClient={apolloClient}
-        ipfsConfig={{
-          uploadEndpoint: "https://api.pinata.cloud/pinning/pinJSONToIPFS",
-          gateway: "https://gateway.pinata.cloud",
-          headers: { Authorization: "Bearer YOUR_JWT" },
-        }}
-      >
-        <Component {...pageProps} />
-      </KinoraProvider>
-    </LivepeerConfig>
+    <KinoraProvider
+      playerAuthedApolloClient={apolloClient}
+      ipfsConfig={{
+        uploadEndpoint: "https://api.pinata.cloud/pinning/pinJSONToIPFS",
+        gateway: "https://gateway.pinata.cloud",
+        headers: { Authorization: "Bearer YOUR_JWT" },
+      }}
+    >
+      <Component {...pageProps} />
+    </KinoraProvider>
   );
 }
 
@@ -149,10 +135,11 @@ function Page() {
         fillWidthHeight={true}
       >
         {(setMediaElement: (node: HTMLVideoElement) => void) => (
-          <Player
-            mediaElementRef={setMediaElement}
-            playbackId="f5eese9wwl88k4g8"
-            objectFit="cover"
+          <video
+            ref={setMediaElement}
+            src="https://ipfs.io/ipfs/YOUR_VIDEO_CID"
+            playsInline
+            muted
           />
         )}
       </KinoraPlayerWrapper>
@@ -161,11 +148,15 @@ function Page() {
 }
 ```
 
+The wrapper works with any native `<video>` element handed to `setMediaElement`. With `customControls` set to `true` the native browser controls are hidden so you can render your own; set it to `false` and add the `controls` attribute to keep the native ones.
+
+Outside of React, the same metric logging can be attached to any video element with `kinora.videoAdd(postId, videoElement)` and released with `kinora.videoDestroy(postId)`.
+
 ### Keen to venture on quests without the code entanglement?
 
 Unlock the gateway to a no code implementation of the Quest Dispatch [here](https://kinora.irrevocable.dev).
 
-![Abstracted](https://chromadin.infura-ipfs.io/ipfs/QmQk9TqFivUqc6ktosoZVVih9o1uiY3r5Z7F3GCC1FpaJS)
+![Abstracted](https://cdn.digitalax.xyz/ipfs/QmQk9TqFivUqc6ktosoZVVih9o1uiY3r5Z7F3GCC1FpaJS)
 
 ### Usage Terms
 

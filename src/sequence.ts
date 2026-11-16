@@ -24,7 +24,7 @@ export class Sequence {
   /**
    * @private
    * @type {{ [postId: string]: PlayerData }}
-   * @description Livepeer Player mapping.
+   * @description Video player mapping.
    */
   private playerMap: { [postId: string]: PlayerData } = {};
 
@@ -50,7 +50,7 @@ export class Sequence {
     this.ipfsConfig = ipfsConfig;
   }
   /**
-   * Initializes a Livepeer video player with given Id and associates event handlers to the video element.
+   * Initializes a video player for any HTML5 video element with given Id and associates event handlers to the video element.
    *
    * @param postId - Lens publication Id associated with the video.
    * @param videoElement - The HTML video element associated with the player.
@@ -158,7 +158,7 @@ export class Sequence {
   }> => {
     if (Object.keys(this.playerMap).length === 0)
       throw new Error(
-        "No video elements detected. Make sure to set your Livepeer Player component in your app.",
+        "No video elements detected. Make sure to set an HTML5 video element (native <video>) inside the KinoraPlayerWrapper in your app.",
       );
 
     if (!this.metrics[postId]) {
@@ -514,7 +514,6 @@ export class Sequence {
           referencedPost: postId,
           referenceTypes: [PostReferenceType.CommentOn],
           pageSize: PageSize.Fifty,
-          authors: [playerProfile],
         },
         this.playerAuthedApolloClient,
       );
@@ -525,7 +524,13 @@ export class Sequence {
         secondaryCollectOnComment: number = 0;
 
       if (commentData && commentData?.length > 0) {
-        commentData?.forEach((item: Post) => {
+        commentData
+          ?.filter(
+            (item: Post) =>
+              item?.author?.address?.toLowerCase() ==
+              playerProfile?.toLowerCase(),
+          )
+          ?.forEach((item: Post) => {
           if (item?.stats?.collects > secondaryCollectOnComment)
             secondaryCollectOnComment = item?.stats?.collects;
           if (item?.stats?.upvotes > secondaryReactOnComment)
@@ -548,13 +553,18 @@ export class Sequence {
         {
           referencedPost: postId,
           referenceTypes: [PostReferenceType.QuoteOf],
-          authors: [playerProfile],
         },
         this.playerAuthedApolloClient,
       );
 
       if (quoteData && quoteData?.length > 0) {
-        quoteData?.forEach((item: Post) => {
+        quoteData
+          ?.filter(
+            (item: Post) =>
+              item?.author?.address?.toLowerCase() ==
+              playerProfile?.toLowerCase(),
+          )
+          ?.forEach((item: Post) => {
           if (item?.stats?.collects > secondaryCollectOnQuote)
             secondaryCollectOnQuote = item?.stats?.collects;
           if (item?.stats?.upvotes > secondaryReactOnQuote)
