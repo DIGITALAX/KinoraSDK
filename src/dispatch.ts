@@ -12,6 +12,7 @@ import KinoraAccesControlAbi from "./abis/KinoraAccesControl.json";
 import { getMilestoneVideos } from "./graphql/queries/getMilestoneVideos";
 import { getPlayerVideoData } from "./graphql/queries/getPlayerVideoData";
 import { act } from "./graphql/mutations/actOn";
+import { buildRawTransaction } from "./utils/transactions";
 import {
   SelfFundedTransactionRequest,
   SponsoredTransactionRequest,
@@ -70,17 +71,7 @@ export class Dispatch {
       const raw = (
         data as SponsoredTransactionRequest | SelfFundedTransactionRequest
       )?.raw;
-      const tx = {
-        chainId: raw?.chainId,
-        from: raw?.from,
-        to: raw?.to,
-        nonce: raw?.nonce,
-        gasLimit: raw?.gasLimit,
-        maxFeePerGas: raw?.maxFeePerGas,
-        maxPriorityFeePerGas: raw?.maxPriorityFeePerGas,
-        value: raw?.value,
-        data: raw?.data,
-      };
+      const tx = buildRawTransaction(raw);
       const txResponse = await wallet.sendTransaction(tx);
 
       const txHash = await txResponse.wait();
@@ -133,17 +124,7 @@ export class Dispatch {
         data as SponsoredTransactionRequest | SelfFundedTransactionRequest
       )?.raw;
 
-      const tx = {
-        chainId: raw?.chainId,
-        from: raw?.from,
-        to: raw?.to,
-        nonce: raw?.nonce,
-        gasLimit: raw?.gasLimit,
-        maxFeePerGas: raw?.maxFeePerGas,
-        maxPriorityFeePerGas: raw?.maxPriorityFeePerGas,
-        value: raw?.value,
-        data: raw?.data,
-      };
+      const tx = buildRawTransaction(raw);
       const txResponse = await wallet.sendTransaction(tx);
 
       const txHash = await txResponse.wait();

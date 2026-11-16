@@ -4,6 +4,9 @@
   "description": "An open source typescript SDK that combines automated on-chain videometric logging for any HTML5 video element with decentralized social quests on Lens Protocol.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "node --trace-deprecation node_modules/.bin/webpack && tsc",
     "start": "node dist/index.js",
@@ -38,7 +41,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.13.8",
-    "@lens-protocol/client": "^0.0.0-canary-20250618120637",
+    "@lens-protocol/client": "0.0.0-canary-20250618120637",
     "@lens-protocol/metadata": "^2.1.0",
     "@typechain/hardhat": "^6.1.4",
     "axios": "^1.6.3",

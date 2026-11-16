@@ -17,7 +17,12 @@ export const LENS_BASE_URL: string = "https://api.lens.xyz/graphql";
 /**
  * @constant IPFS_REGEX IPFS Regex Check.
  */
-export const IPFS_REGEX: RegExp = /\b(Qm[1-9A-Za-z]{44}|ba[A-Za-z2-7]{57})\b/;
+export const IPFS_REGEX: RegExp =
+  /^ipfs:\/\/(Qm[1-9A-Za-z]{44}|ba[A-Za-z2-7]{57})(\/[^\s]*)?$/;
+/**
+ * @constant LENS_CHAIN_ID Lens Mainnet Chain Id.
+ */
+export const LENS_CHAIN_ID: number = 232;
 
 /**
  * @constant ERROR_CODES Contract Error Codes.

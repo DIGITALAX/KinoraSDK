@@ -42,6 +42,7 @@ import {
   URI,
 } from "@lens-protocol/metadata";
 import { disableAction } from "./graphql/mutations/disableAction";
+import { buildRawTransaction } from "./utils/transactions";
 
 export class Envoker {
   /**
@@ -204,19 +205,17 @@ export class Envoker {
     }
 
     if (
-      args?.milestones?.some((milestone) => {
-        milestone?.reward?.some((reward) => {
-          if (reward?.type == RewardType.ERC20) {
-            return (
-              Number(reward?.erc20tokenAmount || 0) <= 0 ||
-              reward?.erc20tokenAddress ||
+      args?.milestones?.some((milestone) =>
+        milestone?.reward?.some(
+          (reward) =>
+            reward?.type == RewardType.ERC20 &&
+            (!(Number(reward?.erc20tokenAmount || 0) > 0) ||
+              !reward?.erc20tokenAddress ||
               reward?.erc20tokenAddress?.trim() == "" ||
-              reward?.erc20tokenAddress == "0x" ||
-              reward.erc20tokenAddress !== "0x00"
-            );
-          }
-        });
-      })
+              (reward?.erc20tokenAddress as string) == "0x" ||
+              (reward?.erc20tokenAddress as string) == "0x00"),
+        ),
+      )
     ) {
       throw new Error(
         "Invalid ERC20 Rewards. Make sure your addresses and amounts are correctly defined.",
@@ -310,6 +309,22 @@ export class Envoker {
           ?.sort((a, b) => a.milestone - b.milestone)
           ?.filter((v, i, a) => !i || v.milestone != a[i - 1].milestone)
           ?.map(async (milestone: Milestone) => {
+            const hashedMilestone = await hashToIPFS(
+              JSON.stringify({
+                title: milestone?.details?.title,
+                description: milestone?.details?.description,
+                cover: milestone?.details?.cover,
+                videoCovers: milestone?.details?.videoInfo,
+              }),
+              this.ipfsConfig,
+            );
+
+            if (hashedMilestone.error || !hashedMilestone.cid) {
+              throw new Error(
+                `Error hashing content: ${hashedMilestone.message}`,
+              );
+            }
+
             return {
               gated: {
                 erc721TokenURIs: milestone.gated.erc721TokenURIs,
@@ -428,17 +443,7 @@ export class Envoker {
                   react: item.playbackCriteria.react || false,
                 };
               }),
-              uri: (
-                await hashToIPFS(
-                  JSON.stringify({
-                    title: milestone?.details?.title,
-                    description: milestone?.details?.description,
-                    cover: milestone?.details?.cover,
-                    videoCovers: milestone?.details?.videoInfo,
-                  }),
-                  this.ipfsConfig
-                )
-              ).cid,
+              uri: hashedMilestone.cid,
               milestone: milestone.milestone,
             };
           }),
@@ -490,6 +495,15 @@ export class Envoker {
         }
       }
 
+      const hashedQuest = await hashToIPFS(
+        JSON.stringify(args.questDetails),
+        this.ipfsConfig,
+      );
+
+      if (hashedQuest.error || !hashedQuest.cid) {
+        throw new Error(`Error hashing content: ${hashedQuest.message}`);
+      }
+
       let encodedData: string;
       try {
         encodedData = ethers.utils.defaultAbiCoder.encode(
@@ -520,7 +534,7 @@ export class Envoker {
                 erc20Thresholds: args.joinQuestTokenGatedLogic.erc20Thresholds,
                 oneOf: args.joinQuestTokenGatedLogic.oneOf,
               },
-              uri: (await hashToIPFS(JSON.stringify(args.questDetails), this.ipfsConfig)).cid,
+              uri: hashedQuest.cid,
               maxPlayerCount: args.maxPlayerCount,
             },
             args.factoryId,
@@ -565,17 +579,7 @@ export class Envoker {
       let txHash = (data as any)?.hash;
 
       if (raw) {
-        const tx = {
-          chainId: raw?.chainId,
-          from: raw?.from,
-          to: raw?.to,
-          nonce: raw?.nonce,
-          gasLimit: raw?.gasLimit,
-          maxFeePerGas: raw?.maxFeePerGas,
-          maxPriorityFeePerGas: raw?.maxPriorityFeePerGas,
-          value: raw?.value,
-          data: raw?.data,
-        };
+        const tx = buildRawTransaction(raw);
         const txResponse = await this.wallet?.sendTransaction(tx);
 
         txHash = (await txResponse?.wait())?.transactionHash;
@@ -778,17 +782,7 @@ export class Envoker {
         disableRes as SponsoredTransactionRequest | SelfFundedTransactionRequest
       )?.raw;
 
-      const tx = {
-        chainId: raw?.chainId,
-        from: raw?.from,
-        to: raw?.to,
-        nonce: raw?.nonce,
-        gasLimit: raw?.gasLimit,
-        maxFeePerGas: raw?.maxFeePerGas,
-        maxPriorityFeePerGas: raw?.maxPriorityFeePerGas,
-        value: raw?.value,
-        data: raw?.data,
-      };
+      const tx = buildRawTransaction(raw);
       const txResponse = await this.wallet?.sendTransaction(tx);
 
       const txHash = await txResponse?.wait();

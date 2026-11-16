@@ -21,7 +21,18 @@ export const hashToIPFS = async (
       }
     );
 
-    const hash = response.data.ipfsHash || response.data.IpfsHash || response.data.Hash;
+    const hash =
+      response.data?.ipfsHash ||
+      response.data?.IpfsHash ||
+      response.data?.Hash ||
+      response.data?.cid;
+
+    if (!hash || typeof hash !== "string") {
+      return {
+        error: true,
+        message: "IPFS upload response did not include a hash.",
+      };
+    }
 
     return {
       cid: `ipfs://${hash}`,

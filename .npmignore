@@ -9,4 +9,3 @@ typechain-types/
 scripts/
 hardhat.config.ts
 .env
-dist/

@@ -28,6 +28,10 @@ export class Sequence {
    */
   private playerMap: { [postId: string]: PlayerData } = {};
 
+  private listeners: {
+    [postId: string]: { type: string; handler: EventListener }[];
+  } = {};
+
   /**
    * @private
    * @type {ApolloClient<NormalizedCacheObject>}
@@ -64,6 +68,10 @@ export class Sequence {
       !this.playerMap[postId] ||
       this.playerMap[postId].videoElement !== videoElement
     ) {
+      if (this.playerMap[postId]) {
+        this.removeListeners(postId);
+      }
+
       this.playerMap[postId] = {
         videoElement,
         postId,
@@ -81,44 +89,28 @@ export class Sequence {
           onSeeking: () => this.metrics[postId].onSeeking(),
         },
       };
-      videoElement.addEventListener("ended", () =>
-        this.playerMap[postId].eventHandlers.end(videoElement),
-      );
-      videoElement.addEventListener("play", () =>
-        this.playerMap[postId].eventHandlers.play(videoElement),
-      );
-      videoElement.addEventListener(
-        "pause",
-        this.playerMap[postId].eventHandlers.pause,
-      );
-      videoElement.addEventListener("seeking", this.metrics[postId].onSeeking);
-      videoElement.addEventListener("seeked", () =>
-        this.metrics[postId].onSeeked(videoElement),
-      );
-      videoElement.addEventListener(
-        "volumechange",
-        this.playerMap[postId].eventHandlers.volumeChange,
-      );
-      videoElement.addEventListener(
-        "click",
-        this.playerMap[postId].eventHandlers.click,
-      );
+      const handlers = this.playerMap[postId].eventHandlers;
+      const boundListeners: { type: string; handler: EventListener }[] = [
+        { type: "ended", handler: () => handlers.end(videoElement) },
+        { type: "play", handler: () => handlers.play(videoElement) },
+        { type: "pause", handler: handlers.pause },
+        { type: "seeking", handler: handlers.onSeeking },
+        { type: "seeked", handler: () => handlers.onSeeked(videoElement) },
+        { type: "volumechange", handler: handlers.volumeChange },
+        { type: "click", handler: handlers.click },
+        { type: "qualityChange", handler: handlers.qualityChange },
+        { type: "muteToggle", handler: handlers.muteToggle },
+        { type: "fullscreenToggle", handler: handlers.fullscreenToggle },
+        {
+          type: "timeupdate",
+          handler: () => handlers.onTimeUpdate(videoElement),
+        },
+      ];
 
-      videoElement.addEventListener(
-        "qualityChange",
-        this.playerMap[postId].eventHandlers.qualityChange,
+      boundListeners.forEach(({ type, handler }) =>
+        videoElement.addEventListener(type, handler),
       );
-      videoElement.addEventListener(
-        "muteToggle",
-        this.playerMap[postId].eventHandlers.muteToggle,
-      );
-      videoElement.addEventListener(
-        "fullscreenToggle",
-        this.playerMap[postId].eventHandlers.fullscreenToggle,
-      );
-      videoElement.addEventListener("timeupdate", () =>
-        this.metrics[postId].onTimeUpdate(videoElement),
-      );
+      this.listeners[postId] = boundListeners;
     }
   };
 
@@ -322,52 +314,15 @@ export class Sequence {
     if (typeof window == "undefined") {
       throw new Error("Make sure you are in a browser environment.");
     }
-    this.playerMap[postId].videoElement.removeEventListener("ended", () =>
-      this.playerMap[postId].eventHandlers.end(
-        this.playerMap[postId].videoElement,
-      ),
+    this.removeListeners(postId);
+  };
+
+  private removeListeners = (postId: string) => {
+    const videoElement = this.playerMap[postId]?.videoElement;
+    (this.listeners[postId] || []).forEach(({ type, handler }) =>
+      videoElement?.removeEventListener(type, handler),
     );
-    this.playerMap[postId].videoElement.removeEventListener("play", () =>
-      this.playerMap[postId].eventHandlers.play(
-        this.playerMap[postId].videoElement,
-      ),
-    );
-    this.playerMap[postId].videoElement.removeEventListener(
-      "pause",
-      this.playerMap[postId].eventHandlers.pause,
-    );
-    this.playerMap[postId].videoElement.removeEventListener(
-      "volumechange",
-      this.playerMap[postId].eventHandlers.volumeChange,
-    );
-    this.playerMap[postId].videoElement.removeEventListener(
-      "click",
-      this.playerMap[postId].eventHandlers.click,
-    );
-    this.playerMap[postId].videoElement.removeEventListener(
-      "seeking",
-      this.playerMap[postId].eventHandlers.onSeeking,
-    );
-    this.playerMap[postId].videoElement.removeEventListener("seeked", () =>
-      this.playerMap[postId].eventHandlers.onSeeked(
-        this.playerMap[postId].videoElement,
-      ),
-    );
-    this.playerMap[postId].videoElement.removeEventListener(
-      "qualityChange",
-      this.playerMap[postId].eventHandlers.qualityChange,
-    );
-    this.playerMap[postId].videoElement.removeEventListener(
-      "muteToggle",
-      this.playerMap[postId].eventHandlers.muteToggle,
-    );
-    this.playerMap[postId].videoElement.removeEventListener(
-      "fullscreenToggle",
-      this.playerMap[postId].eventHandlers.fullscreenToggle,
-    );
-    this.playerMap[postId].videoElement.removeEventListener("timeupdate", () =>
-      this.metrics[postId].onTimeUpdate(this.playerMap[postId].videoElement),
-    );
+    delete this.listeners[postId];
   };
 
   /**
@@ -477,7 +432,16 @@ export class Sequence {
         reconciledAreasString = currentArea;
       }
 
-      return (await hashToIPFS(JSON.stringify(reconciledAreasString), this.ipfsConfig))?.cid!;
+      const hashedAreas = await hashToIPFS(
+        JSON.stringify(reconciledAreasString),
+        this.ipfsConfig,
+      );
+
+      if (hashedAreas?.error || !hashedAreas?.cid) {
+        throw new Error(hashedAreas?.message || "IPFS upload failed.");
+      }
+
+      return hashedAreas.cid;
     } catch (err: any) {
       throw new Error(`Error reconciling most replayed areas: ${err.message}`);
     }
@@ -514,6 +478,7 @@ export class Sequence {
           referencedPost: postId,
           referenceTypes: [PostReferenceType.CommentOn],
           pageSize: PageSize.Fifty,
+          authors: [playerProfile],
         },
         this.playerAuthedApolloClient,
       );
@@ -553,6 +518,7 @@ export class Sequence {
         {
           referencedPost: postId,
           referenceTypes: [PostReferenceType.QuoteOf],
+          authors: [playerProfile],
         },
         this.playerAuthedApolloClient,
       );
