@@ -2,7 +2,11 @@
 
 An open source typescript SDK, with an easy interface to combine on-chain videometric recording for any HTML5 video element (native `<video>`) with decentralized social quests on Lens Protocol.
 
-> **Note:** Livepeer Studio was discontinued on Nov 30 2026. The SDK no longer assumes a Livepeer player: it attaches to any native `<video>` element, and the `playbackId` is any stable video identifier (e.g. the IPFS CID of the video). `videoAdd` / `videoDestroy` are the primary methods; `livepeerAdd` / `livepeerDestroy` remain as deprecated aliases.
+### Livepeer Studio closes its doors on November 30, 2026. Kinora carries on without it.
+
+Kinora no longer leans on a Livepeer player. The wrapper now latches onto any native `<video>` element, and videometrics, quests and milestones are logged on-chain just as before.
+
+Nothing to rewrite on your side. Existing quests keep the `playbackId` they were deployed with, and for new quests the `playbackId` is simply any stable identifier for your video, such as its IPFS CID. Reach for `videoAdd` and `videoDestroy` from here on; `livepeerAdd` and `livepeerDestroy` still answer as deprecated aliases, so older integrations keep running.
 
 ### The Kinora SDK delineates three principle segments: **Envoker**, **Dispatch** and the **Kinora Player Wrapper**. Each segment can be used in isolation for greater flexibility in programming Quest deployment and player interaction.
 
